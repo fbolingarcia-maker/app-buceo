@@ -5,7 +5,7 @@ import { Link, go } from '../lib/router'
 import { levelName, levelRank, dateTime, php } from '../lib/format'
 
 export default function Salida({ id }) {
-  const { session, diver } = useAuth()
+  const { session, diver, isCenter } = useAuth()
   const [t, setT] = useState(null)
   const [center, setCenter] = useState(null)
   const [certs, setCerts] = useState([])
@@ -66,6 +66,8 @@ export default function Salida({ id }) {
           <p>Para reservar necesitas una cuenta.</p>
           <Link to="/login" className="btn block">Entrar o crear cuenta</Link>
         </div>
+      ) : isCenter ? (
+        <div className="card muted">Estás con una cuenta de centro. Para reservar, usa una cuenta de buceador.</div>
       ) : t.available_seats < 1 ? (
         <div className="card muted">Salida completa.</div>
       ) : (
