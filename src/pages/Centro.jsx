@@ -125,7 +125,18 @@ function TripCard({ t, center, run }) {
                   ))}
                 </td>
                 <td>{b.seats}</td>
-                <td>{php(b.amount_php)}</td>
+                <td>
+                  {php(b.amount_php)}
+                  <div className="small muted">
+                    {b.paid_php >= b.amount_php ? 'Pagado' : `Pagado ${php(b.paid_php)} · falta ${php(b.amount_php - b.paid_php)}`}
+                  </div>
+                  {b.paid_php < b.amount_php && (
+                    <button className="btn small ghost" style={{ padding: '2px 8px', marginTop: 4 }} onClick={() => {
+                      if (window.confirm(`¿Registrar cobro en efectivo de ${php(b.amount_php - b.paid_php)}?`))
+                        run(supabase.rpc('record_cash_payment', { p_booking: b.id }), 'Cobro en efectivo registrado')
+                    }}>Cobrar en efectivo</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody></table>
