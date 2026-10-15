@@ -5,6 +5,18 @@ import { Link } from '../lib/router'
 import { dayLabel, dateTime } from '../lib/format'
 import { t } from '../lib/i18n'
 
+// Descarga la bitácora como CSV (se abre en Excel / Google Sheets)
+function exportCsv(logs) {
+  const cols = ['dive_date', 'entry_time', 'site_name', 'max_depth_m', 'avg_depth_m', 'duration_min', 'water_temp_c', 'visibility_m', 'gas', 'o2_pct', 'tank_start_bar', 'tank_end_bar', 'weights_kg', 'suit', 'buddy', 'conditions', 'marine_life', 'rating', 'notes']
+  const esc = (v) => (v == null ? '' : /[",\n;]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v))
+  const rows = [cols.join(','), ...[...logs].reverse().map((l) => cols.map((c) => esc(l[c])).join(','))]
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8' }))
+  a.download = 'diveslot-bitacora.csv'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
+
 export default function Bitacora() {
   const { diver } = useAuth()
   const [logs, setLogs] = useState(null)
@@ -48,7 +60,10 @@ export default function Bitacora() {
     <>
       <div className="row between">
         <h1>{t('Mi bitácora')}</h1>
-        <Link to="/bitacora/nueva" className="btn small">{t('+ Inmersión')}</Link>
+        <div className="row" style={{ gap: 6 }}>
+          {logs.length > 0 && <button className="btn small ghost" onClick={() => exportCsv(logs)}>{t('Exportar CSV')}</button>}
+          <Link to="/bitacora/nueva" className="btn small">{t('+ Inmersión')}</Link>
+        </div>
       </div>
       {error && <div className="msg err">{error}</div>}
 

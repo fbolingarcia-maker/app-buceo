@@ -41,7 +41,7 @@ export default function Inmersion({ id }) {
   const [msg, setMsg] = useState(null)
 
   useEffect(() => {
-    supabase.from('dive_sites').select('id, name, area').order('area').order('name').then(({ data }) => setSites(data || []))
+    supabase.from('dive_sites').select('id, name, area, province').order('area').order('name').then(({ data }) => setSites(data || []))
   }, [])
 
   useEffect(() => {
@@ -153,7 +153,13 @@ export default function Inmersion({ id }) {
             <div className="field"><label>{t('Punto de buceo')}</label>
               <select value={f.site_id || ''} onChange={(e) => pickSite(e.target.value)}>
                 <option value="">{t('Otro (escríbelo)')}</option>
-                {sites.map((s) => <option key={s.id} value={s.id}>{s.area} · {s.name.replace(s.area + ' – ', '')}</option>)}
+                {Object.entries(sites.reduce((m, s) => { const k = (s.province ? s.province + ' · ' : '') + s.area; (m[k] = m[k] || []).push(s); return m }, {}))
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([k, list]) => (
+                    <optgroup key={k} label={k}>
+                      {list.map((s) => <option key={s.id} value={s.id}>{s.name.replace(s.area + ' – ', '')}</option>)}
+                    </optgroup>
+                  ))}
               </select>
             </div>
             <div className="field"><label>{t('Nombre')}</label><input value={f.site_name || ''} onChange={set('site_name')} placeholder={t('p. ej. Napaling')} required /></div>

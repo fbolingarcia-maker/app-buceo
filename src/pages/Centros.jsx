@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition } from '../lib/geo'
-import { loadDestinations, GROUPS } from '../lib/places'
+import { loadDestinations, GROUPS, loadRatings } from '../lib/places'
+import { Link } from '../lib/router'
 
 export default function Centros() {
   const [list, setList] = useState(null)
   const [dests, setDests] = useState([])
+  const [ratings, setRatings] = useState({})
   const [q, setQ] = useState('')
   const [group, setGroup] = useState('')
   const [error, setError] = useState('')
@@ -22,6 +24,7 @@ export default function Centros() {
 
   useEffect(() => {
     loadDestinations().then(setDests)
+    loadRatings().then(setRatings)
     supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng')
       .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%').order('name')
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setList(data || []) })
@@ -61,12 +64,12 @@ export default function Centros() {
       {order.map((z) => (
         <div key={z}>
           <h2>
-            📍 {z}<span className="muted small" style={{ fontWeight: 400 }}>{byDest[z][0].province ? ', ' + byDest[z][0].province : ''} · {byDest[z].length}{here && destKm(z) < 1e9 ? ' · ' + kmLabel(destKm(z)) : ''}</span>
+            📍 <Link to={'/d/' + encodeURIComponent(z)} style={{ color: 'inherit' }}>{z}</Link><span className="muted small" style={{ fontWeight: 400 }}>{byDest[z][0].province ? ', ' + byDest[z][0].province : ''} · {byDest[z].length}{here && destKm(z) < 1e9 ? ' · ' + kmLabel(destKm(z)) : ''}</span>
           </h2>
           {byDest[z].map((c) => (
             <div key={c.id} className="card">
               <div className="row between" style={{ gap: 8 }}>
-                <b>{c.name}</b>
+                <Link to={'/c/' + c.id} style={{ color: 'inherit' }}><b>{c.name}</b>{ratings[c.id] && <span className="small"> · ⭐ {ratings[c.id].rating}</span>}</Link>
                 {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
               </div>
               {c.locality && c.locality !== z && <div className="small muted">{c.locality}</div>}

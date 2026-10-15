@@ -3,7 +3,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { levelName, levelRank, dateTime, php } from '../lib/format'
-import { t } from '../lib/i18n'
+import { t, getLang } from '../lib/i18n'
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
@@ -76,7 +76,7 @@ export default function Salida({ id }) {
       setTrip(data || false)
       if (data) {
         supabase.from('centers').select('name, phone, locality, website, destination, province').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
-        if (data.sites?.length) supabase.from('dive_sites').select('name, min_depth_m, max_depth_m, highlight, recommended_min').in('name', data.sites).then(({ data }) => setSiteInfo(data || []))
+        if (data.sites?.length) supabase.from('dive_sites').select('name, min_depth_m, max_depth_m, highlight, highlight_es, recommended_min').in('name', data.sites).then(({ data }) => setSiteInfo(data || []))
       }
     })
   }, [id])
@@ -133,7 +133,7 @@ export default function Salida({ id }) {
                     {info && (info.max_depth_m || info.recommended_min === 'advanced') && (
                       <span className="small muted"> · {info.min_depth_m != null && info.max_depth_m ? t('{a}–{b} m', { a: info.min_depth_m, b: info.max_depth_m }) : info.max_depth_m ? t('hasta {b} m', { b: info.max_depth_m }) : ''}{info.recommended_min === 'advanced' ? ' · ' + t('recomendado Advanced') : ''}</span>
                     )}
-                    {info?.highlight && <div className="small muted">{info.highlight}</div>}
+                    {info?.highlight && <div className="small muted">{getLang() === 'es' ? (info.highlight_es || info.highlight) : info.highlight}</div>}
                   </li>
                 )
               })}
@@ -145,8 +145,10 @@ export default function Salida({ id }) {
       <div className="card">
         <div className="row between wrap" style={{ gap: 8 }}>
           <div>
-            <b>{trip.center_name}</b>
-            <div className="small muted">📍 {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}</div>
+            <Link to={'/c/' + trip.center_id}><b>{trip.center_name}</b></Link>
+            <div className="small muted">📍 {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}
+              {(center?.destination || trip.center_destination) && <> · <Link to={'/d/' + encodeURIComponent(center?.destination || trip.center_destination)}>{t('Guía del destino')}</Link></>}
+            </div>
           </div>
           <div className="row wrap" style={{ gap: 6 }}>
             {center?.phone && <a className="btn small ghost" href={'https://wa.me/' + center.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}

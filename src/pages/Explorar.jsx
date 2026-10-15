@@ -4,7 +4,7 @@ import { Link } from '../lib/router'
 import { LEVELS, levelName, levelRank, manilaDate, addDays, dayLabel, time, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
-import { loadDestinations, suggestPlaces, inPlace, placeLabel } from '../lib/places'
+import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings } from '../lib/places'
 
 const DAYS = 8
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
@@ -16,6 +16,7 @@ export default function Explorar() {
   const [level, setLevel] = useState('all')
   const [trips, setTrips] = useState(null)
   const [dests, setDests] = useState([])
+  const [ratings, setRatings] = useState({})
   const [error, setError] = useState('')
   const [q, setQ] = useState(() => ss('q') || '')
   const [place, setPlace] = useState(() => json('place'))
@@ -33,6 +34,7 @@ export default function Explorar() {
   // Todas las salidas de los próximos 8 días en una sola consulta
   useEffect(() => {
     loadDestinations().then(setDests)
+    loadRatings().then(setRatings)
     const from = new Date().toISOString()
     const to = new Date(addDays(today, DAYS) + 'T00:00:00+08:00').toISOString()
     supabase.from('published_trips').select('*').gte('departs_at', from).lt('departs_at', to).order('departs_at')
@@ -108,6 +110,7 @@ export default function Explorar() {
           <button className="pill" style={{ border: 0, cursor: 'pointer', fontSize: 14, padding: '6px 12px' }} onClick={() => setPlace(null)}>
             📍 {placeLabel(place, dests)} ✕
           </button>
+          {place.kind === 'dest' && <Link to={'/d/' + encodeURIComponent(place.name)} className="small">{t('Guía del destino')}</Link>}
         </div>
       )}
       {!place && !here && !q && popular.length > 1 && (
@@ -164,7 +167,7 @@ export default function Explorar() {
             <div className="big">{php(tr.price_php)}</div>
           </div>
           <div className="row between" style={{ marginTop: 2, gap: 8 }}>
-            <span style={{ fontWeight: 600 }}>{tr.center_name}</span>
+            <span style={{ fontWeight: 600 }}>{tr.center_name}{ratings[tr.center_id] && <span className="small" style={{ fontWeight: 400 }}> · ⭐ {ratings[tr.center_id].rating}</span>}</span>
             <span className="muted small" style={{ textAlign: 'right' }}>📍 {destOf(tr)}{tr.center_province ? ', ' + tr.center_province : ''}{tr.km != null ? ' · ' + kmLabel(tr.km) : ''}</span>
           </div>
           <div className="muted small">{t('{n} inmersiones', { n: tr.num_dives })} · {(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</div>

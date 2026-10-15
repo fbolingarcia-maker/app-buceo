@@ -121,6 +121,17 @@ export default function CentroPanel() {
         <Link to="/centro/salidas" className="btn ghost">{t('Gestionar salidas')}</Link>
         <Link to="/centro/ajustes" className="btn ghost">{t('Barcos y datos')}</Link>
       </div>
+      <div className="card row between wrap" style={{ marginTop: 12, gap: 8 }}>
+        <span className="small">{t('Tu ficha pública: compártela con tus clientes para que reserven en la app.')}</span>
+        <div className="row" style={{ gap: 6 }}>
+          <Link to={'/c/' + center.id} className="btn small ghost">{t('Ver ficha')}</Link>
+          <button className="btn small ghost" onClick={() => {
+            const url = window.location.origin + window.location.pathname + '#/c/' + center.id
+            if (navigator.share) navigator.share({ title: center.name, url }).catch(() => {})
+            else navigator.clipboard?.writeText(url)
+          }}>{t('Compartir')}</button>
+        </div>
+      </div>
     </>
   )
 }
