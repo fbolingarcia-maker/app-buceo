@@ -10,7 +10,8 @@ Piloto: Panglao (Bohol, Filipinas). Moneda: PHP. Hora: Asia/Manila.
 
 ```
 .github/workflows/deploy.yml   Publica en GitHub Pages en cada push a main
-supabase/migrations/           Esquema, lógica de reservas y seguridad (001–007)
+supabase/migrations/           Esquema, lógica de reservas, seguridad y pagos (001–008)
+supabase/functions/            Edge Functions de pago (crear-pago, paymongo-webhook)
 src/lib/                       Cliente Supabase, sesión, fechas/precios, router
 src/pages/                     Explorar, Salida, Reservas, Perfil, Login, Centro, NuevaSalida, Centros
 CLAUDE.md                      Contexto para trabajar con Claude
@@ -25,7 +26,7 @@ npm run dev        # http://localhost:5173
 
 ## Probar
 
-- **Como buceador**: crea una cuenta, ve a Perfil, añade una certificación, elige una salida en Salidas, reserva y luego, en Reservas, pulsa *Pagar (modo demo)*.
+- **Como buceador**: crea una cuenta, ve a Perfil, añade una certificación, elige una salida en Salidas y reserva. En Reservas elige pagar la señal (50 %) o el total, con GCash o tarjeta. Mientras `payments_mode = 'demo'`, el pago es simulado.
 - **Como centro**: en Perfil usa *Registrar mi centro* (si el nombre coincide con uno del directorio, se reclama esa ficha). Después ve a *Mi centro*, añade un barco en *Barcos y plazas* y crea una salida con *+ Salida*. Desde la agenda puedes añadir reservas manuales, verificar certificaciones y cancelar por meteo.
 - Los centros "Demo · …" tienen salidas para los próximos 7 días, que se regeneran solas cada noche (pg_cron).
 
@@ -34,12 +35,22 @@ npm run dev        # http://localhost:5173
 | Regla | Valor | Dónde |
 |---|---|---|
 | Comisión de la plataforma | ₱250 por buceador reservado por la app | `app_setting()` |
-| Retención de plaza sin pagar | 15 min | `app_setting('hold_minutes')` |
+| Señal mínima para confirmar | 50 % del total | `app_config.deposit_pct` + trigger `bookings_set_deposit` |
+| Resto | En la app (GCash/tarjeta) o en efectivo en el centro | `crear-pago` · `record_cash_payment()` |
+| Retención de plaza sin pagar | 15 min (30 min mientras hay un pago en curso) | `holds_seat()` |
 | Antelación mínima para reservar | 60 min | `book_trip()` |
-| Reembolso si cancela el buceador | 100 % con ≥24 h, 50 % con menos | `cancel_my_booking()` |
-| Cancelación por meteo | Reembolso del 100 % de lo pagado, sin comisión | `cancel_trip_weather()` + trigger `trips_on_weather_cancel` |
+| Reembolso si cancela el buceador | Todo lo pagado con ≥24 h; con menos, el centro retiene el 50 % del total | `cancel_my_booking()` |
+| Cancelación por meteo | Se devuelve todo lo pagado, sin comisión | `cancel_trip_weather()` + trigger `trips_on_weather_cancel` |
 | Plazas operativas | mín(capacidad del barco, guías × buceadores por guía, límite manual) | `operative_seats()` |
 | Plazas en la app | operativas − máx(bloqueadas, reservas manuales) − reservas por app | `app_available_seats()` |
+
+## Pagos (PayMongo)
+
+- Edge Functions: `crear-pago` crea el checkout de PayMongo (GCash o tarjeta) y comprueba el pago al volver; `paymongo-webhook` confirma el pago aunque el buceador cierre la página.
+- Secretos en Supabase (Edge Functions → Secrets): `PAYMONGO_SECRET_KEY` y `PAYMONGO_WEBHOOK_SECRET`.
+- Webhook en PayMongo: `https://tosgzcpnkpsrrkfqctgy.supabase.co/functions/v1/paymongo-webhook`, evento `checkout_session.payment.paid`.
+- Activar el cobro real: `update app_config set value = 'paymongo' where key = 'payments_mode';` (con `'demo'` se simula).
+- Los reembolsos se calculan en `refund_php`; de momento se devuelven a mano desde el panel de PayMongo.
 
 ## Seguridad
 
@@ -49,7 +60,7 @@ npm run dev        # http://localhost:5173
 
 ## Pendiente
 
-- Pago real (GCash / PayMongo) en lugar de `confirm_payment_demo`.
+- Reembolsos automáticos vía API de PayMongo.
 - Foto de la tarjeta de certificación (Supabase Storage; la columna `photo_path` ya existe).
 - Invitar a más staff a un centro.
 - Buddies: emparejar buceadores con `seeks_buddy = true`.
