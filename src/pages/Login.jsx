@@ -4,6 +4,9 @@ import { supabase, appUrl, errMsg } from '../lib/supabase'
 export default function Login() {
   const [mode, setMode] = useState('login') // login | signup | reset
   const [name, setName] = useState('')
+  const [type, setType] = useState('diver') // diver | center
+  const [centerName, setCenterName] = useState('')
+  const [centerPhone, setCenterPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -17,7 +20,10 @@ export default function Login() {
     if (mode === 'login') {
       res = await supabase.auth.signInWithPassword({ email, password })
     } else if (mode === 'signup') {
-      res = await supabase.auth.signUp({ email, password, options: { data: { full_name: name }, emailRedirectTo: appUrl() } })
+      res = await supabase.auth.signUp({ email, password, options: {
+        data: { full_name: name, account_type: type, ...(type === 'center' ? { center_name: centerName, center_phone: centerPhone } : {}) },
+        emailRedirectTo: appUrl(),
+      } })
       if (!res.error && !res.data.session) setInfo('Te hemos enviado un email para confirmar tu cuenta. Ábrelo y pulsa el enlace.')
     } else {
       res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: appUrl() })
@@ -32,7 +38,23 @@ export default function Login() {
       <h1>{mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Crear cuenta' : 'Recuperar acceso'}</h1>
       <form className="card" onSubmit={submit}>
         {mode === 'signup' && (
-          <div className="field"><label>Nombre</label><input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" /></div>
+          <>
+            <label>Tipo de cuenta</label>
+            <div className="grid2 field">
+              <button type="button" className={type === 'diver' ? 'btn' : 'btn ghost'} onClick={() => setType('diver')}>🤿 Soy buceador</button>
+              <button type="button" className={type === 'center' ? 'btn' : 'btn ghost'} onClick={() => setType('center')}>⚓ Soy centro de buceo</button>
+            </div>
+            <p className="small muted" style={{ marginTop: -4 }}>
+              {type === 'diver' ? 'Reserva salidas y lleva tu bitácora de inmersiones.' : 'Publica salidas, gestiona reservas, cobros y check-in de tus buceadores.'}
+            </p>
+            <div className="field"><label>{type === 'center' ? 'Tu nombre (responsable)' : 'Nombre'}</label><input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" /></div>
+            {type === 'center' && (
+              <div className="grid2">
+                <div className="field"><label>Nombre del centro</label><input value={centerName} onChange={(e) => setCenterName(e.target.value)} required /></div>
+                <div className="field"><label>Teléfono / WhatsApp</label><input value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} /></div>
+              </div>
+            )}
+          </>
         )}
         <div className="field"><label>Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></div>
         {mode !== 'reset' && (
