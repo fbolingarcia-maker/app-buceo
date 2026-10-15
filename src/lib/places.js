@@ -52,3 +52,20 @@ export function suggestPlaces(q, dests) {
   // Las coincidencias que empiezan por el texto, primero
   return out.sort((a, b) => (norm(b.name).startsWith(w) ? 1 : 0) - (norm(a.name).startsWith(w) ? 1 : 0)).slice(0, 8)
 }
+
+// Valoraciones públicas de los centros (media de la bitácora compartida): { [center_id]: { rating, reviews } }
+let ratingsCache = null
+export function loadRatings() {
+  if (!ratingsCache) {
+    ratingsCache = supabase.rpc('center_ratings')
+      .then(({ data }) => Object.fromEntries((data || []).map((r) => [r.center_id, r])))
+      .catch(() => ({}))
+  }
+  return ratingsCache
+}
+
+// Abre la lista de salidas filtrada por un lugar
+export function openTripsIn(place) {
+  try { sessionStorage.setItem('place', JSON.stringify(place)); sessionStorage.removeItem('q') } catch {}
+  window.location.hash = '/'
+}
