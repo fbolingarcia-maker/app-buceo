@@ -20,6 +20,7 @@ export default function Perfil() {
     if (diver) setForm({
       full_name: diver.full_name || '', languages: (diver.languages || []).join(', '),
       logged_dives: diver.logged_dives ?? '', seeks_buddy: diver.seeks_buddy,
+      country: diver.country || '', bio: diver.bio || '', show_on_trips: diver.show_on_trips ?? true,
     })
   }, [diver])
 
@@ -40,6 +41,9 @@ export default function Perfil() {
       languages: form.languages.split(',').map((s) => s.trim()).filter(Boolean),
       logged_dives: form.logged_dives === '' ? null : +form.logged_dives,
       seeks_buddy: form.seeks_buddy,
+      country: form.country.trim() || null,
+      bio: form.bio.trim() || null,
+      show_on_trips: form.show_on_trips,
     }).eq('id', diver.id)
     error ? note('p', false, errMsg(error)) : (note('p', true, t('Perfil guardado')), refresh())
   }
@@ -86,7 +90,16 @@ export default function Perfil() {
           <div className="field"><label>{t('Idiomas')}</label><input placeholder={t('Español, English')} value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
           <div className="field"><label>{t('Inmersiones registradas')}</label><input type="number" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
         </div>
-        {!isCenter && <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>}
+        {!isCenter && <>
+          <div className="field"><label>{t('País')}</label><input maxLength={60} placeholder={t('p. ej. España')} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
+          <div className="field"><label>{t('Sobre ti')} <span className="muted small" style={{ fontWeight: 400 }}>({form.bio.length}/160)</span></label>
+            <textarea rows="2" maxLength={160} placeholder={t('p. ej. Me encantan los tiburones ballena y la fotografía submarina')} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+          </div>
+          <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
+          <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />
+            <span>{t('Mostrar mi perfil a los demás buceadores de mis salidas')}<br /><span className="small muted">{t('Verán tu nombre y la inicial del apellido, tu nivel, nº de inmersiones, idiomas, país y esta descripción. Nunca tu email ni tu teléfono.')}</span></span>
+          </label>
+        </>}
         {show('p')}
         <button className="btn">{t('Guardar')}</button>
       </form>

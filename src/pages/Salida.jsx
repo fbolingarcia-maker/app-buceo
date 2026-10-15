@@ -5,6 +5,58 @@ import { Link, go } from '../lib/router'
 import { levelName, levelRank, dateTime, php } from '../lib/format'
 import { t } from '../lib/i18n'
 
+// Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
+function QuienVa({ tripId, loggedIn }) {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    supabase.rpc('trip_divers', { p_trip: tripId }).then(({ data }) => setData(data || { divers: [], others: 0 }))
+  }, [tripId, loggedIn])
+  if (!data) return null
+  const total = data.divers.reduce((n, d) => n + d.seats, 0) + data.others
+  return (
+    <>
+      <h2>{t('¿Quién va?')} {total > 0 && <span className="muted small" style={{ fontWeight: 400 }}>· {total === 1 ? t('1 plaza reservada') : t('{n} plazas reservadas', { n: total })}</span>}</h2>
+      {total === 0 && <div className="card muted">{t('Aún no ha reservado nadie. ¡Sé el primero!')}</div>}
+      {data.divers.map((d, i) => (
+        <div key={i} className="card diver">
+          <div className="avatar" aria-hidden>{(d.name || '?').charAt(0).toUpperCase()}</div>
+          <div className="grow">
+            <div className="row between wrap" style={{ gap: 6 }}>
+              <b>{d.name}{d.is_me ? ' · ' + t('Tú') : ''}{d.seats > 1 ? ' ' + (d.seats === 2 ? t('+1 acompañante') : t('+{n} acompañantes', { n: d.seats - 1 })) : ''}</b>
+              {d.level
+                ? <span className="pill">{levelName(d.level)}{d.verified ? ' ✅' : ''}</span>
+                : <span className="pill warn">{t('Sin certificación')}</span>}
+            </div>
+            <div className="small muted" style={{ marginTop: 2 }}>
+              {[
+                d.dives ? t('🤿 {n} inmersiones', { n: d.dives }) : t('🤿 Primeras inmersiones'),
+                d.country && '📍 ' + d.country,
+                d.languages?.length ? '💬 ' + d.languages.join(', ') : null,
+              ].filter(Boolean).join(' · ')}
+            </div>
+            {(d.fav_site || d.seeks_buddy) && (
+              <div className="row wrap small" style={{ marginTop: 4, gap: 6 }}>
+                {d.seeks_buddy && <span className="pill ok">{t('Busca buddy')}</span>}
+                {d.fav_site && <span className="muted">{t('Punto favorito: {site}', { site: d.fav_site })}</span>}
+              </div>
+            )}
+            {d.bio && <div className="small" style={{ marginTop: 4, fontStyle: 'italic' }}>“{d.bio}”</div>}
+          </div>
+        </div>
+      ))}
+      {data.others > 0 && (
+        <p className="small muted" style={{ marginTop: -4 }}>
+          {!loggedIn
+            ? (data.others === 1 ? t('1 buceador ya ha reservado. Entra para ver quién va.') : t('{n} plazas ya reservadas. Entra para ver quién va.', { n: data.others }))
+            : data.divers.length
+              ? (data.others === 1 ? t('Y 1 plaza más reservada por otra persona.') : t('Y {n} plazas más reservadas por otras personas.', { n: data.others }))
+              : (data.others === 1 ? t('1 plaza reservada por alguien que prefiere no mostrar su perfil.') : t('{n} plazas reservadas por gente que prefiere no mostrar su perfil.', { n: data.others }))}
+        </p>
+      )}
+    </>
+  )
+}
+
 export default function Salida({ id }) {
   const { session, diver, isCenter } = useAuth()
   const [trip, setTrip] = useState(null)
@@ -60,6 +112,8 @@ export default function Salida({ id }) {
         )}
         {center?.phone && <div className="small muted">{t('Contacto del centro: {tel}', { tel: center.phone })}</div>}
       </div>
+
+      <QuienVa tripId={trip.id} loggedIn={!!session} />
 
       <h2>{t('Reservar')}</h2>
       {!session ? (
