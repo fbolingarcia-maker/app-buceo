@@ -7,7 +7,7 @@ import { LEVELS, levelName } from '../lib/format'
 const AGENCIES = ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'RAID', 'BSAC', 'Otra']
 
 export default function Perfil() {
-  const { user, diver, center, refresh, signOut } = useAuth()
+  const { user, diver, center, isCenter, refresh, signOut } = useAuth()
   const [form, setForm] = useState(null)
   const [certs, setCerts] = useState([])
   const [cert, setCert] = useState({ agency: 'PADI', level: 'open_water', card_number: '' })
@@ -73,6 +73,7 @@ export default function Perfil() {
   return (
     <>
       <h1>Tu perfil</h1>
+      <p className="pill" style={{ marginTop: -4 }}>{isCenter ? 'Cuenta de centro de buceo' : 'Cuenta de buceador'}</p>
       <p className="muted small">{user.email}</p>
 
       <form className="card" onSubmit={saveProfile}>
@@ -81,11 +82,12 @@ export default function Perfil() {
           <div className="field"><label>Idiomas</label><input placeholder="Español, English" value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
           <div className="field"><label>Inmersiones registradas</label><input type="number" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
         </div>
-        <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> Busco compañero (buddy) de buceo</label>
+        {!isCenter && <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> Busco compañero (buddy) de buceo</label>}
         {show('p')}
         <button className="btn">Guardar</button>
       </form>
 
+      {!isCenter && <>
       <h2>Certificaciones</h2>
       <div className="card">
         {certs.length === 0 && <p className="muted">Añade al menos una para poder reservar.</p>}
@@ -108,13 +110,14 @@ export default function Perfil() {
           <button className="btn ghost">+ Añadir certificación</button>
         </form>
       </div>
+      </>}
 
       <h2>Centro de buceo</h2>
       {center ? (
-        <div className="card row between"><span>Gestionas <b>{center.name}</b></span><Link to="/centro" className="btn small">Panel del centro</Link></div>
+        <div className="card row between"><span>Gestionas <b>{center.name}</b></span><Link to="/centro" className="btn small">Ir al panel</Link></div>
       ) : (
         <form className="card" onSubmit={registerCenter}>
-          <p className="small muted" style={{ marginTop: 0 }}>¿Tienes un centro? Regístralo para publicar salidas.</p>
+          <p className="small muted" style={{ marginTop: 0 }}>¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).</p>
           <div className="grid2">
             <div className="field"><label>Nombre del centro</label><input required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
             <div className="field"><label>Teléfono / WhatsApp</label><input value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
