@@ -1,4 +1,4 @@
-# CLAUDE.md — contexto para trabajar en App Buceo
+# CLAUDE.md — contexto para trabajar en DiveSlot
 
 App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). Moneda PHP, hora Asia/Manila (UTC+8, sin horario de verano). Interfaz en español.
 
@@ -21,10 +21,13 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 - `src/pages/Salida.jsx`: detalle de la salida y reserva (`book_trip`).
 - `src/pages/Reservas.jsx`: reservas del buceador; pago de la señal, el total o el resto (`crear-pago`, `confirm_payment_demo` en modo demo) y cancelación (`cancel_my_booking`).
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
-- `src/pages/Centro.jsx`: panel del centro (agenda, reservas manuales, meteo, barcos, datos).
-- `src/pages/NuevaSalida.jsx`: crear una salida.
+- `src/pages/Bitacora.jsx` / `Inmersion.jsx`: bitácora del buceador (tabla `dive_logs`, fotos en `dive_log_photos` + bucket privado `dive-photos/<user_id>/...`).
+- `src/pages/CentroPanel.jsx`: cuadro de mandos del centro. `CentroAgenda.jsx`: manifiesto por día (check-in `set_checkin`, cobros, reservas manuales, meteo). `CentroSalidas.jsx`: gestión de salidas (editar, duplicar, publicar, completar). `CentroAjustes.jsx`: barcos y datos. `RegistrarCentro.jsx`: alta del centro.
+- `src/pages/NuevaSalida.jsx`: crear o editar (`#/centro/salida/<id>`) una salida.
+- `src/lib/centro.js`: cálculo de plazas, dinero y consulta común de salidas para las pantallas del centro.
 - `src/pages/Centros.jsx`: directorio público de centros.
-- `supabase/migrations/`: esquema completo (001–008; 008 = pagos).
+- `supabase/migrations/`: esquema completo (001–009; 008 = pagos, 009 = perfiles, check-in y bitácora).
+- Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 
 ## Pagos
