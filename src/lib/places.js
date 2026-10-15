@@ -36,8 +36,32 @@ export function inPlace(obj, place, dests = []) {
   return group === place.name
 }
 
-// Sugerencias para el buscador: destinos, provincias y grupos de islas que encajan con el texto
-export function suggestPlaces(q, dests) {
+// Zonas de puntos de buceo que pertenecen a otro destino (se bucean desde allí)
+export const EXTRA_AREAS = {
+  Panglao: ['Balicasag', 'Pamilacan'],
+  Dauin: ['Apo Island'],
+  'Puerto Galera': ['Verde Island'],
+  'Sogod Bay': ['Southern Leyte'],
+  'Puerto Princesa': ['Tubbataha'],
+}
+
+// Destino desde el que se bucea una zona de puntos de buceo
+export function destForArea(area, dests = []) {
+  if (dests.some((d) => d.name === area)) return area
+  return Object.keys(EXTRA_AREAS).find((k) => EXTRA_AREAS[k].includes(area)) || null
+}
+
+// Puntos de buceo (nombre y zona), para buscar por punto o isla
+let sitesCache = null
+export function loadSiteAreas() {
+  if (!sitesCache) {
+    sitesCache = supabase.from('dive_sites').select('name, area').then(({ data }) => data || []).catch(() => [])
+  }
+  return sitesCache
+}
+
+// Sugerencias para el buscador: destinos, provincias, grupos de islas y puntos de buceo que encajan con el texto
+export function suggestPlaces(q, dests, sites = []) {
   const w = norm(q).trim()
   if (!w) return []
   const out = []
@@ -49,6 +73,14 @@ export function suggestPlaces(q, dests) {
   for (const d of dests) if (norm(d.name).includes(w)) add('dest', d.name, d.province)
   for (const d of dests) if (norm(d.province).includes(w)) add('prov', d.province, d.island_group)
   for (const d of dests) if (norm(d.island_group).includes(w)) add('group', d.island_group, null)
+  // Puntos de buceo e islas (Balicasag, Apo Island, Tubbataha…) llevan a su destino
+  if (w.length >= 3) {
+    for (const st of sites) {
+      if (!norm(st.name).includes(w) && !norm(st.area || '').includes(w)) continue
+      const dest = destForArea(st.area, dests)
+      if (dest) add('dest', dest, '🤿 ' + (norm(st.area || '').includes(w) && st.area !== dest ? st.area : st.name))
+    }
+  }
   // Las coincidencias que empiezan por el texto, primero
   return out.sort((a, b) => (norm(b.name).startsWith(w) ? 1 : 0) - (norm(a.name).startsWith(w) ? 1 : 0)).slice(0, 8)
 }
