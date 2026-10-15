@@ -1,6 +1,6 @@
 # CLAUDE.md — contexto para trabajar en DiveSlot
 
-App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). Moneda PHP, hora Asia/Manila (UTC+8, sin horario de verano). Interfaz en español.
+App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, Bohol). Moneda PHP, hora Asia/Manila (UTC+8, sin horario de verano). Interfaz en español.
 
 ## Stack
 - Frontend: React 18 + Vite, sin router externo (router por hash en `src/lib/router.jsx`). Estilos en `src/styles.css`.
@@ -18,7 +18,7 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 - Idiomas: inglés y español. Todo texto visible va con `t('texto en español')` (`src/lib/i18n.jsx`) y su traducción en `src/lib/en/*.js`; para partes variables usa `t('Quedan {n} plazas', { n })`. Nunca uses plantillas `` `...` `` dentro de `t()`.
 
 ## Mapa
-- `src/pages/Explorar.jsx`: salidas por día (vista `published_trips`), búsqueda por zona/centro/punto y «Cerca de mí» (`src/lib/geo.js`).
+- `src/pages/Explorar.jsx`: salidas de los próximos 8 días (vista `published_trips`, una sola consulta), buscador con sugerencias de destino/provincia/región (`src/lib/places.js`, tabla `destinations`), contador por día, orden por hora/precio/distancia y «Cerca de mí» (`src/lib/geo.js`).
 - `src/pages/Salida.jsx`: detalle de la salida, «¿Quién va?» (`trip_divers()`: nombre corto, nivel, inmersiones, idiomas, país, bio; respeta `divers.show_on_trips`) y reserva (`book_trip`).
 - `src/pages/Reservas.jsx`: reservas del buceador; pago de la señal, el total o el resto (`crear-pago`, `confirm_payment_demo` en modo demo) y cancelación (`cancel_my_booking`).
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
@@ -26,8 +26,10 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 - `src/pages/CentroPanel.jsx`: cuadro de mandos del centro. `CentroAgenda.jsx`: manifiesto por día (check-in `set_checkin`, cobros, reservas manuales, meteo). `CentroSalidas.jsx`: gestión de salidas (editar, duplicar, publicar, completar). `CentroAjustes.jsx`: barcos y datos. `RegistrarCentro.jsx`: alta del centro.
 - `src/pages/NuevaSalida.jsx`: crear o editar (`#/centro/salida/<id>`) una salida.
 - `src/lib/centro.js`: cálculo de plazas, dinero y consulta común de salidas para las pantallas del centro.
-- `src/pages/Centros.jsx`: directorio público de centros.
-- `supabase/migrations/`: esquema completo (001–011; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`).
+- `src/pages/Centros.jsx`: directorio público de centros de toda Filipinas, agrupado por destino y filtrable por región.
+- `src/lib/DestinoSelect.jsx`: selector de destino (alta del centro y ajustes).
+- Datos: `destinations` (destino, provincia, grupo de islas, coordenadas), `centers.destination/province`, `dive_sites.province/highlight`.
+- `supabase/migrations/`: esquema completo (001–012; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos).
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 

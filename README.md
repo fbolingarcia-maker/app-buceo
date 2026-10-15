@@ -1,8 +1,8 @@
-# DiveSlot · Panglao
+# DiveSlot · Filipinas
 
 Reserva de salidas de buceo, al estilo Playtomic. Los buceadores ven las salidas del día y reservan plaza. Los centros publican salidas, controlan las plazas (app + WhatsApp/mostrador) y cancelan por meteo con reembolso automático.
 
-Piloto: Panglao (Bohol, Filipinas). Moneda: PHP. Hora: Asia/Manila.
+Cobertura: toda Filipinas (28 destinos: Bohol, Cebu, Negros, Siquijor, Boracay, Anilao, Puerto Galera, Coron, El Nido, Tubbataha, Camiguin…). Piloto en Panglao. Moneda: PHP. Hora: Asia/Manila.
 
 **Stack:** React 18 + Vite · Supabase (Postgres + Auth + RLS) · GitHub Pages.
 
@@ -10,7 +10,7 @@ Piloto: Panglao (Bohol, Filipinas). Moneda: PHP. Hora: Asia/Manila.
 
 ```
 .github/workflows/deploy.yml   Publica en GitHub Pages en cada push a main
-supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–011)
+supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–012)
 supabase/functions/            Edge Functions de pago (crear-pago, paymongo-webhook)
 src/lib/                       Cliente Supabase, sesión, fechas/precios, router
 src/pages/                     Buceador: Explorar, Salida, Reservas, Bitacora, Inmersion · Centro: CentroPanel, CentroAgenda, CentroSalidas, CentroAjustes, NuevaSalida
@@ -27,7 +27,9 @@ npm run dev        # http://localhost:5173
 ## Idiomas y búsqueda
 
 - Inglés y español: selector EN/ES en la cabecera, en el login y en el perfil (se recuerda en el navegador). Textos en `src/lib/en/*.js`.
-- Salidas: buscador por zona, centro o punto de buceo, filtro por zona y botón «📍 Cerca de mí» (ordena por distancia con la ubicación del móvil). Los centros guardan su ubicación GPS en *Centro → Datos*.
+- Salidas: buscador con sugerencias (destino, provincia o región), atajos a destinos populares, contador de salidas por día, orden por hora/precio/distancia y «📍 Cerca de mí».
+- Directorio: ~150 centros reales de toda Filipinas (fuente en `centers.source_url`) y ~130 puntos de buceo con profundidad, nivel y descripción.
+- La app se puede instalar en el móvil (manifest + iconos en `public/`). Los centros guardan su ubicación GPS en *Centro → Datos*.
 - «¿Quién va?»: en cada salida se ve quién ha reservado ya (nombre e inicial, nivel, inmersiones, idiomas, país, «busca buddy», punto favorito y una frase). Cada buceador puede ocultarse desde su perfil.
 
 ## Dos perfiles
