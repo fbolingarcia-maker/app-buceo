@@ -61,6 +61,8 @@ export default function Salida({ id }) {
   const { session, diver, isCenter } = useAuth()
   const [trip, setTrip] = useState(null)
   const [center, setCenter] = useState(null)
+  const [siteInfo, setSiteInfo] = useState([])
+  const [shared, setShared] = useState('')
   const [certs, setCerts] = useState([])
   const [seats, setSeats] = useState(1)
   const [gear, setGear] = useState(false)
@@ -72,7 +74,10 @@ export default function Salida({ id }) {
     supabase.from('published_trips').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
       if (error) setError(errMsg(error))
       setTrip(data || false)
-      if (data) supabase.from('centers').select('name, phone, locality, website').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
+      if (data) {
+        supabase.from('centers').select('name, phone, locality, website, destination, province').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
+        if (data.sites?.length) supabase.from('dive_sites').select('name, min_depth_m, max_depth_m, highlight, recommended_min').in('name', data.sites).then(({ data }) => setSiteInfo(data || []))
+      }
     })
   }, [id])
 
@@ -86,6 +91,15 @@ export default function Salida({ id }) {
   const best = certs.reduce((m, c) => Math.max(m, levelRank(c.level)), -1)
   const levelOk = best >= levelRank(trip.min_level)
   const total = seats * trip.price_php + (gear ? seats * trip.gear_rental_php : 0)
+
+  async function share() {
+    const url = window.location.href
+    const text = t('Salida de buceo con {centro} el {fecha}', { centro: trip.center_name, fecha: dateTime(trip.departs_at) })
+    try {
+      if (navigator.share) await navigator.share({ title: 'DiveSlot', text, url })
+      else { await navigator.clipboard.writeText(text + ' ' + url); setShared(t('Enlace copiado')) }
+    } catch {}
+  }
 
   async function book() {
     setBusy(true); setError('')
@@ -108,9 +122,39 @@ export default function Salida({ id }) {
         <div className="row between"><span className="muted">{t('Alquiler de equipo')}</span><span>{trip.gear_rental_php ? php(trip.gear_rental_php) : '—'}</span></div>
         <div className="row between"><span className="muted">{t('Plazas libres')}</span><b>{trip.available_seats}</b></div>
         {trip.sites?.length > 0 && (
-          <div><div className="muted">{t('Puntos de buceo')}</div><ol style={{ margin: '4px 0 0', paddingLeft: 20 }}>{trip.sites.map((s) => <li key={s}>{s}</li>)}</ol></div>
+          <div>
+            <div className="muted">{t('Puntos de buceo')}</div>
+            <ol style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+              {trip.sites.map((s) => {
+                const info = siteInfo.find((x) => x.name === s)
+                return (
+                  <li key={s} style={{ marginBottom: 4 }}>
+                    <b>{s}</b>
+                    {info && (info.max_depth_m || info.recommended_min === 'advanced') && (
+                      <span className="small muted"> · {info.min_depth_m != null && info.max_depth_m ? t('{a}–{b} m', { a: info.min_depth_m, b: info.max_depth_m }) : info.max_depth_m ? t('hasta {b} m', { b: info.max_depth_m }) : ''}{info.recommended_min === 'advanced' ? ' · ' + t('recomendado Advanced') : ''}</span>
+                    )}
+                    {info?.highlight && <div className="small muted">{info.highlight}</div>}
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
         )}
-        {center?.phone && <div className="small muted">{t('Contacto del centro: {tel}', { tel: center.phone })}</div>}
+      </div>
+
+      <div className="card">
+        <div className="row between wrap" style={{ gap: 8 }}>
+          <div>
+            <b>{trip.center_name}</b>
+            <div className="small muted">📍 {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}</div>
+          </div>
+          <div className="row wrap" style={{ gap: 6 }}>
+            {center?.phone && <a className="btn small ghost" href={'https://wa.me/' + center.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
+            <a className="btn small ghost" href={'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(trip.center_name + ' ' + (center?.destination || trip.center_destination || ''))} target="_blank" rel="noreferrer">{t('Mapa')}</a>
+            <button type="button" className="btn small ghost" onClick={share}>{t('Compartir')}</button>
+          </div>
+        </div>
+        {shared && <div className="msg ok">{shared}</div>}
       </div>
 
       <QuienVa tripId={trip.id} loggedIn={!!session} />

@@ -7,6 +7,25 @@ import { t } from '../lib/i18n'
 
 const HOLD_MIN = 15
 
+// Descarga un .ics para añadir la salida al calendario del móvil
+function addToCalendar(b) {
+  const start = new Date(b.trips.departs_at)
+  const end = new Date(start.getTime() + Math.max(3, (b.trips.num_dives || 2) * 1.5) * 3600000)
+  const f = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DiveSlot//ES', 'BEGIN:VEVENT',
+    'UID:' + b.id + '@diveslot', 'DTSTAMP:' + f(new Date()), 'DTSTART:' + f(start), 'DTEND:' + f(end),
+    'SUMMARY:' + t('Buceo con {centro}', { centro: b.trips.centers?.name || '' }),
+    'DESCRIPTION:' + t('{n} inmersiones', { n: b.trips.num_dives }) + (b.trips.boats?.name ? ' · ' + b.trips.boats.name : ''),
+    'END:VEVENT', 'END:VCALENDAR',
+  ].join('\r\n')
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
+  a.download = 'diveslot-' + b.id.slice(0, 8) + '.ics'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
+
 // Hasta cuándo se retiene la plaza de una reserva sin pagar
 const holdEnd = (b) => Math.max(new Date(b.created_at).getTime() + HOLD_MIN * 60000, b.hold_until ? new Date(b.hold_until).getTime() : 0)
 
@@ -145,6 +164,9 @@ export default function Reservas() {
         )}
         {b.status === 'confirmed' && balance > 0 && future && (
           <p className="small muted">{t('Paga el resto ahora en la app o en efectivo en el centro el día de la salida.')}</p>
+        )}
+        {b.status === 'confirmed' && future && (
+          <button className="btn small ghost" style={{ marginTop: 8, marginRight: 8 }} onClick={() => addToCalendar(b)}>📅 {t('Añadir al calendario')}</button>
         )}
         {active && future && balance > 0 && <PayBox b={b} mode={mode} onDone={(m) => { setInfo(m); load() }} />}
         {active && future && (

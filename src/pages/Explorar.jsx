@@ -1,95 +1,160 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { Link } from '../lib/router'
-import { LEVELS, levelName, levelRank, manilaDate, addDays, dayRange, dayLabel, time, php } from '../lib/format'
+import { LEVELS, levelName, levelRank, manilaDate, addDays, dayLabel, time, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
+import { loadDestinations, suggestPlaces, inPlace, placeLabel } from '../lib/places'
+
+const DAYS = 8
+const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
 
 export default function Explorar() {
   const today = manilaDate()
-  const days = Array.from({ length: 8 }, (_, i) => addDays(today, i))
-  const [day, setDay] = useState(() => ss('day') || addDays(today, 1))
+  const days = Array.from({ length: DAYS }, (_, i) => addDays(today, i))
+  const [day, setDay] = useState(() => { const d = ss('day'); return d && d >= today && d < addDays(today, DAYS) ? d : addDays(today, 1) })
   const [level, setLevel] = useState('all')
   const [trips, setTrips] = useState(null)
+  const [dests, setDests] = useState([])
   const [error, setError] = useState('')
   const [q, setQ] = useState(() => ss('q') || '')
-  const [zone, setZone] = useState(() => ss('zone') || '')
-  const [here, setHere] = useState(() => { try { return JSON.parse(ss('here')) } catch { return null } })
+  const [place, setPlace] = useState(() => json('place'))
+  const [here, setHere] = useState(() => json('here'))
+  const [sort, setSort] = useState(() => ss('sort') || 'time')
+  const [focus, setFocus] = useState(false)
   const [locating, setLocating] = useState(false)
   const [geoErr, setGeoErr] = useState('')
 
-  useEffect(() => { ssSet('q', q); ssSet('zone', zone); ssSet('here', here ? JSON.stringify(here) : '') }, [q, zone, here])
+  useEffect(() => {
+    ssSet('q', q); ssSet('day', day); ssSet('sort', sort)
+    ssSet('place', place ? JSON.stringify(place) : ''); ssSet('here', here ? JSON.stringify(here) : '')
+  }, [q, day, sort, place, here])
+
+  // Todas las salidas de los próximos 8 días en una sola consulta
+  useEffect(() => {
+    loadDestinations().then(setDests)
+    const from = new Date().toISOString()
+    const to = new Date(addDays(today, DAYS) + 'T00:00:00+08:00').toISOString()
+    supabase.from('published_trips').select('*').gte('departs_at', from).lt('departs_at', to).order('departs_at')
+      .then(({ data, error }) => { if (error) setError(errMsg(error)); setTrips(data || []) })
+  }, [today])
 
   async function nearMe() {
-    if (here) return setHere(null)
+    if (here) { setHere(null); if (sort === 'near') setSort('time'); return }
     setGeoErr(''); setLocating(true)
-    try { setHere(await currentPosition()) } catch (e) { setGeoErr(e.message) }
+    try { setHere(await currentPosition()); setSort('near'); setPlace(null) } catch (e) { setGeoErr(e.message) }
     setLocating(false)
   }
 
-  useEffect(() => {
-    ssSet('day', day)
-    setTrips(null); setError('')
-    const [from, to] = dayRange(day)
-    supabase.from('published_trips').select('*')
-      .gte('departs_at', from < new Date().toISOString() ? new Date().toISOString() : from).lt('departs_at', to)
-      .order('departs_at')
-      .then(({ data, error }) => { if (error) setError(errMsg(error)); setTrips(data || []) })
-  }, [day])
-
-  const zoneOf = (tr) => tr.center_locality || tr.center_area || ''
-  const zones = [...new Set((trips || []).map(zoneOf).filter(Boolean))].sort()
+  const destOf = (tr) => tr.center_destination || tr.center_area || ''
   const words = norm(q).split(/\s+/).filter(Boolean)
-  let shown = (trips || [])
+  const suggestions = focus && q.trim() ? suggestPlaces(q, dests) : []
+
+  // Filtros comunes (todo menos el día)
+  const filtered = useMemo(() => (trips || [])
     .filter((tr) => level === 'all' || levelRank(tr.min_level) <= levelRank(level))
-    .filter((tr) => !zone || zoneOf(tr) === zone)
+    .filter((tr) => inPlace({ destination: destOf(tr), province: tr.center_province }, place, dests))
     .filter((tr) => {
       if (!words.length) return true
-      const text = norm([tr.center_name, tr.center_locality, tr.center_area, tr.boat_name, ...(tr.sites || [])].join(' '))
+      const d = dests.find((x) => x.name === destOf(tr))
+      const text = norm([tr.center_name, tr.center_locality, destOf(tr), tr.center_province, d?.island_group, tr.boat_name, ...(tr.sites || [])].join(' '))
       return words.every((w) => text.includes(w))
     })
-    .map((tr) => ({ ...tr, km: here && tr.center_lat != null ? distKm(here, { lat: tr.center_lat, lng: tr.center_lng }) : null }))
-  if (here) shown = shown.sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
-  const nearest = shown.find((tr) => tr.km != null)?.km
+    .map((tr) => ({ ...tr, km: here && tr.center_lat != null ? distKm(here, { lat: tr.center_lat, lng: tr.center_lng }) : null })),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [trips, level, place, q, here, dests])
+
+  const perDay = {}
+  for (const tr of filtered) { const d = manilaDate(new Date(tr.departs_at)); perDay[d] = (perDay[d] || 0) + 1 }
+  let shown = filtered.filter((tr) => manilaDate(new Date(tr.departs_at)) === day)
+  if (sort === 'price') shown = [...shown].sort((a, b) => a.price_php - b.price_php)
+  else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
+  const nextDay = days.find((d) => d > day && perDay[d]) || days.find((d) => perDay[d])
+  const nearest = here ? Math.min(...filtered.map((tr) => tr.km ?? 1e9)) : null
+
+  // Destinos con salidas, para los atajos
+  const popular = Object.entries((trips || []).reduce((m, tr) => { const d = destOf(tr); if (d) m[d] = (m[d] || 0) + 1; return m }, {}))
+    .sort((a, b) => b[1] - a[1]).slice(0, 10).map(([d]) => d)
+
+  const pickPlace = (p) => { setPlace(p); setQ(''); setFocus(false); if (sort === 'near') setSort('time') }
 
   return (
     <>
-      <h1>{t('Salidas de buceo')}</h1>
+      <h1>{t('Salidas de buceo en Filipinas')}</h1>
+
+      <div className="search-box">
+        <div className="row" style={{ gap: 8 }}>
+          <input type="search" className="grow" placeholder={t('¿Dónde quieres bucear? Zona, isla, centro…')} value={q}
+            onChange={(e) => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)}
+            aria-label={t('¿Dónde quieres bucear? Zona, isla, centro…')} />
+          <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>
+            {locating ? t('Buscando…') : here ? t('📍 Cerca de mí ✕') : t('📍 Cerca de mí')}
+          </button>
+        </div>
+        {suggestions.length > 0 && (
+          <div className="suggest">
+            {suggestions.map((s) => (
+              <button key={s.kind + s.name} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => pickPlace({ kind: s.kind, name: s.name })}>
+                <span>📍 {s.name}</span>
+                <span className="muted small">{s.kind === 'dest' ? s.sub : s.kind === 'prov' ? t('Provincia') : t('Región')}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {place && (
+        <div className="row wrap" style={{ gap: 6, marginBottom: 10 }}>
+          <button className="pill" style={{ border: 0, cursor: 'pointer', fontSize: 14, padding: '6px 12px' }} onClick={() => setPlace(null)}>
+            📍 {placeLabel(place, dests)} ✕
+          </button>
+        </div>
+      )}
+      {!place && !here && !q && popular.length > 1 && (
+        <div className="chips">
+          {popular.map((d) => <button key={d} onClick={() => pickPlace({ kind: 'dest', name: d })}>{d}</button>)}
+        </div>
+      )}
+      {geoErr && <div className="msg err">{geoErr}</div>}
+      {here && nearest > 50 && nearest < 1e9 && <div className="msg ok">{t('No hay salidas cerca de ti. Te mostramos primero las más próximas.')}</div>}
+
       <div className="days">
         {days.map((d, i) => (
           <button key={d} className={d === day ? 'day on' : 'day'} onClick={() => setDay(d)}>
             <small>{i === 0 ? t('Hoy') : i === 1 ? t('Mañana') : dayLabel(d, { weekday: 'short' })}</small>
             <b>{dayLabel(d, { day: 'numeric' })}</b>
-            <small>{dayLabel(d, { month: 'short' })}</small>
+            <small className={perDay[d] ? 'count' : 'count none'}>{trips ? (perDay[d] || 0) : '·'}</small>
           </button>
         ))}
       </div>
-      <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-        <input type="search" className="grow" placeholder={t('Buscar zona, centro o punto de buceo…')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('Buscar zona, centro o punto de buceo…')} />
-        <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>
-          {locating ? t('Buscando…') : here ? t('📍 Cerca de mí ✕') : t('📍 Cerca de mí')}
-        </button>
-      </div>
-      {geoErr && <div className="msg err">{geoErr}</div>}
-      {here && nearest != null && nearest > 50 && <div className="msg ok">{t('No hay salidas cerca de ti. Te mostramos primero las más próximas.')}</div>}
-      {(zones.length > 1 || zone) && (
-        <div className="seg">
-          <button className={!zone ? 'on' : ''} onClick={() => setZone('')}>{t('Todas las zonas')}</button>
-          {zones.map((z) => <button key={z} className={zone === z ? 'on' : ''} onClick={() => setZone(z)}>📍 {z}</button>)}
+
+      <div className="row between wrap" style={{ gap: 6, marginBottom: 6 }}>
+        <div className="seg" style={{ marginBottom: 0 }}>
+          <button className={level === 'all' ? 'on' : ''} onClick={() => setLevel('all')}>{t('Todos los niveles')}</button>
+          {LEVELS.slice(0, 3).map(([k, n]) => (
+            <button key={k} className={level === k ? 'on' : ''} onClick={() => setLevel(k)}>{t('Mi nivel: {nivel}', { nivel: n })}</button>
+          ))}
         </div>
-      )}
-      <div className="seg">
-        <button className={level === 'all' ? 'on' : ''} onClick={() => setLevel('all')}>{t('Todas')}</button>
-        {LEVELS.slice(0, 3).map(([k, n]) => (
-          <button key={k} className={level === k ? 'on' : ''} onClick={() => setLevel(k)}>{t('Mi nivel: {nivel}', { nivel: n })}</button>
-        ))}
+        <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ width: 'auto' }} aria-label={t('Ordenar')}>
+          <option value="time">{t('Ordenar: hora')}</option>
+          <option value="price">{t('Ordenar: precio')}</option>
+          {here && <option value="near">{t('Ordenar: distancia')}</option>}
+        </select>
       </div>
+
       {error && <div className="msg err">{error}</div>}
       {trips === null && <p className="muted">{t('Cargando…')}</p>}
       {trips && shown.length === 0 && (
         <div className="card center muted">
-          {q || zone ? t('No hay salidas que coincidan con tu búsqueda este día.') : t('No hay salidas para este día. Prueba otro día.')}
-          {(q || zone) && <div style={{ marginTop: 8 }}><button className="btn small ghost" onClick={() => { setQ(''); setZone('') }}>{t('Quitar filtros')}</button></div>}
+          {place || q ? t('No hay salidas que coincidan con tu búsqueda este día.') : t('No hay salidas para este día. Prueba otro día.')}
+          <div className="row wrap" style={{ justifyContent: 'center', gap: 8, marginTop: 10 }}>
+            {nextDay && nextDay !== day && (
+              <button className="btn small" onClick={() => setDay(nextDay)}>
+                {t('Ver el {dia} ({n})', { dia: dayLabel(nextDay, { weekday: 'long', day: 'numeric' }), n: perDay[nextDay] })}
+              </button>
+            )}
+            {(place || q) && <button className="btn small ghost" onClick={() => { setQ(''); setPlace(null) }}>{t('Quitar filtros')}</button>}
+          </div>
         </div>
       )}
       {shown.map((tr) => (
@@ -98,9 +163,9 @@ export default function Explorar() {
             <div className="big">{time(tr.departs_at)}</div>
             <div className="big">{php(tr.price_php)}</div>
           </div>
-          <div className="row between" style={{ marginTop: 2 }}>
+          <div className="row between" style={{ marginTop: 2, gap: 8 }}>
             <span style={{ fontWeight: 600 }}>{tr.center_name}</span>
-            <span className="muted small">{zoneOf(tr)}{tr.km != null ? ' · ' + kmLabel(tr.km) : ''}</span>
+            <span className="muted small" style={{ textAlign: 'right' }}>📍 {destOf(tr)}{tr.center_province ? ', ' + tr.center_province : ''}{tr.km != null ? ' · ' + kmLabel(tr.km) : ''}</span>
           </div>
           <div className="muted small">{t('{n} inmersiones', { n: tr.num_dives })} · {(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</div>
           <div className="row wrap" style={{ marginTop: 8 }}>
@@ -113,6 +178,7 @@ export default function Explorar() {
           </div>
         </Link>
       ))}
+      {trips && <p className="small muted center" style={{ marginTop: 16 }}>{t('¿Tu centro no aparece?')} <Link to="/centros">{t('Ver el directorio de centros')}</Link></p>}
     </>
   )
 }

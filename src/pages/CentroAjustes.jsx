@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { t } from '../lib/i18n'
+import DestinoSelect from '../lib/DestinoSelect'
 
 export default function CentroAjustes() {
   const { center, refresh } = useAuth()
@@ -56,14 +57,15 @@ function Datos({ center, refresh }) {
   const [f, setF] = useState({
     name: center.name || '', phone: center.phone || '', gcash_number: center.gcash_number || '',
     default_divers_per_guide: center.default_divers_per_guide || 4, locality: center.locality || '', website: center.website || '',
-    lat: center.lat ?? null, lng: center.lng ?? null,
+    lat: center.lat ?? null, lng: center.lng ?? null, destination: center.destination || '', province: center.province || '',
   })
   const [locating, setLocating] = useState(false)
+  const [gps, setGps] = useState(false) // ubicación tomada con el GPS del móvil
   function useMyLocation() {
     if (!navigator.geolocation) return setMsg({ ok: false, text: t('Tu navegador no permite obtener la ubicación') })
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      (p) => { setLocating(false); setF((x) => ({ ...x, lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5) })); setMsg({ ok: true, text: t('Ubicación obtenida. Pulsa «Guardar».') }) },
+      (p) => { setLocating(false); setGps(true); setF((x) => ({ ...x, lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5) })); setMsg({ ok: true, text: t('Ubicación obtenida. Pulsa «Guardar».') }) },
       () => { setLocating(false); setMsg({ ok: false, text: t('No se pudo obtener tu ubicación. Revisa los permisos del navegador.') }) },
       { enableHighAccuracy: true, timeout: 15000 },
     )
@@ -72,8 +74,10 @@ function Datos({ center, refresh }) {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   async function save(e) {
     e.preventDefault()
-    const moved = f.lat !== (center.lat ?? null) || f.lng !== (center.lng ?? null)
-    const { error } = await supabase.from('centers').update({ ...f, default_divers_per_guide: +f.default_divers_per_guide, ...(moved ? { location_precision: 'exacta' } : {}) }).eq('id', center.id)
+    const { error } = await supabase.from('centers').update({
+      ...f, destination: f.destination || null, province: f.province || null, area: f.destination || center.area,
+      default_divers_per_guide: +f.default_divers_per_guide, ...(gps ? { location_precision: 'exacta' } : {}),
+    }).eq('id', center.id)
     setMsg(error ? { ok: false, text: errMsg(error) } : { ok: true, text: t('Datos guardados') })
     if (!error) refresh()
   }
@@ -83,7 +87,11 @@ function Datos({ center, refresh }) {
       <div className="grid2">
         <div className="field"><label>{t('Teléfono / WhatsApp')}</label><input value={f.phone} onChange={set('phone')} /></div>
         <div className="field"><label>{t('Nº GCash')}</label><input value={f.gcash_number} onChange={set('gcash_number')} /></div>
-        <div className="field"><label>{t('Zona (Alona, Danao…)')}</label><input value={f.locality} onChange={set('locality')} /></div>
+        <div className="field"><label>{t('Destino')}</label><DestinoSelect value={f.destination} onChange={(name, d) => setF((x) => ({
+          ...x, destination: name, province: d?.province || '',
+          ...(x.lat == null && d ? { lat: d.lat, lng: d.lng } : {}),
+        }))} /></div>
+        <div className="field"><label>{t('Playa / barrio (opcional)')}</label><input placeholder={t('p. ej. Alona Beach')} value={f.locality} onChange={set('locality')} /></div>
         <div className="field"><label>{t('Buceadores por guía')}</label><input type="number" min="1" max="10" value={f.default_divers_per_guide} onChange={set('default_divers_per_guide')} /></div>
       </div>
       <div className="field"><label>{t('Web')}</label><input type="url" placeholder="https://" value={f.website} onChange={set('website')} /></div>

@@ -47,6 +47,14 @@ export default function NuevaSalida({ id }) {
 
   if (!center) return null
 
+  // Puntos agrupados por zona: primero los de la provincia del centro
+  const siteGroups = Object.entries(sites.reduce((m, s) => {
+    const k = s.province === center.province || !center.province ? s.area : (s.province || t('Otras zonas'))
+    ;(m[k] = m[k] || []).push(s); return m
+  }, {})).sort(([a, la], [b, lb]) => {
+    const mine = (l) => (center.province && l[0].province === center.province ? 0 : 1)
+    return mine(la) - mine(lb) || (a === center.destination ? -1 : b === center.destination ? 1 : a.localeCompare(b))
+  })
   const set = (k, num) => (e) => setF({ ...f, [k]: num ? (e.target.value === '' ? '' : +e.target.value) : e.target.value })
   const boat = boats.find((b) => b.id === f.boat_id)
   const operative = boat ? Math.min(boat.capacity, f.guides * f.divers_per_guide, f.seat_override === '' ? 999 : f.seat_override) : 0
@@ -106,7 +114,11 @@ export default function NuevaSalida({ id }) {
             <div className="field" key={i} style={{ marginTop: 6 }}>
               <select value={v} onChange={(e) => { const s = [...f.sites]; s[i] = e.target.value; setF({ ...f, sites: s }) }}>
                 <option value="">{t('Inmersión {n}: por decidir', { n: i + 1 })}</option>
-                {sites.map((s) => <option key={s.id} value={s.id}>{s.area} · {s.name.replace(s.area + ' – ', '')}</option>)}
+                {siteGroups.map(([label, list]) => (
+                  <optgroup key={label} label={label}>
+                    {list.map((s) => <option key={s.id} value={s.id}>{s.name.replace(s.area + ' – ', '')}{s.max_depth_m ? ' · ' + s.max_depth_m + ' m' : ''}{s.recommended_min === 'advanced' ? ' · AOW' : ''}</option>)}
+                  </optgroup>
+                ))}
               </select>
             </div>
           ))}
