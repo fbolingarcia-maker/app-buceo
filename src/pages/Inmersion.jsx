@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { manilaDate } from '../lib/format'
 import { hashParam } from '../lib/centro'
+import { t } from '../lib/i18n'
 
 const EMPTY = {
   site_id: '', site_name: '', center_id: null, booking_id: null, dive_date: manilaDate(), entry_time: '',
@@ -47,7 +48,7 @@ export default function Inmersion({ id }) {
     if (!diver) return
     if (!isNew) {
       supabase.from('dive_logs').select('*, centers(name), dive_log_photos(id, path)').eq('id', id).maybeSingle().then(async ({ data, error }) => {
-        if (error || !data) return setMsg({ ok: false, text: error ? errMsg(error) : 'Inmersión no encontrada' })
+        if (error || !data) return setMsg({ ok: false, text: error ? errMsg(error) : t('Inmersión no encontrada') })
         const v = { ...EMPTY }
         for (const k of Object.keys(EMPTY)) v[k] = data[k] ?? EMPTY[k]
         v.entry_time = data.entry_time ? data.entry_time.slice(0, 5) : ''
@@ -60,12 +61,12 @@ export default function Inmersion({ id }) {
     if (!bookingId) return setF({ ...EMPTY })
     supabase.from('bookings').select('id, trips(departs_at, center_id, centers(name), trip_sites(position, site_id, dive_sites(name)))').eq('id', bookingId).maybeSingle()
       .then(({ data }) => {
-        const t = data?.trips
-        if (!t) return setF({ ...EMPTY })
-        const ts = (t.trip_sites || []).sort((a, b) => a.position - b.position)
-        setTripSites(ts); setCenterName(t.centers?.name || '')
-        const hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }).format(new Date(t.departs_at))
-        setF({ ...EMPTY, booking_id: data.id, center_id: t.center_id, dive_date: manilaDate(new Date(t.departs_at)), entry_time: hm,
+        const trip = data?.trips
+        if (!trip) return setF({ ...EMPTY })
+        const ts = (trip.trip_sites || []).sort((a, b) => a.position - b.position)
+        setTripSites(ts); setCenterName(trip.centers?.name || '')
+        const hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }).format(new Date(trip.departs_at))
+        setF({ ...EMPTY, booking_id: data.id, center_id: trip.center_id, dive_date: manilaDate(new Date(trip.departs_at)), entry_time: hm,
           site_id: ts[0]?.site_id || '', site_name: ts[0]?.dive_sites?.name || '' })
       })
   }, [id, diver])
@@ -76,7 +77,7 @@ export default function Inmersion({ id }) {
     setPhotos(list.map((p, i) => ({ ...p, url: data?.[i]?.signedUrl })))
   }
 
-  if (!diver || !f) return <p className="muted">{msg?.text || 'Cargando…'}</p>
+  if (!diver || !f) return <p className="muted">{msg?.text || t('Cargando…')}</p>
 
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
   const pickSite = (siteId) => {
@@ -89,7 +90,7 @@ export default function Inmersion({ id }) {
       const small = await shrink(file)
       const path = `${user.id}/${logId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${small.name.replace(/[^\w.-]/g, '_')}`
       const { error } = await supabase.storage.from('dive-photos').upload(path, small, { contentType: small.type })
-      if (error) throw new Error('No se pudo subir ' + file.name + ': ' + error.message)
+      if (error) throw new Error(t('No se pudo subir {name}: {error}', { name: file.name, error: error.message }))
       const { error: e2 } = await supabase.from('dive_log_photos').insert({ log_id: logId, path })
       if (e2) throw e2
     }
@@ -110,20 +111,20 @@ export default function Inmersion({ id }) {
     setNewFiles([])
     setBusy(false)
     if (isNew) return go('/bitacora/' + data.id)
-    setMsg({ ok: true, text: 'Inmersión guardada' })
+    setMsg({ ok: true, text: t('Inmersión guardada') })
     const { data: ph } = await supabase.from('dive_log_photos').select('id, path').eq('log_id', id).order('created_at')
     loadPhotos(ph || [])
   }
 
   async function removePhoto(p) {
-    if (!window.confirm('¿Borrar esta foto?')) return
+    if (!window.confirm(t('¿Borrar esta foto?'))) return
     await supabase.storage.from('dive-photos').remove([p.path])
     await supabase.from('dive_log_photos').delete().eq('id', p.id)
     setPhotos(photos.filter((x) => x.id !== p.id))
   }
 
   async function removeLog() {
-    if (!window.confirm('¿Borrar esta inmersión y sus fotos?')) return
+    if (!window.confirm(t('¿Borrar esta inmersión y sus fotos?'))) return
     if (photos.length) await supabase.storage.from('dive-photos').remove(photos.map((p) => p.path))
     const { error } = await supabase.from('dive_logs').delete().eq('id', id)
     if (error) return setMsg({ ok: false, text: errMsg(error) })
@@ -134,97 +135,97 @@ export default function Inmersion({ id }) {
 
   return (
     <>
-      <Link to="/bitacora" className="small">← Bitácora</Link>
-      <h1 style={{ marginTop: 8 }}>{isNew ? 'Nueva inmersión' : f.site_name || 'Inmersión'}</h1>
-      {centerName && <p className="muted small" style={{ marginTop: -6 }}>Con {centerName}</p>}
+      <Link to="/bitacora" className="small">← {t('Bitácora')}</Link>
+      <h1 style={{ marginTop: 8 }}>{isNew ? t('Nueva inmersión') : f.site_name || t('Inmersión')}</h1>
+      {centerName && <p className="muted small" style={{ marginTop: -6 }}>{t('Con {name}', { name: centerName })}</p>}
       <form onSubmit={save}>
         <div className="card">
-          <b>Lugar y fecha</b>
+          <b>{t('Lugar y fecha')}</b>
           {tripSites.length > 0 && (
             <div className="seg" style={{ marginTop: 8 }}>
-              {tripSites.map((t) => (
-                <button type="button" key={t.position} className={f.site_id === t.site_id ? 'on' : ''}
-                  onClick={() => setF({ ...f, site_id: t.site_id, site_name: t.dive_sites?.name })}>Inm. {t.position}: {t.dive_sites?.name}</button>
+              {tripSites.map((ts) => (
+                <button type="button" key={ts.position} className={f.site_id === ts.site_id ? 'on' : ''}
+                  onClick={() => setF({ ...f, site_id: ts.site_id, site_name: ts.dive_sites?.name })}>{t('Inm. {n}: {name}', { n: ts.position, name: ts.dive_sites?.name })}</button>
               ))}
             </div>
           )}
           <div className="grid2" style={{ marginTop: 8 }}>
-            <div className="field"><label>Punto de buceo</label>
+            <div className="field"><label>{t('Punto de buceo')}</label>
               <select value={f.site_id || ''} onChange={(e) => pickSite(e.target.value)}>
-                <option value="">Otro (escríbelo)</option>
+                <option value="">{t('Otro (escríbelo)')}</option>
                 {sites.map((s) => <option key={s.id} value={s.id}>{s.area} · {s.name.replace(s.area + ' – ', '')}</option>)}
               </select>
             </div>
-            <div className="field"><label>Nombre</label><input value={f.site_name || ''} onChange={set('site_name')} placeholder="p. ej. Napaling" required /></div>
-            <div className="field"><label>Fecha</label><input type="date" required value={f.dive_date} onChange={set('dive_date')} /></div>
-            <div className="field"><label>Hora de entrada</label><input type="time" value={f.entry_time || ''} onChange={set('entry_time')} /></div>
+            <div className="field"><label>{t('Nombre')}</label><input value={f.site_name || ''} onChange={set('site_name')} placeholder={t('p. ej. Napaling')} required /></div>
+            <div className="field"><label>{t('Fecha')}</label><input type="date" required value={f.dive_date} onChange={set('dive_date')} /></div>
+            <div className="field"><label>{t('Hora de entrada')}</label><input type="time" value={f.entry_time || ''} onChange={set('entry_time')} /></div>
           </div>
         </div>
 
         <div className="card">
-          <b>Datos de la inmersión</b>
+          <b>{t('Datos de la inmersión')}</b>
           <div className="grid2" style={{ marginTop: 8 }}>
-            <div className="field"><label>Prof. máxima (m)</label><input type="number" step="0.1" min="0" value={f.max_depth_m ?? ''} onChange={set('max_depth_m')} /></div>
-            <div className="field"><label>Prof. media (m)</label><input type="number" step="0.1" min="0" value={f.avg_depth_m ?? ''} onChange={set('avg_depth_m')} /></div>
-            <div className="field"><label>Duración (min)</label><input type="number" min="0" value={f.duration_min ?? ''} onChange={set('duration_min')} /></div>
-            <div className="field"><label>Temperatura agua (°C)</label><input type="number" step="0.1" value={f.water_temp_c ?? ''} onChange={set('water_temp_c')} /></div>
-            <div className="field"><label>Visibilidad (m)</label><input type="number" min="0" value={f.visibility_m ?? ''} onChange={set('visibility_m')} /></div>
-            <div className="field"><label>Condiciones</label><input value={f.conditions || ''} onChange={set('conditions')} placeholder="corriente suave, mar en calma…" /></div>
+            <div className="field"><label>{t('Prof. máxima (m)')}</label><input type="number" step="0.1" min="0" value={f.max_depth_m ?? ''} onChange={set('max_depth_m')} /></div>
+            <div className="field"><label>{t('Prof. media (m)')}</label><input type="number" step="0.1" min="0" value={f.avg_depth_m ?? ''} onChange={set('avg_depth_m')} /></div>
+            <div className="field"><label>{t('Duración (min)')}</label><input type="number" min="0" value={f.duration_min ?? ''} onChange={set('duration_min')} /></div>
+            <div className="field"><label>{t('Temperatura agua (°C)')}</label><input type="number" step="0.1" value={f.water_temp_c ?? ''} onChange={set('water_temp_c')} /></div>
+            <div className="field"><label>{t('Visibilidad (m)')}</label><input type="number" min="0" value={f.visibility_m ?? ''} onChange={set('visibility_m')} /></div>
+            <div className="field"><label>{t('Condiciones')}</label><input value={f.conditions || ''} onChange={set('conditions')} placeholder={t('corriente suave, mar en calma…')} /></div>
           </div>
         </div>
 
         <div className="card">
-          <b>Equipo y gas</b>
+          <b>{t('Equipo y gas')}</b>
           <div className="grid2" style={{ marginTop: 8 }}>
-            <div className="field"><label>Gas</label>
-              <select value={f.gas} onChange={set('gas')}><option value="air">Aire</option><option value="nitrox">Nitrox</option><option value="trimix">Trimix</option></select>
+            <div className="field"><label>{t('Gas')}</label>
+              <select value={f.gas} onChange={set('gas')}><option value="air">{t('Aire')}</option><option value="nitrox">Nitrox</option><option value="trimix">Trimix</option></select>
             </div>
             {f.gas !== 'air' && <div className="field"><label>% O₂</label><input type="number" min="21" max="100" value={f.o2_pct ?? ''} onChange={set('o2_pct')} /></div>}
-            <div className="field"><label>Botella inicio (bar)</label><input type="number" min="0" max="350" value={f.tank_start_bar ?? ''} onChange={set('tank_start_bar')} /></div>
-            <div className="field"><label>Botella final (bar)</label><input type="number" min="0" max="350" value={f.tank_end_bar ?? ''} onChange={set('tank_end_bar')} /></div>
-            <div className="field"><label>Lastre (kg)</label><input type="number" step="0.5" min="0" value={f.weights_kg ?? ''} onChange={set('weights_kg')} /></div>
-            <div className="field"><label>Traje</label><input value={f.suit || ''} onChange={set('suit')} placeholder="3 mm, shorty…" /></div>
+            <div className="field"><label>{t('Botella inicio (bar)')}</label><input type="number" min="0" max="350" value={f.tank_start_bar ?? ''} onChange={set('tank_start_bar')} /></div>
+            <div className="field"><label>{t('Botella final (bar)')}</label><input type="number" min="0" max="350" value={f.tank_end_bar ?? ''} onChange={set('tank_end_bar')} /></div>
+            <div className="field"><label>{t('Lastre (kg)')}</label><input type="number" step="0.5" min="0" value={f.weights_kg ?? ''} onChange={set('weights_kg')} /></div>
+            <div className="field"><label>{t('Traje')}</label><input value={f.suit || ''} onChange={set('suit')} placeholder={t('3 mm, shorty…')} /></div>
           </div>
-          {used > 0 && <p className="small muted" style={{ margin: 0 }}>Consumo: {used} bar</p>}
+          {used > 0 && <p className="small muted" style={{ margin: 0 }}>{t('Consumo: {n} bar', { n: used })}</p>}
         </div>
 
         <div className="card">
-          <b>Tu experiencia</b>
-          <div className="field" style={{ marginTop: 8 }}><label>Valoración</label>
+          <b>{t('Tu experiencia')}</b>
+          <div className="field" style={{ marginTop: 8 }}><label>{t('Valoración')}</label>
             <div className="stars">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button type="button" key={n} onClick={() => setF({ ...f, rating: f.rating === n ? 0 : n })} aria-label={`${n} estrellas`}>{n <= f.rating ? '★' : '☆'}</button>
+                <button type="button" key={n} onClick={() => setF({ ...f, rating: f.rating === n ? 0 : n })} aria-label={n === 1 ? t('1 estrella') : t('{n} estrellas', { n })}>{n <= f.rating ? '★' : '☆'}</button>
               ))}
             </div>
           </div>
-          <div className="field"><label>Compañero (buddy) / guía</label><input value={f.buddy || ''} onChange={set('buddy')} /></div>
-          <div className="field"><label>Vida marina vista</label><input value={f.marine_life || ''} onChange={set('marine_life')} placeholder="tortugas, sardinas, nudibranquios…" /></div>
-          <div className="field"><label>Comentarios</label><textarea rows="4" value={f.notes || ''} onChange={set('notes')} /></div>
+          <div className="field"><label>{t('Compañero (buddy) / guía')}</label><input value={f.buddy || ''} onChange={set('buddy')} /></div>
+          <div className="field"><label>{t('Vida marina vista')}</label><input value={f.marine_life || ''} onChange={set('marine_life')} placeholder={t('tortugas, sardinas, nudibranquios…')} /></div>
+          <div className="field"><label>{t('Comentarios')}</label><textarea rows="4" value={f.notes || ''} onChange={set('notes')} /></div>
           {f.center_id && (
-            <label className="check"><input type="checkbox" checked={f.share_with_center} onChange={set('share_with_center')} /> Compartir esta inmersión y mi valoración con {centerName || 'el centro'}</label>
+            <label className="check"><input type="checkbox" checked={f.share_with_center} onChange={set('share_with_center')} /> {t('Compartir esta inmersión y mi valoración con {name}', { name: centerName || t('el centro') })}</label>
           )}
         </div>
 
         <div className="card">
-          <b>Fotos</b>
+          <b>{t('Fotos')}</b>
           {photos.length > 0 && (
             <div className="photos" style={{ marginTop: 8 }}>
               {photos.map((p) => (
                 <div key={p.id}>
                   {p.url && <a href={p.url} target="_blank" rel="noreferrer"><img src={p.url} alt="" /></a>}
-                  <button type="button" onClick={() => removePhoto(p)} aria-label="Borrar foto">×</button>
+                  <button type="button" onClick={() => removePhoto(p)} aria-label={t('Borrar foto')}>×</button>
                 </div>
               ))}
             </div>
           )}
           <input type="file" accept="image/*" multiple style={{ marginTop: 8 }} onChange={(e) => setNewFiles([...e.target.files])} />
-          {newFiles.length > 0 && <p className="small muted">{newFiles.length} foto(s) se subirán al guardar.</p>}
-          <p className="small muted" style={{ marginBottom: 0 }}>Las fotos son privadas: solo las ves tú.</p>
+          {newFiles.length > 0 && <p className="small muted">{newFiles.length === 1 ? t('1 foto se subirá al guardar.') : t('{n} fotos se subirán al guardar.', { n: newFiles.length })}</p>}
+          <p className="small muted" style={{ marginBottom: 0 }}>{t('Las fotos son privadas: solo las ves tú.')}</p>
         </div>
 
         {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
-        <button className="btn block" disabled={busy}>{busy ? 'Guardando…' : 'Guardar inmersión'}</button>
-        {!isNew && <button type="button" className="btn block ghost" style={{ marginTop: 8 }} onClick={removeLog}>Borrar inmersión</button>}
+        <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : t('Guardar inmersión')}</button>
+        {!isNew && <button type="button" className="btn block ghost" style={{ marginTop: 8 }} onClick={removeLog}>{t('Borrar inmersión')}</button>}
       </form>
     </>
   )

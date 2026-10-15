@@ -3,6 +3,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link } from '../lib/router'
 import { dayLabel, dateTime } from '../lib/format'
+import { t } from '../lib/i18n'
 
 export default function Bitacora() {
   const { diver } = useAuth()
@@ -34,7 +35,7 @@ export default function Bitacora() {
     })
   }, [diver])
 
-  if (!diver || logs === null) return <p className="muted">Cargando bitácora…</p>
+  if (!diver || logs === null) return <p className="muted">{t('Cargando bitácora…')}</p>
 
   const appDives = logs.length
   const maxDepth = Math.max(0, ...logs.map((l) => +l.max_depth_m || 0))
@@ -46,34 +47,34 @@ export default function Bitacora() {
   return (
     <>
       <div className="row between">
-        <h1>Mi bitácora</h1>
-        <Link to="/bitacora/nueva" className="btn small">+ Inmersión</Link>
+        <h1>{t('Mi bitácora')}</h1>
+        <Link to="/bitacora/nueva" className="btn small">{t('+ Inmersión')}</Link>
       </div>
       {error && <div className="msg err">{error}</div>}
 
       <div className="stats">
-        <div><b>{appDives + (diver.logged_dives || 0)}</b><span>inmersiones{diver.logged_dives ? ` (${appDives} aquí)` : ''}</span></div>
-        <div><b>{maxDepth ? `${maxDepth} m` : '—'}</b><span>prof. máxima</span></div>
-        <div><b>{minutes ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : '—'}</b><span>bajo el agua</span></div>
+        <div><b>{appDives + (diver.logged_dives || 0)}</b><span>{diver.logged_dives ? t('inmersiones ({n} aquí)', { n: appDives }) : t('inmersiones')}</span></div>
+        <div><b>{maxDepth ? `${maxDepth} m` : '—'}</b><span>{t('prof. máxima')}</span></div>
+        <div><b>{minutes ? t('{h} h {m} min', { h: Math.floor(minutes / 60), m: minutes % 60 }) : '—'}</b><span>{t('bajo el agua')}</span></div>
       </div>
-      {fav && <p className="small muted" style={{ marginTop: -4 }}>Punto favorito: <b>{fav}</b></p>}
+      {fav && <p className="small muted" style={{ marginTop: -4 }}>{t('Punto favorito:')} <b>{fav}</b></p>}
 
       {pendingTrips.map((b) => (
         <Link key={b.id} to={`/bitacora/nueva?booking=${b.id}`} className="card" style={{ borderColor: 'var(--accent)' }}>
-          <b>📝 Registra tus inmersiones</b>
-          <div className="small muted">{b.trips.centers?.name} · {dateTime(b.trips.departs_at)} · {b.trips.num_dives} inmersiones</div>
+          <b>📝 {t('Registra tus inmersiones')}</b>
+          <div className="small muted">{b.trips.centers?.name} · {dateTime(b.trips.departs_at)} · {t('{n} inmersiones', { n: b.trips.num_dives })}</div>
         </Link>
       ))}
 
       {logs.length === 0 && pendingTrips.length === 0 && (
-        <div className="card center muted">Aún no has registrado inmersiones. Pulsa «+ Inmersión» para añadir la primera.</div>
+        <div className="card center muted">{t('Aún no has registrado inmersiones. Pulsa «+ Inmersión» para añadir la primera.')}</div>
       )}
       {logs.map((l, i) => (
         <Link key={l.id} to={'/bitacora/' + l.id} className="card row" style={{ alignItems: 'stretch' }}>
           {thumbs[l.id] && <img src={thumbs[l.id]} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10 }} />}
           <div className="grow">
             <div className="row between">
-              <b>#{logs.length - i + (diver.logged_dives || 0)} · {l.site_name || 'Inmersión'}</b>
+              <b>#{logs.length - i + (diver.logged_dives || 0)} · {l.site_name || t('Inmersión')}</b>
               <span className="small">{l.rating ? '★'.repeat(l.rating) : ''}</span>
             </div>
             <div className="small muted">

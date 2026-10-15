@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { go } from '../lib/router'
+import { t } from '../lib/i18n'
 
 export default function NuevaClave() {
   const { setRecovering } = useAuth()
@@ -15,10 +16,10 @@ export default function NuevaClave() {
   }
   return (
     <form className="card" onSubmit={save} style={{ maxWidth: 420, margin: '0 auto' }}>
-      <h1>Nueva contraseña</h1>
+      <h1>{t('Nueva contraseña')}</h1>
       <div className="field"><input type="password" minLength={6} required value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
       {error && <div className="msg err">{error}</div>}
-      <button className="btn block">Guardar</button>
+      <button className="btn block">{t('Guardar')}</button>
     </form>
   )
 }

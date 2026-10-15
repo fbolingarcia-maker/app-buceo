@@ -3,6 +3,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, levelName } from '../lib/format'
+import { t, LangSwitch } from '../lib/i18n'
 
 const AGENCIES = ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'RAID', 'BSAC', 'Otra']
 
@@ -40,17 +41,17 @@ export default function Perfil() {
       logged_dives: form.logged_dives === '' ? null : +form.logged_dives,
       seeks_buddy: form.seeks_buddy,
     }).eq('id', diver.id)
-    error ? note('p', false, errMsg(error)) : (note('p', true, 'Perfil guardado'), refresh())
+    error ? note('p', false, errMsg(error)) : (note('p', true, t('Perfil guardado')), refresh())
   }
 
   async function addCert(e) {
     e.preventDefault()
     const { error } = await supabase.from('certifications').insert({ diver_id: diver.id, agency: cert.agency, level: cert.level, card_number: cert.card_number.trim() || null })
     if (error) return note('c', false, errMsg(error))
-    setCert({ ...cert, card_number: '' }); note('c', true, 'Certificación añadida'); loadCerts()
+    setCert({ ...cert, card_number: '' }); note('c', true, t('Certificación añadida')); loadCerts()
   }
   async function delCert(id) {
-    if (!window.confirm('¿Eliminar esta certificación?')) return
+    if (!window.confirm(t('¿Eliminar esta certificación?'))) return
     const { error } = await supabase.from('certifications').delete().eq('id', id)
     error ? note('c', false, errMsg(error)) : loadCerts()
   }
@@ -58,7 +59,7 @@ export default function Perfil() {
   async function changePw(e) {
     e.preventDefault()
     const { error } = await supabase.auth.updateUser({ password: pw })
-    error ? note('pw', false, errMsg(error)) : (note('pw', true, 'Contraseña cambiada'), setPw(''))
+    error ? note('pw', false, errMsg(error)) : (note('pw', true, t('Contraseña cambiada')), setPw(''))
   }
 
   async function registerCenter(e) {
@@ -68,72 +69,75 @@ export default function Perfil() {
     await refresh(); go('/centro')
   }
 
-  if (!diver || !form) return <p className="muted">Cargando perfil…</p>
+  if (!diver || !form) return <p className="muted">{t('Cargando perfil…')}</p>
 
   return (
     <>
-      <h1>Tu perfil</h1>
-      <p className="pill" style={{ marginTop: -4 }}>{isCenter ? 'Cuenta de centro de buceo' : 'Cuenta de buceador'}</p>
+      <h1>{t('Tu perfil')}</h1>
+      <p className="pill" style={{ marginTop: -4 }}>{isCenter ? t('Cuenta de centro de buceo') : t('Cuenta de buceador')}</p>
       <p className="muted small">{user.email}</p>
 
+      <h2>{t('Idioma')}</h2>
+      <div className="card"><LangSwitch full /></div>
+
       <form className="card" onSubmit={saveProfile}>
-        <div className="field"><label>Nombre</label><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
+        <div className="field"><label>{t('Nombre')}</label><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
         <div className="grid2">
-          <div className="field"><label>Idiomas</label><input placeholder="Español, English" value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
-          <div className="field"><label>Inmersiones registradas</label><input type="number" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
+          <div className="field"><label>{t('Idiomas')}</label><input placeholder={t('Español, English')} value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
+          <div className="field"><label>{t('Inmersiones registradas')}</label><input type="number" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
         </div>
-        {!isCenter && <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> Busco compañero (buddy) de buceo</label>}
+        {!isCenter && <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>}
         {show('p')}
-        <button className="btn">Guardar</button>
+        <button className="btn">{t('Guardar')}</button>
       </form>
 
       {!isCenter && <>
-      <h2>Certificaciones</h2>
+      <h2>{t('Certificaciones')}</h2>
       <div className="card">
-        {certs.length === 0 && <p className="muted">Añade al menos una para poder reservar.</p>}
+        {certs.length === 0 && <p className="muted">{t('Añade al menos una para poder reservar.')}</p>}
         {certs.map((c) => (
           <div key={c.id} className="row between" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
             <div>
               <b>{c.agency} · {levelName(c.level)}</b>
-              <div className="small muted">{c.card_number || 'Sin nº de tarjeta'} · {c.verified_at ? `✅ Verificada por ${c.centers?.name || 'un centro'}` : 'Sin verificar'}</div>
+              <div className="small muted">{c.card_number || t('Sin nº de tarjeta')} · {c.verified_at ? t('✅ Verificada por {centro}', { centro: c.centers?.name || t('un centro') }) : t('Sin verificar')}</div>
             </div>
-            {!c.verified_at && <button className="btn small ghost" onClick={() => delCert(c.id)}>Quitar</button>}
+            {!c.verified_at && <button className="btn small ghost" onClick={() => delCert(c.id)}>{t('Quitar')}</button>}
           </div>
         ))}
         <form onSubmit={addCert} style={{ marginTop: 12 }}>
           <div className="grid2">
-            <div className="field"><label>Agencia</label><select value={cert.agency} onChange={(e) => setCert({ ...cert, agency: e.target.value })}>{AGENCIES.map((a) => <option key={a}>{a}</option>)}</select></div>
-            <div className="field"><label>Nivel</label><select value={cert.level} onChange={(e) => setCert({ ...cert, level: e.target.value })}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+            <div className="field"><label>{t('Agencia')}</label><select value={cert.agency} onChange={(e) => setCert({ ...cert, agency: e.target.value })}>{AGENCIES.map((a) => <option key={a} value={a}>{a === 'Otra' ? t('Otra') : a}</option>)}</select></div>
+            <div className="field"><label>{t('Nivel')}</label><select value={cert.level} onChange={(e) => setCert({ ...cert, level: e.target.value })}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
           </div>
-          <div className="field"><label>Nº de tarjeta (opcional)</label><input value={cert.card_number} onChange={(e) => setCert({ ...cert, card_number: e.target.value })} /></div>
+          <div className="field"><label>{t('Nº de tarjeta (opcional)')}</label><input value={cert.card_number} onChange={(e) => setCert({ ...cert, card_number: e.target.value })} /></div>
           {show('c')}
-          <button className="btn ghost">+ Añadir certificación</button>
+          <button className="btn ghost">{t('+ Añadir certificación')}</button>
         </form>
       </div>
       </>}
 
-      <h2>Centro de buceo</h2>
+      <h2>{t('Centro de buceo')}</h2>
       {center ? (
-        <div className="card row between"><span>Gestionas <b>{center.name}</b></span><Link to="/centro" className="btn small">Ir al panel</Link></div>
+        <div className="card row between"><span>{t('Gestionas')} <b>{center.name}</b></span><Link to="/centro" className="btn small">{t('Ir al panel')}</Link></div>
       ) : (
         <form className="card" onSubmit={registerCenter}>
-          <p className="small muted" style={{ marginTop: 0 }}>¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).</p>
+          <p className="small muted" style={{ marginTop: 0 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</p>
           <div className="grid2">
-            <div className="field"><label>Nombre del centro</label><input required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
-            <div className="field"><label>Teléfono / WhatsApp</label><input value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
+            <div className="field"><label>{t('Nombre del centro')}</label><input required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
+            <div className="field"><label>{t('Teléfono / WhatsApp')}</label><input value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
           </div>
           {show('ce')}
-          <button className="btn ghost">Registrar mi centro</button>
+          <button className="btn ghost">{t('Registrar mi centro')}</button>
         </form>
       )}
 
-      <h2>Cuenta</h2>
+      <h2>{t('Cuenta')}</h2>
       <form className="card" onSubmit={changePw}>
-        <div className="field"><label>Nueva contraseña</label><input type="password" minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
+        <div className="field"><label>{t('Nueva contraseña')}</label><input type="password" minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
         {show('pw')}
         <div className="row between">
-          <button className="btn ghost" disabled={pw.length < 6}>Cambiar contraseña</button>
-          <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>Cerrar sesión</button>
+          <button className="btn ghost" disabled={pw.length < 6}>{t('Cambiar contraseña')}</button>
+          <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
         </div>
       </form>
     </>

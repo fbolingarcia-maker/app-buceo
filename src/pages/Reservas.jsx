@@ -3,6 +3,7 @@ import { supabase, errMsg, appUrl } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link } from '../lib/router'
 import { BOOKING_STATUS, dateTime, php } from '../lib/format'
+import { t } from '../lib/i18n'
 
 const HOLD_MIN = 15
 
@@ -28,7 +29,7 @@ function PayBox({ b, mode, onDone }) {
     if (mode === 'demo') {
       const { error } = await supabase.rpc('confirm_payment_demo', { p_booking: b.id, p_kind: kind })
       setBusy(false)
-      return error ? setError(errMsg(error)) : onDone('¡Pago registrado! (modo demo)')
+      return error ? setError(errMsg(error)) : onDone(t('¡Pago registrado! (modo demo)'))
     }
     const { data, error } = await supabase.functions.invoke('crear-pago', {
       body: { booking_id: b.id, kind, method, return_url: appUrl() },
@@ -41,19 +42,22 @@ function PayBox({ b, mode, onDone }) {
     <div style={{ marginTop: 10 }}>
       {pending ? (
         <div className="seg">
-          <button className={kind === 'deposit' ? 'on' : ''} onClick={() => setKind('deposit')}>Señal 50 % · {php(b.deposit_php - b.paid_php)}</button>
-          <button className={kind === 'full' ? 'on' : ''} onClick={() => setKind('full')}>Todo · {php(balance)}</button>
+          <button className={kind === 'deposit' ? 'on' : ''} onClick={() => setKind('deposit')}>{t('Señal 50 % · {amount}', { amount: php(b.deposit_php - b.paid_php) })}</button>
+          <button className={kind === 'full' ? 'on' : ''} onClick={() => setKind('full')}>{t('Todo · {amount}', { amount: php(balance) })}</button>
         </div>
       ) : null}
       {mode !== 'demo' && (
         <div className="seg">
           <button className={method === 'gcash' ? 'on' : ''} onClick={() => setMethod('gcash')}>GCash</button>
-          <button className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}>Tarjeta</button>
+          <button className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}>{t('Tarjeta')}</button>
         </div>
       )}
       {error && <div className="msg err">{error}</div>}
       <button className="btn block" disabled={busy || amount <= 0} onClick={pay}>
-        {busy ? 'Un momento…' : `Pagar ${php(amount)}${mode === 'demo' ? ' (modo demo)' : method === 'gcash' ? ' con GCash' : ' con tarjeta'}`}
+        {busy ? t('Un momento…')
+          : mode === 'demo' ? t('Pagar {amount} (modo demo)', { amount: php(amount) })
+          : method === 'gcash' ? t('Pagar {amount} con GCash', { amount: php(amount) })
+          : t('Pagar {amount} con tarjeta', { amount: php(amount) })}
       </button>
     </div>
   )
@@ -89,11 +93,11 @@ export default function Reservas() {
     const pid = q.get('pago')
     if (!pid || !diver) return
     history.replaceState(null, '', window.location.pathname + '#/reservas')
-    if (q.get('cancelado')) { setInfo('Pago cancelado. Puedes intentarlo de nuevo.'); return }
-    setInfo('Comprobando el pago…')
+    if (q.get('cancelado')) { setInfo(t('Pago cancelado. Puedes intentarlo de nuevo.')); return }
+    setInfo(t('Comprobando el pago…'))
     supabase.functions.invoke('crear-pago', { body: { action: 'check', payment_id: pid } }).then(async ({ data, error }) => {
       if (error) { setInfo(''); return setError(await fnError(error)) }
-      setInfo(data.status === 'paid' ? '¡Pago recibido! Tu reserva está confirmada.' : 'El pago aún no aparece como completado. Si has pagado, se actualizará en unos minutos.')
+      setInfo(data.status === 'paid' ? t('¡Pago recibido! Tu reserva está confirmada.') : t('El pago aún no aparece como completado. Si has pagado, se actualizará en unos minutos.'))
       load()
     })
   }, [diver, load])
@@ -101,11 +105,11 @@ export default function Reservas() {
   async function cancel(b) {
     setError(''); setInfo('')
     const { error } = await supabase.rpc('cancel_my_booking', { p_booking: b.id })
-    if (error) setError(errMsg(error)); else setInfo('Reserva cancelada')
+    if (error) setError(errMsg(error)); else setInfo(t('Reserva cancelada'))
     load()
   }
 
-  if (!diver || list === null) return <p className="muted">Cargando…</p>
+  if (!diver || list === null) return <p className="muted">{t('Cargando…')}</p>
 
   const now = Date.now()
   const upcoming = list.filter((b) => new Date(b.trips?.departs_at) > now)
@@ -122,36 +126,36 @@ export default function Reservas() {
       <div key={b.id} className="card">
         <div className="row between">
           <b>{b.trips?.centers?.name}</b>
-          <span className={cls}>{expired ? 'Caducada (sin pagar)' : BOOKING_STATUS[b.status]}</span>
+          <span className={cls}>{expired ? t('Caducada (sin pagar)') : BOOKING_STATUS[b.status]}</span>
         </div>
-        <div className="muted small">{dateTime(b.trips?.departs_at)} · {b.trips?.boats?.name} · {b.trips?.num_dives} inmersiones</div>
+        <div className="muted small">{dateTime(b.trips?.departs_at)} · {b.trips?.boats?.name} · {t('{n} inmersiones', { n: b.trips?.num_dives })}</div>
         <div className="row between" style={{ marginTop: 8 }}>
-          <span>{b.seats} plaza{b.seats > 1 ? 's' : ''}{b.with_gear ? ' · con equipo' : ''}</span>
+          <span>{b.seats > 1 ? t('{n} plazas', { n: b.seats }) : t('{n} plaza', { n: b.seats })}{b.with_gear ? ' · ' + t('con equipo') : ''}</span>
           <b>{php(b.amount_php)}</b>
         </div>
         {b.paid_php > 0 && (
           <div className="small" style={{ marginTop: 4 }}>
-            Pagado {php(b.paid_php)}{balance > 0 && active ? <> · <b>pendiente {php(balance)}</b></> : ' · todo pagado'}
+            {t('Pagado {amount}', { amount: php(b.paid_php) })}{balance > 0 && active ? <> · <b>{t('pendiente {amount}', { amount: php(balance) })}</b></> : ' · ' + t('todo pagado')}
           </div>
         )}
-        {b.refund_php > 0 && <div className="msg ok">Reembolso: {php(b.refund_php)}</div>}
-        {b.trips?.status === 'cancelled_weather' && <div className="msg err">Salida cancelada por meteo.</div>}
+        {b.refund_php > 0 && <div className="msg ok">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
+        {b.trips?.status === 'cancelled_weather' && <div className="msg err">{t('Salida cancelada por meteo.')}</div>}
         {b.status === 'pending_payment' && !expired && (
-          <p className="small muted">Plaza retenida {minsLeft} min más. Paga al menos la señal del 50 % ({php(b.deposit_php)}) para confirmarla.</p>
+          <p className="small muted">{t('Plaza retenida {n} min más. Paga al menos la señal del 50 % ({amount}) para confirmarla.', { n: minsLeft, amount: php(b.deposit_php) })}</p>
         )}
         {b.status === 'confirmed' && balance > 0 && future && (
-          <p className="small muted">Paga el resto ahora en la app o en efectivo en el centro el día de la salida.</p>
+          <p className="small muted">{t('Paga el resto ahora en la app o en efectivo en el centro el día de la salida.')}</p>
         )}
-        {active && future && balance > 0 && <PayBox b={b} mode={mode} onDone={(t) => { setInfo(t); load() }} />}
+        {active && future && balance > 0 && <PayBox b={b} mode={mode} onDone={(m) => { setInfo(m); load() }} />}
         {active && future && (
           <button className="btn small ghost" style={{ marginTop: 8 }} onClick={() => {
             const h = (new Date(b.trips.departs_at) - now) / 3600000
             const keep = Math.round(b.amount_php * 0.5)
-            const txt = b.status === 'pending_payment' ? '¿Cancelar la reserva?'
-              : h >= 24 ? `¿Cancelar? Se te devolverá todo lo pagado (${php(b.paid_php)}).`
-              : `¿Cancelar? Quedan menos de 24 h: el centro se queda el 50 % (${php(keep)}). Se te devolverán ${php(Math.max(0, b.paid_php - keep))}.`
+            const txt = b.status === 'pending_payment' ? t('¿Cancelar la reserva?')
+              : h >= 24 ? t('¿Cancelar? Se te devolverá todo lo pagado ({amount}).', { amount: php(b.paid_php) })
+              : t('¿Cancelar? Quedan menos de 24 h: el centro se queda el 50 % ({keep}). Se te devolverán {refund}.', { keep: php(keep), refund: php(Math.max(0, b.paid_php - keep)) })
             if (window.confirm(txt)) cancel(b)
-          }}>Cancelar reserva</button>
+          }}>{t('Cancelar reserva')}</button>
         )}
       </div>
     )
@@ -159,12 +163,12 @@ export default function Reservas() {
 
   return (
     <>
-      <h1>Mis reservas</h1>
+      <h1>{t('Mis reservas')}</h1>
       {error && <div className="msg err">{error}</div>}
       {info && <div className="msg ok">{info}</div>}
-      {upcoming.length === 0 && <div className="card center muted">No tienes reservas próximas. <Link to="/">Ver salidas</Link></div>}
+      {upcoming.length === 0 && <div className="card center muted">{t('No tienes reservas próximas.')} <Link to="/">{t('Ver salidas')}</Link></div>}
       {upcoming.map(card)}
-      {past.length > 0 && <><h2>Anteriores</h2>{past.map(card)}</>}
+      {past.length > 0 && <><h2>{t('Anteriores')}</h2>{past.map(card)}</>}
     </>
   )
 }

@@ -3,6 +3,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, manilaDate, addDays, manilaToIso, php } from '../lib/format'
+import { t } from '../lib/i18n'
 
 export default function NuevaSalida({ id }) {
   const { center } = useAuth()
@@ -29,7 +30,7 @@ export default function NuevaSalida({ id }) {
   useEffect(() => {
     if (!id) return
     supabase.from('trips').select('*, trip_sites(site_id, position), bookings(id, status)').eq('id', id).maybeSingle().then(({ data, error }) => {
-      if (error || !data) { setError(error ? errMsg(error) : 'Salida no encontrada'); return }
+      if (error || !data) { setError(error ? errMsg(error) : t('Salida no encontrada')); return }
       const hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }).format(new Date(data.departs_at))
       const ts = (data.trip_sites || []).sort((a, b) => a.position - b.position)
       setF({
@@ -54,7 +55,7 @@ export default function NuevaSalida({ id }) {
     e.preventDefault()
     setBusy(true); setError('')
     const departs_at = manilaToIso(f.date, f.hour)
-    if (new Date(departs_at) < new Date() && !id) { setBusy(false); return setError('La fecha ya ha pasado') }
+    if (new Date(departs_at) < new Date() && !id) { setBusy(false); return setError(t('La fecha ya ha pasado')) }
     const fields = {
       boat_id: f.boat_id, departs_at, num_dives: f.num_dives, min_level: f.min_level,
       price_php: f.price_php, gear_rental_php: f.gear_rental_php || 0, guides: f.guides, divers_per_guide: f.divers_per_guide,
@@ -69,7 +70,7 @@ export default function NuevaSalida({ id }) {
     const ts = f.sites.slice(0, f.num_dives).map((site_id, i) => ({ trip_id: trip.id, site_id, position: i + 1 })).filter((x) => x.site_id)
     if (ts.length) {
       const { error: e2 } = await supabase.from('trip_sites').insert(ts)
-      if (e2) { setBusy(false); return setError('Salida creada, pero falló guardar los puntos: ' + errMsg(e2)) }
+      if (e2) { setBusy(false); return setError(t('Salida creada, pero falló guardar los puntos: {error}', { error: errMsg(e2) })) }
     }
     setBusy(false)
     go(id ? '/centro/salidas' : '/centro/agenda?dia=' + f.date)
@@ -77,43 +78,43 @@ export default function NuevaSalida({ id }) {
 
   return (
     <>
-      <Link to="/centro/salidas" className="small">← Salidas</Link>
-      <h1 style={{ marginTop: 8 }}>{id ? 'Editar salida' : 'Nueva salida'}</h1>
-      {id && hasBookings && <div className="msg err">Esta salida ya tiene reservas: los cambios de precio no afectan a las reservas hechas, pero avisa a los buceadores si cambias la hora o el barco.</div>}
-      {!loaded ? <p className="muted">{error || 'Cargando…'}</p> : boats.length === 0 ? (
-        <div className="card">Antes necesitas un barco. Ve a <Link to="/centro/ajustes">Mi centro → Barcos</Link>.</div>
+      <Link to="/centro/salidas" className="small">← {t('Salidas')}</Link>
+      <h1 style={{ marginTop: 8 }}>{id ? t('Editar salida') : t('Nueva salida')}</h1>
+      {id && hasBookings && <div className="msg err">{t('Esta salida ya tiene reservas: los cambios de precio no afectan a las reservas hechas, pero avisa a los buceadores si cambias la hora o el barco.')}</div>}
+      {!loaded ? <p className="muted">{error || t('Cargando…')}</p> : boats.length === 0 ? (
+        <div className="card">{t('Antes necesitas un barco. Ve a')} <Link to="/centro/ajustes">{t('Mi centro → Barcos')}</Link>.</div>
       ) : (
         <form className="card" onSubmit={save}>
           <div className="grid2">
-            <div className="field"><label>Día</label><input type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
-            <div className="field"><label>Hora (Manila)</label><input type="time" required value={f.hour} onChange={set('hour')} /></div>
-            <div className="field"><label>Barco</label><select value={f.boat_id} onChange={set('boat_id')}>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.capacity})</option>)}</select></div>
-            <div className="field"><label>Inmersiones</label><select value={f.num_dives} onChange={(e) => {
+            <div className="field"><label>{t('Día')}</label><input type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
+            <div className="field"><label>{t('Hora (Manila)')}</label><input type="time" required value={f.hour} onChange={set('hour')} /></div>
+            <div className="field"><label>{t('Barco')}</label><select value={f.boat_id} onChange={set('boat_id')}>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.capacity})</option>)}</select></div>
+            <div className="field"><label>{t('Inmersiones')}</label><select value={f.num_dives} onChange={(e) => {
               const n = +e.target.value; setF({ ...f, num_dives: n, sites: Array.from({ length: n }, (_, i) => f.sites[i] || '') })
             }}>{[1, 2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}</select></div>
-            <div className="field"><label>Nivel mínimo</label><select value={f.min_level} onChange={set('min_level')}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
-            <div className="field"><label>Precio (₱/buceador)</label><input type="number" min="1" required value={f.price_php} onChange={set('price_php', true)} /></div>
-            <div className="field"><label>Alquiler equipo (₱)</label><input type="number" min="0" value={f.gear_rental_php} onChange={set('gear_rental_php', true)} /></div>
-            <div className="field"><label>Guías</label><input type="number" min="1" max="15" required value={f.guides} onChange={set('guides', true)} /></div>
-            <div className="field"><label>Buceadores por guía</label><input type="number" min="1" max="10" required value={f.divers_per_guide} onChange={set('divers_per_guide', true)} /></div>
-            <div className="field"><label>Límite manual de plazas</label><input type="number" min="0" placeholder="(opcional)" value={f.seat_override} onChange={set('seat_override', true)} /></div>
-            <div className="field"><label>Plazas reservadas fuera de la app</label><input type="number" min="0" value={f.blocked_seats} onChange={set('blocked_seats', true)} /></div>
+            <div className="field"><label>{t('Nivel mínimo')}</label><select value={f.min_level} onChange={set('min_level')}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+            <div className="field"><label>{t('Precio (₱/buceador)')}</label><input type="number" min="1" required value={f.price_php} onChange={set('price_php', true)} /></div>
+            <div className="field"><label>{t('Alquiler equipo (₱)')}</label><input type="number" min="0" value={f.gear_rental_php} onChange={set('gear_rental_php', true)} /></div>
+            <div className="field"><label>{t('Guías')}</label><input type="number" min="1" max="15" required value={f.guides} onChange={set('guides', true)} /></div>
+            <div className="field"><label>{t('Buceadores por guía')}</label><input type="number" min="1" max="10" required value={f.divers_per_guide} onChange={set('divers_per_guide', true)} /></div>
+            <div className="field"><label>{t('Límite manual de plazas')}</label><input type="number" min="0" placeholder={t('(opcional)')} value={f.seat_override} onChange={set('seat_override', true)} /></div>
+            <div className="field"><label>{t('Plazas reservadas fuera de la app')}</label><input type="number" min="0" value={f.blocked_seats} onChange={set('blocked_seats', true)} /></div>
           </div>
 
-          <b>Puntos de buceo</b>
+          <b>{t('Puntos de buceo')}</b>
           {f.sites.map((v, i) => (
             <div className="field" key={i} style={{ marginTop: 6 }}>
               <select value={v} onChange={(e) => { const s = [...f.sites]; s[i] = e.target.value; setF({ ...f, sites: s }) }}>
-                <option value="">Inmersión {i + 1}: por decidir</option>
+                <option value="">{t('Inmersión {n}: por decidir', { n: i + 1 })}</option>
                 {sites.map((s) => <option key={s.id} value={s.id}>{s.area} · {s.name.replace(s.area + ' – ', '')}</option>)}
               </select>
             </div>
           ))}
 
-          <p className="small muted">Plazas operativas: <b>{operative}</b> · en la app: <b>{Math.max(0, operative - (f.blocked_seats || 0))}</b> · precio {php(f.price_php)}</p>
-          <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> Publicar ya (si no, queda como borrador)</label>
+          <p className="small muted">{t('Plazas operativas:')} <b>{operative}</b> · {t('en la app:')} <b>{Math.max(0, operative - (f.blocked_seats || 0))}</b> · {t('precio {price}', { price: php(f.price_php) })}</p>
+          <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> {t('Publicar ya (si no, queda como borrador)')}</label>
           {error && <div className="msg err">{error}</div>}
-          <button className="btn block" disabled={busy}>{busy ? 'Guardando…' : id ? 'Guardar cambios' : 'Crear salida'}</button>
+          <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : id ? t('Guardar cambios') : t('Crear salida')}</button>
         </form>
       )}
     </>

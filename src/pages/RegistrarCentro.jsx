@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { go } from '../lib/router'
+import { t } from '../lib/i18n'
 
 // Alta del centro para cuentas de centro que aún no lo tienen registrado
 export default function RegistrarCentro() {
@@ -24,15 +25,15 @@ export default function RegistrarCentro() {
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
-      <h1>Da de alta tu centro</h1>
-      <p className="muted">Si tu centro ya aparece en el directorio de Panglao, escribe el mismo nombre y pasarás a gestionar su ficha.</p>
+      <h1>{t('Da de alta tu centro')}</h1>
+      <p className="muted">{t('Si tu centro ya aparece en el directorio de Panglao, escribe el mismo nombre y pasarás a gestionar su ficha.')}</p>
       <form className="card" onSubmit={save}>
-        <div className="field"><label>Nombre del centro</label><input required value={name} onChange={(e) => setName(e.target.value)} /></div>
-        <div className="field"><label>Teléfono / WhatsApp</label><input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+        <div className="field"><label>{t('Nombre del centro')}</label><input required value={name} onChange={(e) => setName(e.target.value)} /></div>
+        <div className="field"><label>{t('Teléfono / WhatsApp')}</label><input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
         {error && <div className="msg err">{error}</div>}
-        <button className="btn block" disabled={busy}>{busy ? 'Guardando…' : 'Registrar centro'}</button>
+        <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : t('Registrar centro')}</button>
       </form>
-      <p className="small muted center">Después podrás añadir tus barcos, publicar salidas y gestionar reservas desde el panel.</p>
+      <p className="small muted center">{t('Después podrás añadir tus barcos, publicar salidas y gestionar reservas desde el panel.')}</p>
     </div>
   )
 }
