@@ -70,4 +70,23 @@ export default {
   'Centros': 'Centres',
   'Reservas': 'Bookings',
   'Bitácora': 'Logbook',
+
+  // Zonas y ubicación (Explorar, Centros, CentroAjustes)
+  'Buscar zona, centro o punto de buceo…': 'Search area, centre or dive site…',
+  '📍 Cerca de mí': '📍 Near me',
+  '📍 Cerca de mí ✕': '📍 Near me ✕',
+  'Buscando…': 'Locating…',
+  'Todas las zonas': 'All areas',
+  'No hay salidas cerca de ti. Te mostramos primero las más próximas.': 'There are no trips near you. Showing the closest ones first.',
+  'No hay salidas que coincidan con tu búsqueda este día.': 'No trips match your search on this day.',
+  'Quitar filtros': 'Clear filters',
+  'a {km} km': '{km} km away',
+  'Tu navegador no permite obtener la ubicación': "Your browser can't share your location",
+  'No se pudo obtener tu ubicación. Revisa los permisos del navegador.': "Couldn't get your location. Check your browser permissions.",
+  'Ubicación en el mapa': 'Location on the map',
+  '📍 Usar mi ubicación actual': '📍 Use my current location',
+  'Ver en el mapa': 'View on map',
+  'Sin ubicación: los buceadores no te verán en «Cerca de mí».': 'No location yet: divers won’t see you under “Near me”.',
+  'Hazlo desde el centro para que los buceadores te encuentren cerca.': 'Do this from the centre so divers can find you nearby.',
+  'Ubicación obtenida. Pulsa «Guardar».': 'Location found. Tap “Save”.',
 }
