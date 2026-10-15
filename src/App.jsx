@@ -42,7 +42,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="top">
-        <Link to="/" className="brand">🤿 Buceo Panglao</Link>
+        <Link to="/" className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <svg width="27" height="18" viewBox="0 0 30 20" aria-hidden="true" style={{ borderRadius: 2 }}>
+            <rect width="30" height="20" fill="#d62828" />
+            <polygon points="0,0 6,0 30,16 30,20 24,20 0,4" fill="#fff" />
+          </svg>
+          DiveSlot
+        </Link>
         {!session && session !== undefined && <Link to="/login" className="btn small ghost">Entrar</Link>}
       </header>
       <main>{page}</main>
