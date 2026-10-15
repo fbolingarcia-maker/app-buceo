@@ -15,9 +15,10 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 - Después de cambiar el esquema, revisa los advisors de seguridad de Supabase.
 - Los errores de las RPC usan el formato `CODIGO: mensaje para el usuario`. `errMsg()` en `src/lib/supabase.js` muestra solo el mensaje.
 - Las fechas siempre se manejan en hora de Manila con los helpers de `src/lib/format.js`.
+- Idiomas: inglés y español. Todo texto visible va con `t('texto en español')` (`src/lib/i18n.jsx`) y su traducción en `src/lib/en/*.js`; para partes variables usa `t('Quedan {n} plazas', { n })`. Nunca uses plantillas `` `...` `` dentro de `t()`.
 
 ## Mapa
-- `src/pages/Explorar.jsx`: salidas por día (vista `published_trips`).
+- `src/pages/Explorar.jsx`: salidas por día (vista `published_trips`), búsqueda por zona/centro/punto y «Cerca de mí» (`src/lib/geo.js`).
 - `src/pages/Salida.jsx`: detalle de la salida y reserva (`book_trip`).
 - `src/pages/Reservas.jsx`: reservas del buceador; pago de la señal, el total o el resto (`crear-pago`, `confirm_payment_demo` en modo demo) y cancelación (`cancel_my_booking`).
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
@@ -26,7 +27,7 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 - `src/pages/NuevaSalida.jsx`: crear o editar (`#/centro/salida/<id>`) una salida.
 - `src/lib/centro.js`: cálculo de plazas, dinero y consulta común de salidas para las pantallas del centro.
 - `src/pages/Centros.jsx`: directorio público de centros.
-- `supabase/migrations/`: esquema completo (001–009; 008 = pagos, 009 = perfiles, check-in y bitácora).
+- `supabase/migrations/`: esquema completo (001–010; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`).
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 
