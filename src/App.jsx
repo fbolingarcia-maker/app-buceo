@@ -1,5 +1,6 @@
 import { useAuth } from './lib/auth'
-import { useRoute, Link } from './lib/router'
+import { useRoute, Link, go } from './lib/router'
+import { t, LangSwitch } from './lib/i18n'
 import Explorar from './pages/Explorar'
 import Salida from './pages/Salida'
 import Reservas from './pages/Reservas'
@@ -18,7 +19,7 @@ import RegistrarCentro from './pages/RegistrarCentro'
 
 function NeedLogin({ children }) {
   const { session } = useAuth()
-  if (session === undefined) return <p className="muted center">Cargando…</p>
+  if (session === undefined) return <p className="muted center">{t('Cargando…')}</p>
   if (!session) return <Login />
   return children
 }
@@ -26,7 +27,7 @@ function NeedLogin({ children }) {
 // Páginas del centro: hace falta sesión y tener el centro dado de alta
 function NeedCenter({ children }) {
   const { session, center, diver } = useAuth()
-  if (session === undefined || (session && !diver)) return <p className="muted center">Cargando…</p>
+  if (session === undefined || (session && !diver)) return <p className="muted center">{t('Cargando…')}</p>
   if (!session) return <Login />
   if (!center) return <RegistrarCentro />
   return children
@@ -43,7 +44,7 @@ function Flag() {
 
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, recovering } = useAuth()
+  const { session, isCenter, recovering, signOut } = useAuth()
   const seg = path.split('/').filter(Boolean)
 
   let page
@@ -65,7 +66,7 @@ export default function App() {
 
   const tab = (to, icon, label, match) => (
     <Link to={to} className={match ? 'tab on' : 'tab'}>
-      <span aria-hidden>{icon}</span>{label}
+      <span aria-hidden>{icon}</span>{t(label)}
     </Link>
   )
   const home = !seg[0]
@@ -76,9 +77,15 @@ export default function App() {
         <Link to="/" className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Flag />
           DiveSlot
-          {session && isCenter && <span className="pill" style={{ fontSize: 11 }}>Centro</span>}
+          {session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>
-        {!session && session !== undefined && <Link to="/login" className="btn small ghost">Entrar</Link>}
+        <div className="row" style={{ gap: 8 }}>
+          <LangSwitch />
+          {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
+          {session && (
+            <button type="button" className="btn small ghost" onClick={async () => { await signOut(); go('/') }}>{t('Salir')}</button>
+          )}
+        </div>
       </header>
       <main>{page}</main>
       <nav className="tabs">
