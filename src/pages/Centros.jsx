@@ -25,7 +25,7 @@ export default function Centros() {
   useEffect(() => {
     loadDestinations().then(setDests)
     loadRatings().then(setRatings)
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng')
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url')
       .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%').order('name')
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setList(data || []) })
   }, [])
@@ -74,7 +74,7 @@ export default function Centros() {
               </div>
               {c.locality && c.locality !== z && <div className="small muted">{c.locality}</div>}
               <div className="row wrap small" style={{ marginTop: 6, gap: 14 }}>
-                {c.website && <a href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a>}
+                {c.website ? <a href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a> : c.source_url && <a href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
                 {c.lat && c.lng && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + ' ' + z)}`} target="_blank" rel="noreferrer">{t('Mapa')}</a>}
                 {c.phone && <a href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
               </div>

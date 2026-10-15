@@ -4,7 +4,7 @@ import { Link } from '../lib/router'
 import { LEVELS, levelName, levelRank, manilaDate, addDays, dayLabel, time, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
-import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings } from '../lib/places'
+import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings, loadSiteAreas } from '../lib/places'
 
 const DAYS = 8
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
@@ -16,6 +16,7 @@ export default function Explorar() {
   const [level, setLevel] = useState('all')
   const [trips, setTrips] = useState(null)
   const [dests, setDests] = useState([])
+  const [siteAreas, setSiteAreas] = useState([])
   const [ratings, setRatings] = useState({})
   const [error, setError] = useState('')
   const [q, setQ] = useState(() => ss('q') || '')
@@ -34,6 +35,7 @@ export default function Explorar() {
   // Todas las salidas de los próximos 8 días en una sola consulta
   useEffect(() => {
     loadDestinations().then(setDests)
+    loadSiteAreas().then(setSiteAreas)
     loadRatings().then(setRatings)
     const from = new Date().toISOString()
     const to = new Date(addDays(today, DAYS) + 'T00:00:00+08:00').toISOString()
@@ -50,7 +52,7 @@ export default function Explorar() {
 
   const destOf = (tr) => tr.center_destination || tr.center_area || ''
   const words = norm(q).split(/\s+/).filter(Boolean)
-  const suggestions = focus && q.trim() ? suggestPlaces(q, dests) : []
+  const suggestions = focus && q.trim() ? suggestPlaces(q, dests, siteAreas) : []
 
   // Filtros comunes (todo menos el día)
   const filtered = useMemo(() => (trips || [])

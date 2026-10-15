@@ -3,16 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Link } from '../lib/router'
 import { t, getLang } from '../lib/i18n'
 import { levelName } from '../lib/format'
-import { loadDestinations, openTripsIn, loadRatings } from '../lib/places'
-
-// Zonas de puntos de buceo que pertenecen a cada destino (además de la propia)
-const EXTRA_AREAS = {
-  Panglao: ['Balicasag', 'Pamilacan'],
-  Dauin: ['Apo Island'],
-  'Puerto Galera': ['Verde Island'],
-  'Sogod Bay': ['Southern Leyte'],
-  'Puerto Princesa': ['Tubbataha'],
-}
+import { loadDestinations, openTripsIn, loadRatings, EXTRA_AREAS } from '../lib/places'
 
 // Página de un destino: puntos de buceo, centros y acceso a sus salidas
 export default function Destino({ name }) {

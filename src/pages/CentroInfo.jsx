@@ -13,7 +13,7 @@ export default function CentroInfo({ id }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision').eq('id', id).maybeSingle()
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url').eq('id', id).maybeSingle()
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setC(data || false) })
     supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(20)
       .then(({ data }) => setTrips(data || []))
@@ -41,6 +41,7 @@ export default function CentroInfo({ id }) {
       <div className="card row wrap" style={{ gap: 8 }}>
         {c.phone && <a className="btn small ghost" href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
         {c.website && <a className="btn small ghost" href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a>}
+        {!c.website && c.source_url && <a className="btn small ghost" href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
         <a className="btn small ghost" href={mapUrl} target="_blank" rel="noreferrer">{t('Mapa')}</a>
       </div>
 
