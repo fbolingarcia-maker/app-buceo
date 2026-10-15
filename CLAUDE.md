@@ -1,6 +1,6 @@
 # CLAUDE.md — contexto para trabajar en DiveSlot
 
-App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, Bohol). Moneda PHP, hora Asia/Manila (UTC+8, sin horario de verano). Interfaz en español.
+App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, Bohol). Moneda PHP, hora Asia/Manila (UTC+8, sin horario de verano). Interfaz en inglés y español.
 
 ## Stack
 - Frontend: React 18 + Vite, sin router externo (router por hash en `src/lib/router.jsx`). Estilos en `src/styles.css`.
@@ -27,9 +27,11 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - `src/pages/NuevaSalida.jsx`: crear o editar (`#/centro/salida/<id>`) una salida.
 - `src/lib/centro.js`: cálculo de plazas, dinero y consulta común de salidas para las pantallas del centro.
 - `src/pages/Centros.jsx`: directorio público de centros de toda Filipinas, agrupado por destino y filtrable por región.
+- `src/pages/CentroInfo.jsx` (`#/c/<id>`): ficha pública del centro (valoración, contacto, próximas salidas). `src/pages/Destino.jsx` (`#/d/<destino>`): guía del destino (puntos de buceo, centros, «Ver salidas aquí»).
+- Valoraciones: `center_ratings()` (media de la bitácora compartida, solo datos agregados), cargadas con `loadRatings()`.
 - `src/lib/DestinoSelect.jsx`: selector de destino (alta del centro y ajustes).
-- Datos: `destinations` (destino, provincia, grupo de islas, coordenadas), `centers.destination/province`, `dive_sites.province/highlight`.
-- `supabase/migrations/`: esquema completo (001–012; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos).
+- Datos: `destinations` (destino, provincia, grupo de islas, coordenadas), `centers.destination/province`, `dive_sites.province/highlight/highlight_es` (descripción en inglés y español).
+- `supabase/migrations/`: esquema completo (001–014; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos, 013 = valoraciones públicas, 014 = descripciones de puntos en español).
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 

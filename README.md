@@ -10,7 +10,7 @@ Cobertura: toda Filipinas (28 destinos: Bohol, Cebu, Negros, Siquijor, Boracay, 
 
 ```
 .github/workflows/deploy.yml   Publica en GitHub Pages en cada push a main
-supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–012)
+supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–014)
 supabase/functions/            Edge Functions de pago (crear-pago, paymongo-webhook)
 src/lib/                       Cliente Supabase, sesión, fechas/precios, router
 src/pages/                     Buceador: Explorar, Salida, Reservas, Bitacora, Inmersion · Centro: CentroPanel, CentroAgenda, CentroSalidas, CentroAjustes, NuevaSalida
@@ -29,6 +29,9 @@ npm run dev        # http://localhost:5173
 - Inglés y español: selector EN/ES en la cabecera, en el login y en el perfil (se recuerda en el navegador). Textos en `src/lib/en/*.js`.
 - Salidas: buscador con sugerencias (destino, provincia o región), atajos a destinos populares, contador de salidas por día, orden por hora/precio/distancia y «📍 Cerca de mí».
 - Directorio: ~150 centros reales de toda Filipinas (fuente en `centers.source_url`) y ~130 puntos de buceo con profundidad, nivel y descripción.
+- Guía de cada destino (`#/d/<destino>`): puntos de buceo con profundidad, nivel y descripción (en inglés y español) y los centros de la zona.
+- Ficha pública de cada centro (`#/c/<id>`) con valoración media (de las inmersiones que los buceadores comparten desde su bitácora), contacto y próximas salidas. El centro puede compartir su enlace desde el Panel.
+- La bitácora se puede exportar a CSV y las reservas se pueden añadir al calendario (.ics).
 - La app se puede instalar en el móvil (manifest + iconos en `public/`). Los centros guardan su ubicación GPS en *Centro → Datos*.
 - «¿Quién va?»: en cada salida se ve quién ha reservado ya (nombre e inicial, nivel, inmersiones, idiomas, país, «busca buddy», punto favorito y una frase). Cada buceador puede ocultarse desde su perfil.
 
