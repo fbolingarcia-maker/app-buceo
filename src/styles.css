@@ -96,3 +96,19 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .diver { display: flex; gap: 12px; align-items: flex-start; }
 .avatar { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-weight: 700; color: var(--brand-ink); background: linear-gradient(135deg, var(--brand), var(--accent)); }
+
+/* Buscador con sugerencias y atajos */
+.search-box { position: relative; margin-bottom: 10px; }
+.suggest { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px); background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.12); overflow: hidden; }
+.suggest button { display: flex; width: 100%; justify-content: space-between; gap: 8px; padding: 10px 12px; border: 0; background: none;
+  font: inherit; color: var(--ink); text-align: left; cursor: pointer; border-bottom: 1px solid var(--line); }
+.suggest button:last-child { border-bottom: 0; }
+.suggest button:hover { background: color-mix(in srgb, var(--brand) 8%, transparent); }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin: 0 -16px 10px; padding-left: 16px; padding-right: 16px; }
+.chips button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 99px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.chips button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.day .count { display: inline-block; min-width: 20px; margin-top: 2px; padding: 0 6px; border-radius: 99px; font-size: 11px; font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.day .count.none { background: transparent; opacity: .5; }
+.day.on .count { background: rgba(255,255,255,.25); }
