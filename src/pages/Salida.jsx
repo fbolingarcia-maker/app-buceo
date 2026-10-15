@@ -89,12 +89,15 @@ export default function Salida({ id }) {
             <input type="checkbox" checked={medical} onChange={(e) => setMedical(e.target.checked)} />
             <span>Declaro que estoy en condiciones médicas para bucear y que he respondido "no" a todas las preguntas del cuestionario médico RSTC (o tengo autorización médica).</span>
           </label>
-          <div className="row between" style={{ margin: '12px 0' }}><span>Total</span><span className="big">{php(total)}</span></div>
+          <div className="row between" style={{ margin: '12px 0 4px' }}><span>Total</span><span className="big">{php(total)}</span></div>
+          <div className="row between small" style={{ marginBottom: 12 }}>
+            <span className="muted">Para reservar pagas como mínimo el 50 %</span><b>{php(Math.ceil(total / 2))}</b>
+          </div>
           {error && <div className="msg err">{error}</div>}
           <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book}>
             {busy ? 'Reservando…' : 'Reservar plaza'}
           </button>
-          <p className="muted small">La plaza queda retenida 15 min hasta que pagues. Cancelación gratis hasta 24 h antes; después se devuelve el 50 %. Si se cancela por meteo, se devuelve el 100 %.</p>
+          <p className="muted small">Pagas con GCash o tarjeta: al menos el 50 % para confirmar la plaza (retenida 15 min) y el resto en la app o en efectivo en el centro. Cancelación con devolución total hasta 24 h antes; después el centro se queda el 50 % del precio. Si se cancela por meteo, se devuelve todo lo pagado.</p>
         </div>
       )}
     </>
