@@ -1,3 +1,5 @@
+import { t, locale } from './i18n'
+
 export const TZ = 'Asia/Manila'
 
 export const LEVELS = [
@@ -16,20 +18,23 @@ export const SOURCES = [
   ['instagram', 'Instagram'],
   ['facebook', 'Facebook'],
 ]
-export const sourceName = (s) => (s === 'app' ? 'App' : (SOURCES.find(([k]) => k === s) || [, s])[1])
+export const sourceName = (s) => (s === 'app' ? 'App' : t((SOURCES.find(([k]) => k === s) || [, s])[1]))
 
-export const BOOKING_STATUS = {
+// Los textos se traducen al leerlos: BOOKING_STATUS[x] devuelve el texto en el idioma activo
+const translated = (o) => new Proxy(o, { get: (obj, k) => (typeof obj[k] === 'string' ? t(obj[k]) : obj[k]) })
+
+export const BOOKING_STATUS = translated({
   pending_payment: 'Pendiente de pago',
   confirmed: 'Confirmada',
   cancelled_by_diver: 'Cancelada por ti',
   cancelled_by_center: 'Cancelada por el centro',
-}
-export const TRIP_STATUS = {
+})
+export const TRIP_STATUS = translated({
   draft: 'Borrador',
   published: 'Publicada',
   cancelled_weather: 'Cancelada por meteo',
   completed: 'Completada',
-}
+})
 
 export const php = (n) => '₱' + Number(n || 0).toLocaleString('en-PH')
 
@@ -50,8 +55,8 @@ export function dayRange(ymd) {
 export const manilaToIso = (ymd, hm) => new Date(`${ymd}T${hm}:00+08:00`).toISOString()
 
 export const time = (iso) =>
-  new Intl.DateTimeFormat('es-ES', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+  new Intl.DateTimeFormat(locale(), { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 export const dayLabel = (ymd, opts = { weekday: 'short', day: 'numeric', month: 'short' }) =>
-  new Intl.DateTimeFormat('es-ES', { timeZone: TZ, ...opts }).format(new Date(ymd + 'T12:00:00+08:00'))
+  new Intl.DateTimeFormat(locale(), { timeZone: TZ, ...opts }).format(new Date(ymd + 'T12:00:00+08:00'))
 export const dateTime = (iso) =>
-  new Intl.DateTimeFormat('es-ES', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+  new Intl.DateTimeFormat(locale(), { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
