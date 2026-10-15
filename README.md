@@ -55,4 +55,3 @@ npm run dev        # http://localhost:5173
 - Buddies: emparejar buceadores con `seeks_buddy = true`.
 - Notificaciones (email/WhatsApp) al confirmar o cancelar.
 - Login con Google (la migración 006 ya lo prepara; falta activar el proveedor en Supabase).
-# app-buceo
