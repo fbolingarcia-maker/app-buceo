@@ -10,7 +10,7 @@ Piloto: Panglao (Bohol, Filipinas). Moneda: PHP. Hora: Asia/Manila.
 
 ```
 .github/workflows/deploy.yml   Publica en GitHub Pages en cada push a main
-supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–010)
+supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–011)
 supabase/functions/            Edge Functions de pago (crear-pago, paymongo-webhook)
 src/lib/                       Cliente Supabase, sesión, fechas/precios, router
 src/pages/                     Buceador: Explorar, Salida, Reservas, Bitacora, Inmersion · Centro: CentroPanel, CentroAgenda, CentroSalidas, CentroAjustes, NuevaSalida
@@ -28,6 +28,7 @@ npm run dev        # http://localhost:5173
 
 - Inglés y español: selector EN/ES en la cabecera, en el login y en el perfil (se recuerda en el navegador). Textos en `src/lib/en/*.js`.
 - Salidas: buscador por zona, centro o punto de buceo, filtro por zona y botón «📍 Cerca de mí» (ordena por distancia con la ubicación del móvil). Los centros guardan su ubicación GPS en *Centro → Datos*.
+- «¿Quién va?»: en cada salida se ve quién ha reservado ya (nombre e inicial, nivel, inmersiones, idiomas, país, «busca buddy», punto favorito y una frase). Cada buceador puede ocultarse desde su perfil.
 
 ## Dos perfiles
 

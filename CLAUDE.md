@@ -19,7 +19,7 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 
 ## Mapa
 - `src/pages/Explorar.jsx`: salidas por día (vista `published_trips`), búsqueda por zona/centro/punto y «Cerca de mí» (`src/lib/geo.js`).
-- `src/pages/Salida.jsx`: detalle de la salida y reserva (`book_trip`).
+- `src/pages/Salida.jsx`: detalle de la salida, «¿Quién va?» (`trip_divers()`: nombre corto, nivel, inmersiones, idiomas, país, bio; respeta `divers.show_on_trips`) y reserva (`book_trip`).
 - `src/pages/Reservas.jsx`: reservas del buceador; pago de la señal, el total o el resto (`crear-pago`, `confirm_payment_demo` en modo demo) y cancelación (`cancel_my_booking`).
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
 - `src/pages/Bitacora.jsx` / `Inmersion.jsx`: bitácora del buceador (tabla `dive_logs`, fotos en `dive_log_photos` + bucket privado `dive-photos/<user_id>/...`).
@@ -27,7 +27,7 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 - `src/pages/NuevaSalida.jsx`: crear o editar (`#/centro/salida/<id>`) una salida.
 - `src/lib/centro.js`: cálculo de plazas, dinero y consulta común de salidas para las pantallas del centro.
 - `src/pages/Centros.jsx`: directorio público de centros.
-- `supabase/migrations/`: esquema completo (001–010; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`).
+- `supabase/migrations/`: esquema completo (001–011; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`).
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 
