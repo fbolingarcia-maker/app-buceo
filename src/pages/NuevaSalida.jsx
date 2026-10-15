@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, manilaDate, addDays, manilaToIso, php } from '../lib/format'
 
-export default function NuevaSalida() {
+export default function NuevaSalida({ id }) {
   const { center } = useAuth()
   const [boats, setBoats] = useState([])
   const [sites, setSites] = useState([])
@@ -23,7 +23,28 @@ export default function NuevaSalida() {
     supabase.from('dive_sites').select('*').order('area').order('name').then(({ data }) => setSites(data || []))
   }, [center])
 
-  if (!center) return <div className="card">Primero registra tu centro en el <Link to="/perfil">perfil</Link>.</div>
+  // Modo edición: cargar la salida
+  const [loaded, setLoaded] = useState(!id)
+  const [hasBookings, setHasBookings] = useState(false)
+  useEffect(() => {
+    if (!id) return
+    supabase.from('trips').select('*, trip_sites(site_id, position), bookings(id, status)').eq('id', id).maybeSingle().then(({ data, error }) => {
+      if (error || !data) { setError(error ? errMsg(error) : 'Salida no encontrada'); return }
+      const hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }).format(new Date(data.departs_at))
+      const ts = (data.trip_sites || []).sort((a, b) => a.position - b.position)
+      setF({
+        boat_id: data.boat_id, date: manilaDate(new Date(data.departs_at)), hour: hm, num_dives: data.num_dives, min_level: data.min_level,
+        price_php: data.price_php, gear_rental_php: data.gear_rental_php, guides: data.guides, divers_per_guide: data.divers_per_guide,
+        seat_override: data.seat_override ?? '', blocked_seats: data.blocked_seats,
+        sites: Array.from({ length: data.num_dives }, (_, i) => ts.find((x) => x.position === i + 1)?.site_id || ''),
+        publish: data.status !== 'draft', status: data.status,
+      })
+      setHasBookings((data.bookings || []).some((b) => ['pending_payment', 'confirmed'].includes(b.status)))
+      setLoaded(true)
+    })
+  }, [id])
+
+  if (!center) return null
 
   const set = (k, num) => (e) => setF({ ...f, [k]: num ? (e.target.value === '' ? '' : +e.target.value) : e.target.value })
   const boat = boats.find((b) => b.id === f.boat_id)
@@ -33,33 +54,38 @@ export default function NuevaSalida() {
     e.preventDefault()
     setBusy(true); setError('')
     const departs_at = manilaToIso(f.date, f.hour)
-    if (new Date(departs_at) < new Date()) { setBusy(false); return setError('La fecha ya ha pasado') }
-    const { data: trip, error } = await supabase.from('trips').insert({
-      center_id: center.id, boat_id: f.boat_id, departs_at, num_dives: f.num_dives, min_level: f.min_level,
+    if (new Date(departs_at) < new Date() && !id) { setBusy(false); return setError('La fecha ya ha pasado') }
+    const fields = {
+      boat_id: f.boat_id, departs_at, num_dives: f.num_dives, min_level: f.min_level,
       price_php: f.price_php, gear_rental_php: f.gear_rental_php || 0, guides: f.guides, divers_per_guide: f.divers_per_guide,
       seat_override: f.seat_override === '' ? null : f.seat_override, blocked_seats: f.blocked_seats || 0,
-      status: f.publish ? 'published' : 'draft',
-    }).select().single()
+    }
+    if (!id || ['draft', 'published'].includes(f.status)) fields.status = f.publish ? 'published' : 'draft'
+    const { data: trip, error } = id
+      ? await supabase.from('trips').update(fields).eq('id', id).select().single()
+      : await supabase.from('trips').insert({ ...fields, center_id: center.id }).select().single()
     if (error) { setBusy(false); return setError(errMsg(error)) }
+    if (id) await supabase.from('trip_sites').delete().eq('trip_id', id)
     const ts = f.sites.slice(0, f.num_dives).map((site_id, i) => ({ trip_id: trip.id, site_id, position: i + 1 })).filter((x) => x.site_id)
     if (ts.length) {
       const { error: e2 } = await supabase.from('trip_sites').insert(ts)
       if (e2) { setBusy(false); return setError('Salida creada, pero falló guardar los puntos: ' + errMsg(e2)) }
     }
     setBusy(false)
-    go('/centro')
+    go(id ? '/centro/salidas' : '/centro/agenda?dia=' + f.date)
   }
 
   return (
     <>
-      <Link to="/centro" className="small">← Panel del centro</Link>
-      <h1 style={{ marginTop: 8 }}>Nueva salida</h1>
-      {boats.length === 0 ? (
-        <div className="card">Antes necesitas un barco. Ve a <Link to="/centro">Panel → Barcos y plazas</Link>.</div>
+      <Link to="/centro/salidas" className="small">← Salidas</Link>
+      <h1 style={{ marginTop: 8 }}>{id ? 'Editar salida' : 'Nueva salida'}</h1>
+      {id && hasBookings && <div className="msg err">Esta salida ya tiene reservas: los cambios de precio no afectan a las reservas hechas, pero avisa a los buceadores si cambias la hora o el barco.</div>}
+      {!loaded ? <p className="muted">{error || 'Cargando…'}</p> : boats.length === 0 ? (
+        <div className="card">Antes necesitas un barco. Ve a <Link to="/centro/ajustes">Mi centro → Barcos</Link>.</div>
       ) : (
         <form className="card" onSubmit={save}>
           <div className="grid2">
-            <div className="field"><label>Día</label><input type="date" required value={f.date} min={manilaDate()} onChange={set('date')} /></div>
+            <div className="field"><label>Día</label><input type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
             <div className="field"><label>Hora (Manila)</label><input type="time" required value={f.hour} onChange={set('hour')} /></div>
             <div className="field"><label>Barco</label><select value={f.boat_id} onChange={set('boat_id')}>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.capacity})</option>)}</select></div>
             <div className="field"><label>Inmersiones</label><select value={f.num_dives} onChange={(e) => {
@@ -87,7 +113,7 @@ export default function NuevaSalida() {
           <p className="small muted">Plazas operativas: <b>{operative}</b> · en la app: <b>{Math.max(0, operative - (f.blocked_seats || 0))}</b> · precio {php(f.price_php)}</p>
           <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> Publicar ya (si no, queda como borrador)</label>
           {error && <div className="msg err">{error}</div>}
-          <button className="btn block" disabled={busy}>{busy ? 'Guardando…' : 'Crear salida'}</button>
+          <button className="btn block" disabled={busy}>{busy ? 'Guardando…' : id ? 'Guardar cambios' : 'Crear salida'}</button>
         </form>
       )}
     </>
