@@ -19,12 +19,18 @@ App tipo Playtomic para salidas de buceo. Piloto en Panglao (Bohol, Filipinas). 
 ## Mapa
 - `src/pages/Explorar.jsx`: salidas por día (vista `published_trips`).
 - `src/pages/Salida.jsx`: detalle de la salida y reserva (`book_trip`).
-- `src/pages/Reservas.jsx`: reservas del buceador (`confirm_payment_demo`, `cancel_my_booking`).
+- `src/pages/Reservas.jsx`: reservas del buceador; pago de la señal, el total o el resto (`crear-pago`, `confirm_payment_demo` en modo demo) y cancelación (`cancel_my_booking`).
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
 - `src/pages/Centro.jsx`: panel del centro (agenda, reservas manuales, meteo, barcos, datos).
 - `src/pages/NuevaSalida.jsx`: crear una salida.
 - `src/pages/Centros.jsx`: directorio público de centros.
-- `supabase/migrations/`: esquema completo (001–007).
+- `supabase/migrations/`: esquema completo (001–008; 008 = pagos).
+- `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
+
+## Pagos
+- Señal mínima del 50 % (`deposit_php`) para confirmar la reserva; el resto se paga en la app o en efectivo en el centro (`record_cash_payment`).
+- Todo cobro pasa por la tabla `payments` y se aplica con `settle_payment()` (solo service_role).
+- `app_config.payments_mode`: `demo` (pago simulado) o `paymongo` (cobro real).
 
 ## Comprobar antes de hacer push
 - `npm run build` sin errores.
