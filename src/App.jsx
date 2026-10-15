@@ -16,6 +16,8 @@ import CentroAgenda from './pages/CentroAgenda'
 import CentroSalidas from './pages/CentroSalidas'
 import CentroAjustes from './pages/CentroAjustes'
 import RegistrarCentro from './pages/RegistrarCentro'
+import CentroInfo from './pages/CentroInfo'
+import Destino from './pages/Destino'
 
 function NeedLogin({ children }) {
   const { session } = useAuth()
@@ -62,6 +64,8 @@ export default function App() {
   else if (seg[0] === 'centro' && seg[1] === 'ajustes') page = <NeedCenter><CentroAjustes /></NeedCenter>
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
+  else if (seg[0] === 'c' && seg[1]) page = <CentroInfo id={seg[1]} />
+  else if (seg[0] === 'd' && seg[1]) page = <Destino name={decodeURIComponent(seg[1])} />
   else page = session && isCenter ? <NeedCenter><CentroPanel /></NeedCenter> : <Explorar />
 
   const tab = (to, icon, label, match) => (
@@ -100,7 +104,7 @@ export default function App() {
         ) : (
           <>
             {tab('/', '🌊', 'Salidas', home || seg[0] === 'salida')}
-            {tab('/centros', '📍', 'Centros', seg[0] === 'centros')}
+            {tab('/centros', '📍', 'Centros', seg[0] === 'centros' || seg[0] === 'c' || seg[0] === 'd')}
             {tab('/reservas', '🎟️', 'Reservas', seg[0] === 'reservas')}
             {tab('/bitacora', '📖', 'Bitácora', seg[0] === 'bitacora')}
             {tab('/perfil', '👤', 'Perfil', seg[0] === 'perfil' || seg[0] === 'login')}
