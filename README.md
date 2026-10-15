@@ -1,4 +1,4 @@
-# App Buceo · Panglao
+# DiveSlot · Panglao
 
 Reserva de salidas de buceo, al estilo Playtomic. Los buceadores ven las salidas del día y reservan plaza. Los centros publican salidas, controlan las plazas (app + WhatsApp/mostrador) y cancelan por meteo con reembolso automático.
 
@@ -10,10 +10,10 @@ Piloto: Panglao (Bohol, Filipinas). Moneda: PHP. Hora: Asia/Manila.
 
 ```
 .github/workflows/deploy.yml   Publica en GitHub Pages en cada push a main
-supabase/migrations/           Esquema, lógica de reservas, seguridad y pagos (001–008)
+supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–009)
 supabase/functions/            Edge Functions de pago (crear-pago, paymongo-webhook)
 src/lib/                       Cliente Supabase, sesión, fechas/precios, router
-src/pages/                     Explorar, Salida, Reservas, Perfil, Login, Centro, NuevaSalida, Centros
+src/pages/                     Buceador: Explorar, Salida, Reservas, Bitacora, Inmersion · Centro: CentroPanel, CentroAgenda, CentroSalidas, CentroAjustes, NuevaSalida
 CLAUDE.md                      Contexto para trabajar con Claude
 ```
 
@@ -24,10 +24,18 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
+## Dos perfiles
+
+Al crear la cuenta se elige **buceador** o **centro de buceo** (`divers.account_type`).
+
+- **Buceador**: Salidas · Centros · Reservas · **Bitácora** (inmersiones con datos técnicos, valoración, comentarios y fotos privadas en Storage `dive-photos`) · Perfil.
+- **Centro**: **Panel** (KPIs del día, avisos, próximos 7 días) · **Agenda** (manifiesto por salida, check-in, cobros en efectivo, reservas manuales, meteo) · **Salidas** (crear, editar, duplicar en varios días, publicar, completar, eliminar) · **Centro** (barcos y datos) · Perfil.
+
 ## Probar
 
 - **Como buceador**: crea una cuenta, ve a Perfil, añade una certificación, elige una salida en Salidas y reserva. En Reservas elige pagar la señal (50 %) o el total, con GCash o tarjeta. Mientras `payments_mode = 'demo'`, el pago es simulado.
-- **Como centro**: en Perfil usa *Registrar mi centro* (si el nombre coincide con uno del directorio, se reclama esa ficha). Después ve a *Mi centro*, añade un barco en *Barcos y plazas* y crea una salida con *+ Salida*. Desde la agenda puedes añadir reservas manuales, verificar certificaciones y cancelar por meteo.
+- **Como centro**: crea la cuenta eligiendo «Soy centro de buceo» y da de alta el centro (si el nombre coincide con uno del directorio, se reclama esa ficha). En *Centro* añade un barco y crea salidas desde *Salidas*. En la *Agenda* tienes el manifiesto, check-in, cobros y cancelación por meteo.
+- **Bitácora**: tras una salida, el buceador ve «Registra tus inmersiones» con los puntos ya rellenados.
 - Los centros "Demo · …" tienen salidas para los próximos 7 días, que se regeneran solas cada noche (pg_cron).
 
 ## Reglas de negocio (en la base de datos)
