@@ -141,4 +141,5 @@ export default {
   'Tu ficha pública: compártela con tus clientes para que reserven en la app.': 'Your public page: share it with your customers so they book in the app.',
   'Ver ficha': 'View page',
   'Exportar CSV': 'Export CSV',
+  'Más información': 'More info',
 }
