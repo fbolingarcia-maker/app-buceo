@@ -39,8 +39,10 @@ export function AuthProvider({ children }) {
     return () => sub.subscription.unsubscribe()
   }, [loadProfile])
 
+  // Perfil: cuenta de centro (gestiona un centro o se registró como centro) o de buceador
+  const isCenter = !!center || diver?.account_type === 'center' || session?.user?.user_metadata?.account_type === 'center'
   const value = {
-    session, user: session?.user || null, diver, center, recovering, setRecovering,
+    session, user: session?.user || null, diver, center, isCenter, recovering, setRecovering,
     refresh: () => loadProfile(session),
     signOut: () => supabase.auth.signOut(),
   }
