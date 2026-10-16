@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
-import { manilaDate, addDays, dayLabel, time, php } from '../lib/format'
+import { manilaDate, addDays, dayLabel, time, php, sourceName } from '../lib/format'
 import { seatsSummary, money, holds, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
 
@@ -47,10 +47,13 @@ export default function CentroPanel() {
   const drafts = next.filter((tr) => tr.status === 'draft')
   const toClose = trips.filter((tr) => tr.status === 'published' && new Date(tr.departs_at) < new Date(Date.now() - 6 * 3600000))
   const noSites = next.filter((tr) => live(tr) && !(tr.trip_sites || []).length)
+  const recent = trips.flatMap((tr) => (tr.bookings || []).map((b) => ({ ...b, trip: tr })))
+    .filter((b) => Date.now() - new Date(b.created_at).getTime() < 3 * 86400000)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 6)
   const balanceDue = php(balances.reduce((s, b) => s + b.amount_php - b.paid_php, 0))
   const alerts = [
-    unpaid.length && [unpaid.length === 1 ? t('{n} reserva pendiente de pagar la señal', { n: 1 }) : t('{n} reservas pendientes de pagar la señal', { n: unpaid.length }), '/centro/agenda'],
-    balances.length && [(balances.length === 1 ? t('{n} reserva con resto pendiente ({amount})', { n: 1, amount: balanceDue }) : t('{n} reservas con resto pendiente ({amount})', { n: balances.length, amount: balanceDue })), '/centro/agenda'],
+    unpaid.length && [unpaid.length === 1 ? t('{n} reserva pendiente de pagar la señal', { n: 1 }) : t('{n} reservas pendientes de pagar la señal', { n: unpaid.length }), '/centro/informes?ver=cobros'],
+    balances.length && [(balances.length === 1 ? t('{n} reserva con resto pendiente ({amount})', { n: 1, amount: balanceDue }) : t('{n} reservas con resto pendiente ({amount})', { n: balances.length, amount: balanceDue })), '/centro/informes?ver=cobros'],
     unverified.length && [unverified.length === 1 ? t('{n} buceador con certificación sin verificar', { n: 1 }) : t('{n} buceadores con certificación sin verificar', { n: unverified.length }), '/centro/agenda'],
     drafts.length && [drafts.length === 1 ? t('{n} salida en borrador sin publicar', { n: 1 }) : t('{n} salidas en borrador sin publicar', { n: drafts.length }), '/centro/salidas'],
     toClose.length && [toClose.length === 1 ? t('{n} salida pasada sin marcar como completada', { n: 1 }) : t('{n} salidas pasadas sin marcar como completadas', { n: toClose.length }), '/centro/salidas'],
@@ -99,6 +102,25 @@ export default function CentroPanel() {
         </>
       )}
 
+      {recent.length > 0 && (
+        <>
+          <h2>{t('Últimas reservas')}</h2>
+          <div className="card">
+            {recent.map((b) => (
+              <Link key={b.id} to={'/centro/agenda?dia=' + dayOf(b.trip.departs_at)} className="row between alert-row" style={{ gap: 8 }}>
+                <span style={{ minWidth: 0 }}>
+                  <b>{b.divers?.full_name || b.guest_name || t('Sin nombre')}</b>{b.seats > 1 ? ' ×' + b.seats : ''}
+                  <span className="small muted"> · {dayLabel(dayOf(b.trip.departs_at))} {time(b.trip.departs_at)} · {sourceName(b.source)}</span>
+                </span>
+                <span className={b.status === 'confirmed' ? 'pill ok' : b.status === 'pending_payment' ? 'pill warn' : 'pill bad'} style={{ whiteSpace: 'nowrap' }}>
+                  {b.status === 'confirmed' ? t('Confirmada') : b.status === 'pending_payment' ? t('Sin pagar') : t('Cancelada')}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+
       <h2>{t('Próximos 7 días')}</h2>
       <div className="card" style={{ padding: 0 }}>
         <table>
@@ -119,7 +141,7 @@ export default function CentroPanel() {
 
       <div className="grid2" style={{ marginTop: 12 }}>
         <Link to="/centro/salidas" className="btn ghost">{t('Gestionar salidas')}</Link>
-        <Link to="/centro/ajustes" className="btn ghost">{t('Barcos y datos')}</Link>
+        <Link to="/centro/informes" className="btn ghost">{t('Informes y clientes')}</Link>
       </div>
       <div className="card row between wrap" style={{ marginTop: 12, gap: 8 }}>
         <span className="small">{t('Tu ficha pública: compártela con tus clientes para que reserven en la app.')}</span>
