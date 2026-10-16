@@ -5,9 +5,36 @@ import { LEVELS, levelName, levelRank, manilaDate, addDays, dayLabel, time, php 
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
 import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings, loadSiteAreas } from '../lib/places'
+import { useAuth } from '../lib/auth'
 
 const DAYS = 8
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
+
+// Buceadores apuntados a una salida: iniciales, nombre y nivel (los perfiles visibles) y el resto como número
+function Apuntados({ trip }) {
+  const { session } = useAuth()
+  const [d, setD] = useState(null)
+  useEffect(() => {
+    if (trip.booked_seats > 0) supabase.rpc('trip_divers', { p_trip: trip.id }).then(({ data }) => setD(data || null))
+  }, [trip.id, trip.booked_seats, session])
+  if (!trip.booked_seats) return <span className="small muted">{t('Aún no hay nadie apuntado')}</span>
+  const divers = d?.divers || []
+  const shownDivers = divers.slice(0, 3)
+  const rest = trip.booked_seats - shownDivers.reduce((n, x) => n + (x.seats || 1), 0)
+  return (
+    <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
+      <div className="faces" aria-hidden="true">
+        {shownDivers.map((x, i) => <span key={i} className="face">{(x.name || '?').charAt(0).toUpperCase()}</span>)}
+        {(!shownDivers.length || rest > 0) && <span className="face more">{shownDivers.length ? '+' + rest : '👥'}</span>}
+      </div>
+      <span className="small muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {shownDivers.length
+          ? shownDivers.map((x) => x.name + (x.level ? ' · ' + levelName(x.level) : '')).join(', ') + (rest > 0 ? ' ' + t('y {n} más', { n: rest }) : '')
+          : trip.booked_seats === 1 ? t('👥 1 apuntado') : t('👥 {n} apuntados', { n: trip.booked_seats })}
+      </span>
+    </div>
+  )
+}
 
 export default function Explorar() {
   const today = manilaDate()
@@ -74,6 +101,25 @@ export default function Explorar() {
   let shown = filtered.filter((tr) => manilaDate(new Date(tr.departs_at)) === day)
   if (sort === 'price') shown = [...shown].sort((a, b) => a.price_php - b.price_php)
   else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
+  // Salidas del día agrupadas por centro (como los clubs de Playtomic: primero el centro, luego su disponibilidad)
+  const groups = Object.values(shown.reduce((m, tr) => {
+    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, trips: [] })
+    g.trips.push(tr)
+    return m
+  }, {})).map((g) => {
+    g.trips.sort((a, b) => a.departs_at.localeCompare(b.departs_at))
+    g.seats = g.trips.reduce((n, x) => n + Math.max(0, x.available_seats), 0)
+    g.booked = g.trips.reduce((n, x) => n + (x.booked_seats || 0), 0)
+    g.min = Math.min(...g.trips.map((x) => x.price_php))
+    return g
+  })
+  if (sort === 'price') groups.sort((a, b) => a.min - b.min)
+  else if (sort === 'near' && here) groups.sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9))
+  else groups.sort((a, b) => a.trips[0].departs_at.localeCompare(b.trips[0].departs_at))
+  const [open, setOpen] = useState(() => new Set())
+  const toggle = (id) => setOpen((o) => { const n = new Set(o); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const isOpen = (id) => open.has(id) || groups.length === 1
+
   // Primera visita: abre el primer día que tenga salidas (hoy si aún quedan)
   const [autoDay, setAutoDay] = useState(!savedDay)
   useEffect(() => {
@@ -171,26 +217,68 @@ export default function Explorar() {
           </div>
         </div>
       )}
-      {shown.map((tr) => (
-        <Link key={tr.id} to={'/salida/' + tr.id} className={tr.available_seats > 0 ? 'card trip' : 'card trip full'}>
-          <div className="row between">
-            <div className="big">{time(tr.departs_at)}</div>
-            <div className="big">{php(tr.price_php)}</div>
-          </div>
-          <div className="row between" style={{ marginTop: 2, gap: 8 }}>
-            <span style={{ fontWeight: 600 }}>{tr.center_name}{ratings[tr.center_id] && <span className="small" style={{ fontWeight: 400 }}> · ⭐ {ratings[tr.center_id].rating}</span>}</span>
-            <span className="muted small" style={{ textAlign: 'right' }}>📍 {destOf(tr)}{tr.center_province ? ', ' + tr.center_province : ''}{tr.km != null ? ' · ' + kmLabel(tr.km) : ''}</span>
-          </div>
-          <div className="muted small">{t('{n} inmersiones', { n: tr.num_dives })} · {(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</div>
-          <div className="row wrap" style={{ marginTop: 8 }}>
-            <span className="pill">{t('Mín. {nivel}', { nivel: levelName(tr.min_level) })}</span>
-            <span className={tr.available_seats > 2 ? 'pill ok' : tr.available_seats > 0 ? 'pill warn' : 'pill bad'}>
-              {tr.available_seats > 0 ? t('{n} plazas', { n: tr.available_seats }) : t('Completa')}
-            </span>
-            {tr.booked_seats > 0 && <span className="pill">{tr.booked_seats === 1 ? t('👥 1 apuntado') : t('👥 {n} apuntados', { n: tr.booked_seats })}</span>}
-            {tr.boat_name && <span className="muted small">⛵ {tr.boat_name}</span>}
-          </div>
-        </Link>
+      {groups.length > 0 && (
+        <p className="small muted" style={{ margin: '4px 0 8px' }}>
+          {groups.length === 1 ? t('1 centro con salidas') : t('{n} centros con salidas', { n: groups.length })} · {shown.length === 1 ? t('1 salida') : t('{n} salidas', { n: shown.length })}
+        </p>
+      )}
+      {groups.map((g) => (
+        <div key={g.id} className={isOpen(g.id) ? 'card center-group open' : 'card center-group'}>
+          <button type="button" className="center-head" aria-expanded={isOpen(g.id)} onClick={() => toggle(g.id)}>
+            <div className="row between" style={{ gap: 8, alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>{g.name}{ratings[g.id] && <span className="small" style={{ fontWeight: 400 }}> · ⭐ {ratings[g.id].rating}</span>}</div>
+                <div className="muted small">📍 {g.dest}{g.prov ? ', ' + g.prov : ''}{g.km != null ? ' · ' + kmLabel(g.km) : ''}</div>
+              </div>
+              <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <div className="small muted">{t('desde')}</div>
+                <div className="big">{php(g.min)}</div>
+              </div>
+            </div>
+            <div className="slots">
+              {g.trips.map((tr) => (
+                <span key={tr.id} className={tr.available_seats > 0 ? 'slot' : 'slot full'}>
+                  <b>{time(tr.departs_at)}</b> <small>{tr.available_seats > 0 ? t('{n} libres', { n: tr.available_seats }) : t('Completa')}</small>
+                </span>
+              ))}
+            </div>
+            <div className="row between small" style={{ marginTop: 8, gap: 8 }}>
+              <span className="muted">
+                {g.trips.length === 1 ? t('1 salida') : t('{n} salidas', { n: g.trips.length })} · {g.seats === 1 ? t('1 plaza libre') : t('{n} plazas libres', { n: g.seats })}
+                {g.booked > 0 ? ' · ' + (g.booked === 1 ? t('👥 1 apuntado') : t('👥 {n} apuntados', { n: g.booked })) : ''}
+              </span>
+              <span className="chev" aria-hidden="true">{isOpen(g.id) ? '▲' : '▼'}</span>
+            </div>
+          </button>
+          {isOpen(g.id) && (
+            <div className="center-trips">
+              {g.trips.map((tr) => (
+                <Link key={tr.id} to={'/salida/' + tr.id} className={tr.available_seats > 0 ? 'trip-row' : 'trip-row full'}>
+                  <div className="row between" style={{ gap: 8 }}>
+                    <div className="big">{time(tr.departs_at)}</div>
+                    <div><b>{php(tr.price_php)}</b></div>
+                  </div>
+                  <div className="muted small">{t('{n} inmersiones', { n: tr.num_dives })} · {(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</div>
+                  <div className="row wrap" style={{ marginTop: 6, gap: 6 }}>
+                    <span className="pill">{t('Mín. {nivel}', { nivel: levelName(tr.min_level) })}</span>
+                    <span className={tr.available_seats > 2 ? 'pill ok' : tr.available_seats > 0 ? 'pill warn' : 'pill bad'}>
+                      {tr.available_seats > 0 ? t('{n} plazas', { n: tr.available_seats }) : t('Completa')}
+                    </span>
+                    {tr.boat_name && <span className="muted small">⛵ {tr.boat_name}</span>}
+                  </div>
+                  <div className="row between" style={{ marginTop: 8, gap: 8, flexWrap: 'nowrap' }}>
+                    <Apuntados trip={tr} />
+                    <span className="btn small" style={{ flex: '0 0 auto' }}>{tr.available_seats > 0 ? t('Reservar') : t('Ver')}</span>
+                  </div>
+                </Link>
+              ))}
+              <div className="row wrap small" style={{ gap: 14, marginTop: 4 }}>
+                <Link to={'/c/' + g.id}>{t('Ficha del centro')}</Link>
+                {g.dest && <Link to={'/d/' + encodeURIComponent(g.dest)}>{t('Guía del destino')}</Link>}
+              </div>
+            </div>
+          )}
+        </div>
       ))}
       {trips && <p className="small muted center" style={{ marginTop: 16 }}>{t('¿Tu centro no aparece?')} <Link to="/centros">{t('Ver el directorio de centros')}</Link></p>}
     </>
