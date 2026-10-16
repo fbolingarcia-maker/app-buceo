@@ -145,3 +145,9 @@ a.card.trip.full { opacity: .6; }
   background: color-mix(in srgb, var(--brand) 18%, var(--card)); color: var(--brand); border: 2px solid var(--card); margin-left: -7px; }
 .face:first-child { margin-left: 0; }
 .face.more { background: var(--line); color: var(--muted); font-size: 11px; }
+.flags { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; }
+.flag { border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); object-fit: cover; }
+.lang-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.lang-pick label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 99px; font-size: 13px; cursor: pointer; }
+.lang-pick label.on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); }
+.lang-pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
