@@ -14,6 +14,7 @@ import Inmersion from './pages/Inmersion'
 import CentroPanel from './pages/CentroPanel'
 import CentroAgenda from './pages/CentroAgenda'
 import CentroSalidas from './pages/CentroSalidas'
+import CentroInformes from './pages/CentroInformes'
 import CentroAjustes from './pages/CentroAjustes'
 import RegistrarCentro from './pages/RegistrarCentro'
 import CentroInfo from './pages/CentroInfo'
@@ -78,6 +79,7 @@ export default function App() {
   else if (seg[0] === 'centro' && seg[1] === 'salida' && seg[2]) page = <NeedCenter><NuevaSalida id={seg[2]} /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'agenda') page = <NeedCenter><CentroAgenda /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'salidas') page = <NeedCenter><CentroSalidas /></NeedCenter>
+  else if (seg[0] === 'centro' && seg[1] === 'informes') page = <NeedCenter><CentroInformes /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'ajustes') page = <NeedCenter><CentroAjustes /></NeedCenter>
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
@@ -115,6 +117,7 @@ export default function App() {
             {tab('/centro', '📊', 'Panel', home || (seg[0] === 'centro' && !seg[1]))}
             {tab('/centro/agenda', '📅', 'Agenda', seg[1] === 'agenda')}
             {tab('/centro/salidas', <DiverIcon />, 'Salidas', ['salidas', 'nueva', 'salida'].includes(seg[1]))}
+            {tab('/centro/informes', '📈', 'Informes', seg[1] === 'informes')}
             {tab('/centro/ajustes', '⚙️', 'Centro', seg[1] === 'ajustes')}
             {tab('/perfil', '👤', 'Perfil', seg[0] === 'perfil')}
           </>

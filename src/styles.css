@@ -151,3 +151,4 @@ a.card.trip.full { opacity: .6; }
 .lang-pick label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 99px; font-size: 13px; cursor: pointer; }
 .lang-pick label.on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); }
 .lang-pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--brand); font: inherit; cursor: pointer; text-align: left; }
