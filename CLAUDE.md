@@ -31,7 +31,7 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Valoraciones: `center_ratings()` (media de la bitácora compartida, solo datos agregados), cargadas con `loadRatings()`.
 - `src/lib/DestinoSelect.jsx`: selector de destino (alta del centro y ajustes).
 - Datos: `destinations` (destino, provincia, grupo de islas, coordenadas), `centers.destination/province`, `dive_sites.province/highlight/highlight_es` (descripción en inglés y español).
-- `supabase/migrations/`: esquema completo (001–014; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos, 013 = valoraciones públicas, 014 = descripciones de puntos en español).
+- `supabase/migrations/`: esquema completo (001–015; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos, 013 = valoraciones públicas, 014 = descripciones de puntos en español, 015 = `boats.show_to_divers`: el centro decide si los buceadores ven el barco; si no, `published_trips.boat_name` es null).
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 

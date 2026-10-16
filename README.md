@@ -10,7 +10,7 @@ Cobertura: toda Filipinas (28 destinos: Bohol, Cebu, Negros, Siquijor, Boracay, 
 
 ```
 .github/workflows/deploy.yml   Publica en GitHub Pages en cada push a main
-supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–014)
+supabase/migrations/           Esquema, reservas, seguridad, pagos, perfiles y bitácora (001–015)
 supabase/functions/            Edge Functions de pago (crear-pago, paymongo-webhook)
 src/lib/                       Cliente Supabase, sesión, fechas/precios, router
 src/pages/                     Buceador: Explorar, Salida, Reservas, Bitacora, Inmersion · Centro: CentroPanel, CentroAgenda, CentroSalidas, CentroAjustes, NuevaSalida
