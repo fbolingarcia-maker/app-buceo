@@ -24,6 +24,7 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
 - `src/pages/Bitacora.jsx` / `Inmersion.jsx`: bitácora del buceador (tabla `dive_logs`, fotos en `dive_log_photos` + bucket privado `dive-photos/<user_id>/...`).
 - `src/pages/CentroPanel.jsx`: cuadro de mandos del centro. `CentroAgenda.jsx`: manifiesto por día (check-in `set_checkin`, cobros, reservas manuales, meteo). `CentroSalidas.jsx`: gestión de salidas (editar, duplicar, publicar, completar). `CentroAjustes.jsx`: barcos y datos. `RegistrarCentro.jsx`: alta del centro.
+- `src/pages/CentroInformes.jsx` (`#/centro/informes?ver=resumen|cobros|clientes|movimientos`): seguimiento del centro. Resumen por periodo (salidas, ocupación, facturado/cobrado/pendiente, origen de las reservas, ocupación por día y horario, puntos más usados), cobros pendientes (próximos y atrasados), clientes (historial, gasto, repetidores, email) y movimientos (tabla `payments`). Todo exportable a CSV (`src/lib/csv.js`). El Panel muestra además las últimas reservas (72 h).
 - `src/pages/NuevaSalida.jsx`: crear o editar (`#/centro/salida/<id>`) una salida.
 - `src/lib/centro.js`: cálculo de plazas, dinero y consulta común de salidas para las pantallas del centro.
 - `src/pages/Centros.jsx`: directorio público de centros de toda Filipinas, agrupado por destino y filtrable por región.
