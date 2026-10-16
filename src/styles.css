@@ -125,3 +125,23 @@ a.card.trip.full { opacity: .6; }
 .card.skeleton div:nth-child(3) { width: 60%; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .card.skeleton div { animation: none; } a.card.trip { transition: none; } }
+
+/* Salidas agrupadas por centro (primero el centro, luego su disponibilidad) */
+.card.center-group { padding: 0; overflow: hidden; }
+.center-head { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 14px; cursor: pointer; color: inherit; font: inherit; }
+.center-head:hover { background: color-mix(in srgb, var(--brand) 4%, transparent); }
+.center-group.open .center-head { border-bottom: 1px solid var(--line); }
+.slots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.slot { border: 1px solid var(--brand); color: var(--brand); border-radius: 8px; padding: 4px 9px; font-size: 13px; }
+.slot small { color: var(--muted); font-size: 11px; }
+.slot.full { border-color: var(--line); color: var(--muted); text-decoration: line-through; }
+.chev { color: var(--muted); font-size: 11px; }
+.center-trips { padding: 0 14px 14px; }
+.trip-row { display: block; color: inherit; text-decoration: none; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.trip-row:hover .big { color: var(--brand); }
+.trip-row.full { opacity: .6; }
+.faces { display: flex; flex: 0 0 auto; }
+.face { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+  background: color-mix(in srgb, var(--brand) 18%, var(--card)); color: var(--brand); border: 2px solid var(--card); margin-left: -7px; }
+.face:first-child { margin-left: 0; }
+.face.more { background: var(--line); color: var(--muted); font-size: 11px; }
