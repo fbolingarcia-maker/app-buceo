@@ -142,4 +142,6 @@ export default {
   'Ver ficha': 'View page',
   'Exportar CSV': 'Export CSV',
   'Más información': 'More info',
+  'Mostrar el nombre del barco a los buceadores': 'Show the boat name to divers',
+  'Los barcos sirven para organizar tus salidas y su capacidad. Tú decides si los buceadores ven el nombre del barco.': 'Boats help you organise your trips and their capacity. You decide whether divers see the boat name.',
 }
