@@ -3,6 +3,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { t } from '../lib/i18n'
 import DestinoSelect from '../lib/DestinoSelect'
+import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
 
 export default function CentroAjustes() {
   const { center, refresh } = useAuth()
@@ -60,11 +61,30 @@ function Barcos({ center }) {
   )
 }
 
+// Selector de idiomas con banderas
+function LangPicker({ label, value, onChange }) {
+  const toggle = (code) => onChange(value.includes(code) ? value.filter((c) => c !== code) : [...value, code])
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <div className="lang-pick">
+        {CENTER_LANGS.map((l) => (
+          <label key={l.code} className={value.includes(l.code) ? 'on' : ''}>
+            <input type="checkbox" checked={value.includes(l.code)} onChange={() => toggle(l.code)} />
+            <FlagImg code={l.code} size={18} /> {langName(l.code)}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Datos({ center, refresh }) {
   const [f, setF] = useState({
     name: center.name || '', phone: center.phone || '', gcash_number: center.gcash_number || '',
     default_divers_per_guide: center.default_divers_per_guide || 4, locality: center.locality || '', website: center.website || '',
     lat: center.lat ?? null, lng: center.lng ?? null, destination: center.destination || '', province: center.province || '',
+    languages: center.languages || [], course_languages: center.course_languages || [],
   })
   const [locating, setLocating] = useState(false)
   const [gps, setGps] = useState(false) // ubicación tomada con el GPS del móvil
@@ -101,6 +121,8 @@ function Datos({ center, refresh }) {
         <div className="field"><label>{t('Playa / barrio (opcional)')}</label><input placeholder={t('p. ej. Alona Beach')} value={f.locality} onChange={set('locality')} /></div>
         <div className="field"><label>{t('Buceadores por guía')}</label><input type="number" min="1" max="10" value={f.default_divers_per_guide} onChange={set('default_divers_per_guide')} /></div>
       </div>
+      <LangPicker label={t('Idiomas en los que atendéis')} value={f.languages} onChange={(v) => setF((x) => ({ ...x, languages: v }))} />
+      <LangPicker label={t('Idiomas en los que dais cursos')} value={f.course_languages} onChange={(v) => setF((x) => ({ ...x, course_languages: v }))} />
       <div className="field"><label>{t('Web')}</label><input type="url" placeholder="https://" value={f.website} onChange={set('website')} /></div>
       <div className="field">
         <label>{t('Ubicación en el mapa')}</label>

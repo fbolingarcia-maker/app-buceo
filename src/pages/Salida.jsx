@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { levelName, levelRank, dateTime, php } from '../lib/format'
 import { t, getLang } from '../lib/i18n'
+import { Flags } from '../lib/langs'
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
@@ -75,7 +76,7 @@ export default function Salida({ id }) {
       if (error) setError(errMsg(error))
       setTrip(data || false)
       if (data) {
-        supabase.from('centers').select('name, phone, locality, website, destination, province').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
+        supabase.from('centers').select('name, phone, locality, website, destination, province, languages, course_languages').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
         if (data.sites?.length) supabase.from('dive_sites').select('name, min_depth_m, max_depth_m, highlight, highlight_es, recommended_min').in('name', data.sites).then(({ data }) => setSiteInfo(data || []))
       }
     })
@@ -151,7 +152,7 @@ export default function Salida({ id }) {
       <div className="card">
         <div className="row between wrap" style={{ gap: 8 }}>
           <div>
-            <Link to={'/c/' + trip.center_id}><b>{trip.center_name}</b></Link>
+            <Link to={'/c/' + trip.center_id}><b>{trip.center_name}</b></Link> <Flags codes={center?.languages} />
             <div className="small muted">📍 {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}
               {(center?.destination || trip.center_destination) && <> · <Link to={'/d/' + encodeURIComponent(center?.destination || trip.center_destination)}>{t('Guía del destino')}</Link></>}
             </div>

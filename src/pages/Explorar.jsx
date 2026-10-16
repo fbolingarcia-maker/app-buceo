@@ -6,6 +6,7 @@ import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
 import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings, loadSiteAreas } from '../lib/places'
 import { useAuth } from '../lib/auth'
+import { Flags } from '../lib/langs'
 
 const DAYS = 8
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
@@ -103,7 +104,7 @@ export default function Explorar() {
   else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
   // Salidas del día agrupadas por centro (como los clubs de Playtomic: primero el centro, luego su disponibilidad)
   const groups = Object.values(shown.reduce((m, tr) => {
-    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, trips: [] })
+    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, langs: tr.center_languages || [], trips: [] })
     g.trips.push(tr)
     return m
   }, {})).map((g) => {
@@ -229,6 +230,7 @@ export default function Explorar() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 17 }}>{g.name}{ratings[g.id] && <span className="small" style={{ fontWeight: 400 }}> · ⭐ {ratings[g.id].rating}</span>}</div>
                 <div className="muted small">📍 {g.dest}{g.prov ? ', ' + g.prov : ''}{g.km != null ? ' · ' + kmLabel(g.km) : ''}</div>
+                {g.langs.length > 0 && <div style={{ marginTop: 4 }}><Flags codes={g.langs} size={18} /></div>}
               </div>
               <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <div className="small muted">{t('desde')}</div>

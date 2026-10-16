@@ -4,6 +4,7 @@ import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition } from '../lib/geo'
 import { loadDestinations, GROUPS, loadRatings } from '../lib/places'
 import { Link } from '../lib/router'
+import { Flags } from '../lib/langs'
 
 export default function Centros() {
   const [list, setList] = useState(null)
@@ -25,7 +26,7 @@ export default function Centros() {
   useEffect(() => {
     loadDestinations().then(setDests)
     loadRatings().then(setRatings)
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url')
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url, languages')
       .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%').order('name')
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setList(data || []) })
   }, [])
@@ -69,7 +70,7 @@ export default function Centros() {
           {byDest[z].map((c) => (
             <div key={c.id} className="card">
               <div className="row between" style={{ gap: 8 }}>
-                <Link to={'/c/' + c.id} style={{ color: 'inherit' }}><b>{c.name}</b>{ratings[c.id] && <span className="small"> · ⭐ {ratings[c.id].rating}</span>}</Link>
+                <Link to={'/c/' + c.id} style={{ color: 'inherit' }}><b>{c.name}</b> <Flags codes={c.languages} />{ratings[c.id] && <span className="small"> · ⭐ {ratings[c.id].rating}</span>}</Link>
                 {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
               </div>
               {c.locality && c.locality !== z && <div className="small muted">{c.locality}</div>}

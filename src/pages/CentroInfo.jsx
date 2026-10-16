@@ -4,6 +4,7 @@ import { Link } from '../lib/router'
 import { t } from '../lib/i18n'
 import { dateTime, levelName, php } from '../lib/format'
 import { loadRatings } from '../lib/places'
+import { Flags, langName } from '../lib/langs'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
 export default function CentroInfo({ id }) {
@@ -13,7 +14,7 @@ export default function CentroInfo({ id }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url').eq('id', id).maybeSingle()
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages').eq('id', id).maybeSingle()
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setC(data || false) })
     supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(20)
       .then(({ data }) => setTrips(data || []))
@@ -37,6 +38,13 @@ export default function CentroInfo({ id }) {
         {rating && <span className="pill ok">⭐ {rating.rating} · {rating.reviews === 1 ? t('1 valoración') : t('{n} valoraciones', { n: rating.reviews })}</span>}
         {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
       </div>
+
+      {(c.languages?.length > 0 || c.course_languages?.length > 0) && (
+        <div className="card stack small">
+          {c.languages?.length > 0 && <div className="row between" style={{ gap: 8 }}><span className="muted">{t('Atienden en')}</span><span><Flags codes={c.languages} size={20} /> {c.languages.map(langName).join(', ')}</span></div>}
+          {c.course_languages?.length > 0 && <div className="row between" style={{ gap: 8 }}><span className="muted">{t('Cursos en')}</span><span><Flags codes={c.course_languages} size={20} /> {c.course_languages.map(langName).join(', ')}</span></div>}
+        </div>
+      )}
 
       <div className="card row wrap" style={{ gap: 8 }}>
         {c.phone && <a className="btn small ghost" href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
