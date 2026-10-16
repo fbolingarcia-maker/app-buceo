@@ -12,7 +12,8 @@ const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
 export default function Explorar() {
   const today = manilaDate()
   const days = Array.from({ length: DAYS }, (_, i) => addDays(today, i))
-  const [day, setDay] = useState(() => { const d = ss('day'); return d && d >= today && d < addDays(today, DAYS) ? d : addDays(today, 1) })
+  const savedDay = ss('day')
+  const [day, setDay] = useState(() => (savedDay && savedDay >= today && savedDay < addDays(today, DAYS) ? savedDay : addDays(today, 1)))
   const [level, setLevel] = useState('all')
   const [trips, setTrips] = useState(null)
   const [dests, setDests] = useState([])
@@ -73,6 +74,14 @@ export default function Explorar() {
   let shown = filtered.filter((tr) => manilaDate(new Date(tr.departs_at)) === day)
   if (sort === 'price') shown = [...shown].sort((a, b) => a.price_php - b.price_php)
   else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
+  // Primera visita: abre el primer día que tenga salidas (hoy si aún quedan)
+  const [autoDay, setAutoDay] = useState(!savedDay)
+  useEffect(() => {
+    if (!autoDay || !trips) return
+    setAutoDay(false)
+    if (!perDay[day]) { const first = days.find((d) => perDay[d]); if (first) setDay(first) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trips, autoDay])
   const nextDay = days.find((d) => d > day && perDay[d]) || days.find((d) => perDay[d])
   const nearest = here ? Math.min(...filtered.map((tr) => tr.km ?? 1e9)) : null
 
@@ -148,7 +157,7 @@ export default function Explorar() {
       </div>
 
       {error && <div className="msg err">{error}</div>}
-      {trips === null && <p className="muted">{t('Cargando…')}</p>}
+      {trips === null && [0, 1, 2].map((i) => <div key={i} className="card skeleton" aria-hidden="true"><div /><div /><div /></div>)}
       {trips && shown.length === 0 && (
         <div className="card center muted">
           {place || q ? t('No hay salidas que coincidan con tu búsqueda este día.') : t('No hay salidas para este día. Prueba otro día.')}
@@ -163,7 +172,7 @@ export default function Explorar() {
         </div>
       )}
       {shown.map((tr) => (
-        <Link key={tr.id} to={'/salida/' + tr.id} className="card">
+        <Link key={tr.id} to={'/salida/' + tr.id} className={tr.available_seats > 0 ? 'card trip' : 'card trip full'}>
           <div className="row between">
             <div className="big">{time(tr.departs_at)}</div>
             <div className="big">{php(tr.price_php)}</div>
