@@ -16,7 +16,7 @@ function addToCalendar(b) {
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DiveSlot//ES', 'BEGIN:VEVENT',
     'UID:' + b.id + '@diveslot', 'DTSTAMP:' + f(new Date()), 'DTSTART:' + f(start), 'DTEND:' + f(end),
     'SUMMARY:' + t('Buceo con {centro}', { centro: b.trips.centers?.name || '' }),
-    'DESCRIPTION:' + t('{n} inmersiones', { n: b.trips.num_dives }) + (b.trips.boats?.name ? ' · ' + b.trips.boats.name : ''),
+    'DESCRIPTION:' + t('{n} inmersiones', { n: b.trips.num_dives }) + (b.trips.boats?.show_to_divers ? ' · ' + b.trips.boats.name : ''),
     'END:VEVENT', 'END:VCALENDAR',
   ].join('\r\n')
   const a = document.createElement('a')
@@ -93,7 +93,7 @@ export default function Reservas() {
   const load = useCallback(async () => {
     if (!diver) return
     const { data, error } = await supabase.from('bookings')
-      .select('*, trips(departs_at, num_dives, status, centers(name, phone), boats(name))')
+      .select('*, trips(departs_at, num_dives, status, centers(name, phone), boats(name, show_to_divers))')
       .eq('diver_id', diver.id).order('created_at', { ascending: false })
     if (error) setError(errMsg(error))
     setList(data || [])
@@ -147,7 +147,7 @@ export default function Reservas() {
           <b>{b.trips?.centers?.name}</b>
           <span className={cls}>{expired ? t('Caducada (sin pagar)') : BOOKING_STATUS[b.status]}</span>
         </div>
-        <div className="muted small">{dateTime(b.trips?.departs_at)} · {b.trips?.boats?.name} · {t('{n} inmersiones', { n: b.trips?.num_dives })}</div>
+        <div className="muted small">{dateTime(b.trips?.departs_at)}{b.trips?.boats?.show_to_divers ? ' · ' + b.trips.boats.name : ''} · {t('{n} inmersiones', { n: b.trips?.num_dives })}</div>
         <div className="row between" style={{ marginTop: 8 }}>
           <span>{b.seats > 1 ? t('{n} plazas', { n: b.seats }) : t('{n} plaza', { n: b.seats })}{b.with_gear ? ' · ' + t('con equipo') : ''}</span>
           <b>{php(b.amount_php)}</b>

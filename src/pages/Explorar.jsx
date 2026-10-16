@@ -188,7 +188,7 @@ export default function Explorar() {
               {tr.available_seats > 0 ? t('{n} plazas', { n: tr.available_seats }) : t('Completa')}
             </span>
             {tr.booked_seats > 0 && <span className="pill">{tr.booked_seats === 1 ? t('👥 1 apuntado') : t('👥 {n} apuntados', { n: tr.booked_seats })}</span>}
-            <span className="muted small">⛵ {tr.boat_name}</span>
+            {tr.boat_name && <span className="muted small">⛵ {tr.boat_name}</span>}
           </div>
         </Link>
       ))}

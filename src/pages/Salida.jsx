@@ -113,9 +113,15 @@ export default function Salida({ id }) {
     <>
       <Link to="/" className="small">{t('← Salidas')}</Link>
       <h1 style={{ marginTop: 8 }}>{trip.center_name}</h1>
+      {trip.available_seats > 0 && !isCenter && (
+        <div className="row between" style={{ gap: 8, marginBottom: 12 }}>
+          <span className="muted small">{t('{n} plazas', { n: trip.available_seats })} · <b>{php(trip.price_php)}</b></span>
+          <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
+        </div>
+      )}
       <div className="card stack">
         <div className="row between"><span className="muted">{t('Salida')}</span><b>{dateTime(trip.departs_at)}</b></div>
-        <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>
+        {trip.boat_name && <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>}
         <div className="row between"><span className="muted">{t('Inmersiones')}</span><span>{trip.num_dives}</span></div>
         <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill">{levelName(trip.min_level)}</span></div>
         <div className="row between"><span className="muted">{t('Precio por buceador')}</span><b>{php(trip.price_php)}</b></div>
@@ -161,7 +167,7 @@ export default function Salida({ id }) {
 
       <QuienVa tripId={trip.id} loggedIn={!!session} />
 
-      <h2>{t('Reservar')}</h2>
+      <h2 id="reservar" style={{ scrollMarginTop: 12 }}>{t('Reservar')}</h2>
       {!session ? (
         <div className="card">
           <p>{t('Para reservar necesitas una cuenta.')}</p>

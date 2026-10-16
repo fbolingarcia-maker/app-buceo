@@ -30,9 +30,16 @@ function Barcos({ center }) {
     <div className="card">
       {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
       {boats.length === 0 && <p className="muted">{t('Añade tu primer barco para poder crear salidas.')}</p>}
+      <p className="small muted" style={{ marginTop: 0 }}>{t('Los barcos sirven para organizar tus salidas y su capacidad. Tú decides si los buceadores ven el nombre del barco.')}</p>
       {boats.map((b) => (
         <div key={b.id} className="row between" style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-          <div><b>{b.name}</b> <span className="muted small">· {t('{n} plazas', { n: b.capacity })}</span> {!b.active && <span className="pill bad">{t('Inactivo')}</span>}</div>
+          <div>
+            <b>{b.name}</b> <span className="muted small">· {t('{n} plazas', { n: b.capacity })}</span> {!b.active && <span className="pill bad">{t('Inactivo')}</span>}
+            <label className="check small" style={{ marginTop: 4 }}>
+              <input type="checkbox" checked={!!b.show_to_divers} onChange={(e) => run(supabase.from('boats').update({ show_to_divers: e.target.checked }).eq('id', b.id), t('Barco actualizado'))} />
+              {t('Mostrar el nombre del barco a los buceadores')}
+            </label>
+          </div>
           <div className="row">
             <input type="number" min="1" max="60" defaultValue={b.capacity} style={{ width: 70 }}
               onBlur={(e) => +e.target.value !== b.capacity && run(supabase.from('boats').update({ capacity: +e.target.value }).eq('id', b.id), t('Capacidad actualizada'))} />
