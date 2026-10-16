@@ -35,6 +35,23 @@ function NeedCenter({ children }) {
   return children
 }
 
+// Icono de buceador para la pestaña de salidas
+function DiverIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', margin: '0 auto' }}>
+      <circle cx="21" cy="6.5" r="1" fill="#7cc4f2" />
+      <circle cx="19.6" cy="3.6" r="0.7" fill="#7cc4f2" />
+      <rect x="8.2" y="8.2" width="7.4" height="3" rx="1.5" fill="#f4b400" />
+      <path d="M5 12.6 L16.2 11.6" stroke="#1f6fb2" strokeWidth="3.4" strokeLinecap="round" />
+      <path d="M6.2 12.2 L2.4 9.6 M6.2 13.2 L2.4 15.6" stroke="#1f6fb2" strokeWidth="2" strokeLinecap="round" />
+      <path d="M2.8 9.8 L0.8 7.6 M2.8 15.4 L0.8 17.6" stroke="#f4b400" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M15 12.6 L18.6 15.8" stroke="#1f6fb2" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="18.7" cy="11.2" r="2.6" fill="#1f6fb2" />
+      <rect x="19.2" y="9.9" width="2.9" height="1.9" rx="0.8" fill="#bfe6ff" stroke="#0d3b66" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
 function Flag() {
   return (
     <svg width="27" height="18" viewBox="0 0 30 20" aria-hidden="true" style={{ borderRadius: 2 }}>
@@ -97,13 +114,13 @@ export default function App() {
           <>
             {tab('/centro', '📊', 'Panel', home || (seg[0] === 'centro' && !seg[1]))}
             {tab('/centro/agenda', '📅', 'Agenda', seg[1] === 'agenda')}
-            {tab('/centro/salidas', '⛵', 'Salidas', ['salidas', 'nueva', 'salida'].includes(seg[1]))}
+            {tab('/centro/salidas', <DiverIcon />, 'Salidas', ['salidas', 'nueva', 'salida'].includes(seg[1]))}
             {tab('/centro/ajustes', '⚙️', 'Centro', seg[1] === 'ajustes')}
             {tab('/perfil', '👤', 'Perfil', seg[0] === 'perfil')}
           </>
         ) : (
           <>
-            {tab('/', '🌊', 'Salidas', home || seg[0] === 'salida')}
+            {tab('/', <DiverIcon />, 'Salidas', home || seg[0] === 'salida')}
             {tab('/centros', '📍', 'Centros', seg[0] === 'centros' || seg[0] === 'c' || seg[0] === 'd')}
             {tab('/reservas', '🎟️', 'Reservas', seg[0] === 'reservas')}
             {tab('/bitacora', '📖', 'Bitácora', seg[0] === 'bitacora')}
