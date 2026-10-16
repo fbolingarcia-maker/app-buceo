@@ -18,7 +18,7 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Idiomas: inglés y español. Todo texto visible va con `t('texto en español')` (`src/lib/i18n.jsx`) y su traducción en `src/lib/en/*.js`; para partes variables usa `t('Quedan {n} plazas', { n })`. Nunca uses plantillas `` `...` `` dentro de `t()`.
 
 ## Mapa
-- `src/pages/Explorar.jsx`: salidas de los próximos 8 días (vista `published_trips`, una sola consulta), buscador con sugerencias de destino/provincia/región (`src/lib/places.js`, tabla `destinations`), contador por día, orden por hora/precio/distancia y «Cerca de mí» (`src/lib/geo.js`).
+- `src/pages/Explorar.jsx`: salidas de los próximos 8 días (vista `published_trips`, una sola consulta), buscador con sugerencias de destino/provincia/región (`src/lib/places.js`, tabla `destinations`), contador por día, orden por hora/precio/distancia y «Cerca de mí» (`src/lib/geo.js`). Las salidas del día se agrupan por centro (estilo Playtomic): tarjeta del centro con horarios y plazas libres; al desplegarla, cada salida con sus apuntados (`trip_divers()`).
 - `src/pages/Salida.jsx`: detalle de la salida, «¿Quién va?» (`trip_divers()`: nombre corto, nivel, inmersiones, idiomas, país, bio; respeta `divers.show_on_trips`) y reserva (`book_trip`).
 - `src/pages/Reservas.jsx`: reservas del buceador; pago de la señal, el total o el resto (`crear-pago`, `confirm_payment_demo` en modo demo) y cancelación (`cancel_my_booking`).
 - `src/pages/Perfil.jsx`: perfil, certificaciones, alta de centro (`register_center`), contraseña.
@@ -31,7 +31,7 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Valoraciones: `center_ratings()` (media de la bitácora compartida, solo datos agregados), cargadas con `loadRatings()`.
 - `src/lib/DestinoSelect.jsx`: selector de destino (alta del centro y ajustes).
 - Datos: `destinations` (destino, provincia, grupo de islas, coordenadas), `centers.destination/province`, `dive_sites.province/highlight/highlight_es` (descripción en inglés y español).
-- `supabase/migrations/`: esquema completo (001–015; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos, 013 = valoraciones públicas, 014 = descripciones de puntos en español, 015 = `boats.show_to_divers`: el centro decide si los buceadores ven el barco; si no, `published_trips.boat_name` es null).
+- `supabase/migrations/`: esquema completo (001–016; 008 = pagos, 009 = perfiles, check-in y bitácora, 010 = zona y coordenadas en `published_trips`, 011 = «¿Quién va?» y `booked_seats`, 012 = toda Filipinas: destinos, directorio, puntos de buceo y demos, 013 = valoraciones públicas, 014 = descripciones de puntos en español, 015 = `boats.show_to_divers`: el centro decide si los buceadores ven el barco; si no, `published_trips.boat_name` es null, 016 = `centers.languages` y `course_languages`: idiomas del centro con banderas, `src/lib/langs.jsx`).
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 
