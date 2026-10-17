@@ -19,6 +19,8 @@ import CentroAjustes from './pages/CentroAjustes'
 import RegistrarCentro from './pages/RegistrarCentro'
 import CentroInfo from './pages/CentroInfo'
 import Destino from './pages/Destino'
+import CentroVerificacion from './pages/CentroVerificacion'
+import Admin from './pages/Admin'
 
 function NeedLogin({ children }) {
   const { session } = useAuth()
@@ -33,7 +35,27 @@ function NeedCenter({ children }) {
   if (session === undefined || (session && !diver)) return <p className="muted center">{t('Cargando…')}</p>
   if (!session) return <Login />
   if (!center) return <RegistrarCentro />
-  return children
+  return <><VerifyBanner />{children}</>
+}
+
+// Aviso permanente mientras el centro no está verificado por la plataforma
+function VerifyBanner() {
+  const { center } = useAuth()
+  const path = useRoute()
+  const st = center?.verification_status
+  if (!st || st === 'verified' || path.startsWith('/centro/verificacion')) return null
+  const text = {
+    unverified: t('Tu centro aún no es visible: completa la verificación para publicar salidas.'),
+    pending: t('Verificación en revisión. Puedes preparar salidas como borrador; se publicarán cuando te validemos.'),
+    rejected: t('Tu verificación fue rechazada. Revisa el motivo y vuelve a enviarla.'),
+    suspended: t('Tu centro está suspendido y no es visible para los buceadores.'),
+  }[st]
+  return (
+    <div className={st === 'rejected' || st === 'suspended' ? 'banner bad' : 'banner'}>
+      <span>{text}</span>
+      <Link to="/centro/verificacion" className="btn small">{st === 'pending' ? t('Ver estado') : t('Verificar centro')}</Link>
+    </div>
+  )
 }
 
 // Icono de buceador para la pestaña de salidas
@@ -64,7 +86,7 @@ function Flag() {
 
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, recovering, signOut } = useAuth()
+  const { session, isCenter, isAdmin, recovering, signOut } = useAuth()
   const seg = path.split('/').filter(Boolean)
 
   let page
@@ -80,6 +102,8 @@ export default function App() {
   else if (seg[0] === 'centro' && seg[1] === 'agenda') page = <NeedCenter><CentroAgenda /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'salidas') page = <NeedCenter><CentroSalidas /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'informes') page = <NeedCenter><CentroInformes /></NeedCenter>
+  else if (seg[0] === 'centro' && seg[1] === 'verificacion') page = <NeedCenter><CentroVerificacion /></NeedCenter>
+  else if (seg[0] === 'admin') page = <NeedLogin><Admin /></NeedLogin>
   else if (seg[0] === 'centro' && seg[1] === 'ajustes') page = <NeedCenter><CentroAjustes /></NeedCenter>
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
@@ -103,6 +127,7 @@ export default function App() {
           {session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>
         <div className="row" style={{ gap: 8 }}>
+          {isAdmin && <Link to="/admin" className="btn small ghost" title={t('Validación de centros')}>🛡️</Link>}
           <LangSwitch />
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
           {session && (
