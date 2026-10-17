@@ -6,7 +6,7 @@ import { LEVELS, manilaDate, addDays, manilaToIso, php } from '../lib/format'
 import { t } from '../lib/i18n'
 
 export default function NuevaSalida({ id }) {
-  const { center } = useAuth()
+  const { center, verified } = useAuth()
   const [boats, setBoats] = useState([])
   const [sites, setSites] = useState([])
   const [error, setError] = useState('')
@@ -69,7 +69,7 @@ export default function NuevaSalida({ id }) {
       price_php: f.price_php, gear_rental_php: f.gear_rental_php || 0, guides: f.guides, divers_per_guide: f.divers_per_guide,
       seat_override: f.seat_override === '' ? null : f.seat_override, blocked_seats: f.blocked_seats || 0,
     }
-    if (!id || ['draft', 'published'].includes(f.status)) fields.status = f.publish ? 'published' : 'draft'
+    if (!id || ['draft', 'published'].includes(f.status)) fields.status = f.publish && verified ? 'published' : 'draft'
     const { data: trip, error } = id
       ? await supabase.from('trips').update(fields).eq('id', id).select().single()
       : await supabase.from('trips').insert({ ...fields, center_id: center.id }).select().single()
@@ -124,7 +124,9 @@ export default function NuevaSalida({ id }) {
           ))}
 
           <p className="small muted">{t('Plazas operativas:')} <b>{operative}</b> · {t('en la app:')} <b>{Math.max(0, operative - (f.blocked_seats || 0))}</b> · {t('precio {price}', { price: php(f.price_php) })}</p>
-          <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> {t('Publicar ya (si no, queda como borrador)')}</label>
+          {verified
+            ? <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> {t('Publicar ya (si no, queda como borrador)')}</label>
+            : <p className="small muted">{t('Se guardará como borrador: podrás publicarla cuando tu centro esté verificado.')} <Link to="/centro/verificacion">{t('Verificar centro')}</Link></p>}
           {error && <div className="msg err">{error}</div>}
           <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : id ? t('Guardar cambios') : t('Crear salida')}</button>
         </form>

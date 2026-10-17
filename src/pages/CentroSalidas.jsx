@@ -13,7 +13,7 @@ const dayOf = (iso) => manilaDate(new Date(iso))
 const hhmm = (iso) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 
 export default function CentroSalidas() {
-  const { center } = useAuth()
+  const { center, verified } = useAuth()
   const today = manilaDate()
   const [filter, setFilter] = useState('next')
   const [trips, setTrips] = useState(null)
@@ -42,7 +42,7 @@ export default function CentroSalidas() {
     const rows = dates.map((d) => ({
       center_id: tr.center_id, boat_id: tr.boat_id, departs_at: manilaToIso(d, hm), num_dives: tr.num_dives, min_level: tr.min_level,
       price_php: tr.price_php, gear_rental_php: tr.gear_rental_php, guides: tr.guides, divers_per_guide: tr.divers_per_guide,
-      seat_override: tr.seat_override, blocked_seats: tr.blocked_seats, status: 'published',
+      seat_override: tr.seat_override, blocked_seats: tr.blocked_seats, status: verified ? 'published' : 'draft',
     }))
     const { data, error } = await supabase.from('trips').insert(rows).select('id')
     if (error) return setMsg({ ok: false, text: errMsg(error) })
@@ -95,7 +95,7 @@ export default function CentroSalidas() {
                   <Link to={'/centro/salida/' + tr.id} className="btn small ghost">{t('Editar')}</Link>
                   <button className="btn small ghost" onClick={() => setDup(dup === tr.id ? null : tr.id)}>{t('Duplicar')}</button>
                   <Link to={`/centro/agenda?dia=${d}`} className="btn small ghost">{t('Manifiesto')}</Link>
-                  {tr.status === 'draft' && <button className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'published' }).eq('id', tr.id), t('Publicada'))}>{t('Publicar')}</button>}
+                  {tr.status === 'draft' && verified && <button className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'published' }).eq('id', tr.id), t('Publicada'))}>{t('Publicar')}</button>}
                   {tr.status === 'published' && nBookings === 0 && new Date(tr.departs_at) > new Date() && (
                     <button className="btn small ghost" onClick={() => run(supabase.from('trips').update({ status: 'draft' }).eq('id', tr.id), t('Pasada a borrador'))}>{t('Despublicar')}</button>
                   )}

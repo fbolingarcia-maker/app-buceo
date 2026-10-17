@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { AGENCIES } from '../lib/agencies'
 import { t } from '../lib/i18n'
 import DestinoSelect from '../lib/DestinoSelect'
 import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
@@ -84,7 +85,7 @@ function Datos({ center, refresh }) {
     name: center.name || '', phone: center.phone || '', gcash_number: center.gcash_number || '',
     default_divers_per_guide: center.default_divers_per_guide || 4, locality: center.locality || '', website: center.website || '',
     lat: center.lat ?? null, lng: center.lng ?? null, destination: center.destination || '', province: center.province || '',
-    languages: center.languages || [], course_languages: center.course_languages || [],
+    languages: center.languages || [], course_languages: center.course_languages || [], agencies: center.agencies || [],
   })
   const [locating, setLocating] = useState(false)
   const [gps, setGps] = useState(false) // ubicación tomada con el GPS del móvil
@@ -123,6 +124,16 @@ function Datos({ center, refresh }) {
       </div>
       <LangPicker label={t('Idiomas en los que atendéis')} value={f.languages} onChange={(v) => setF((x) => ({ ...x, languages: v }))} />
       <LangPicker label={t('Idiomas en los que dais cursos')} value={f.course_languages} onChange={(v) => setF((x) => ({ ...x, course_languages: v }))} />
+      <div className="field">
+        <label>{t('Agencias con las que certificáis')}</label>
+        <div className="lang-pick">
+          {AGENCIES.map((a) => (
+            <label key={a} className={f.agencies.includes(a) ? 'on' : ''}>
+              <input type="checkbox" checked={f.agencies.includes(a)} onChange={() => setF((x) => ({ ...x, agencies: x.agencies.includes(a) ? x.agencies.filter((y) => y !== a) : [...x.agencies, a] }))} /> {a}
+            </label>
+          ))}
+        </div>
+      </div>
       <div className="field"><label>{t('Web')}</label><input type="url" placeholder="https://" value={f.website} onChange={set('website')} /></div>
       <div className="field">
         <label>{t('Ubicación en el mapa')}</label>

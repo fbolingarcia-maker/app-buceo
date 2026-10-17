@@ -5,6 +5,7 @@ import { norm, distKm, kmLabel, currentPosition } from '../lib/geo'
 import { loadDestinations, GROUPS, loadRatings } from '../lib/places'
 import { Link } from '../lib/router'
 import { Flags } from '../lib/langs'
+import { Agencies } from '../lib/agencies'
 
 export default function Centros() {
   const [list, setList] = useState(null)
@@ -12,6 +13,7 @@ export default function Centros() {
   const [ratings, setRatings] = useState({})
   const [q, setQ] = useState('')
   const [group, setGroup] = useState('')
+  const [ag, setAg] = useState('')
   const [error, setError] = useState('')
   const [here, setHere] = useState(null)
   const [locating, setLocating] = useState(false)
@@ -26,7 +28,7 @@ export default function Centros() {
   useEffect(() => {
     loadDestinations().then(setDests)
     loadRatings().then(setRatings)
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url, languages')
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url, languages, agencies')
       .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%').order('name')
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setList(data || []) })
   }, [])
@@ -36,6 +38,7 @@ export default function Centros() {
   const words = norm(q).split(/\s+/).filter(Boolean)
   const shown = (list || [])
     .filter((c) => !group || groupOf(c) === group)
+    .filter((c) => !ag || (c.agencies || []).includes(ag))
     .filter((c) => words.every((w) => norm([c.name, c.locality, destOf(c), c.province, groupOf(c)].join(' ')).includes(w)))
     .map((c) => ({ ...c, km: here && c.lat != null ? distKm(here, { lat: c.lat, lng: c.lng }) : null }))
   const byDest = shown.reduce((m, c) => { (m[destOf(c)] = m[destOf(c)] || []).push(c); return m }, {})
@@ -58,6 +61,10 @@ export default function Centros() {
         <button className={!group ? 'on' : ''} onClick={() => setGroup('')}>{t('Todas')}</button>
         {groups.map((g) => <button key={g} className={group === g ? 'on' : ''} onClick={() => setGroup(g)}>{g}</button>)}
       </div>
+      <div className="chips">
+        <button className={!ag ? 'on' : ''} onClick={() => setAg('')}>{t('Todas las agencias')}</button>
+        {['PADI', 'SSI', 'SDI/TDI', 'NAUI', 'RAID'].map((a) => <button key={a} className={ag === a ? 'on' : ''} onClick={() => setAg(ag === a ? '' : a)}>{a}</button>)}
+      </div>
       {error && <div className="msg err">{error}</div>}
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list && <p className="small muted">{shown.length === 1 ? t('1 centro') : t('{n} centros', { n: shown.length })}</p>}
@@ -73,7 +80,9 @@ export default function Centros() {
                 <Link to={'/c/' + c.id} style={{ color: 'inherit' }}><b>{c.name}</b> <Flags codes={c.languages} />{ratings[c.id] && <span className="small"> · ⭐ {ratings[c.id].rating}</span>}</Link>
                 {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
               </div>
-              {c.locality && c.locality !== z && <div className="small muted">{c.locality}</div>}
+              {(c.agencies?.length > 0 || (c.locality && c.locality !== z)) && (
+                <div className="small muted row wrap" style={{ gap: 6, marginTop: 2 }}><Agencies list={c.agencies} small />{c.locality && c.locality !== z && <span>{c.locality}</span>}</div>
+              )}
               <div className="row wrap small" style={{ marginTop: 6, gap: 14 }}>
                 {c.website ? <a href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a> : c.source_url && <a href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
                 {c.lat && c.lng && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + ' ' + z)}`} target="_blank" rel="noreferrer">{t('Mapa')}</a>}

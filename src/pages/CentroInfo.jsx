@@ -5,6 +5,7 @@ import { t } from '../lib/i18n'
 import { dateTime, levelName, php } from '../lib/format'
 import { loadRatings } from '../lib/places'
 import { Flags, langName } from '../lib/langs'
+import { Agencies } from '../lib/agencies'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
 export default function CentroInfo({ id }) {
@@ -14,7 +15,7 @@ export default function CentroInfo({ id }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages').eq('id', id).maybeSingle()
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages, agencies, agency_detail, verification_status').eq('id', id).maybeSingle()
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setC(data || false) })
     supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(20)
       .then(({ data }) => setTrips(data || []))
@@ -37,7 +38,13 @@ export default function CentroInfo({ id }) {
         {dest && <Link to={'/d/' + encodeURIComponent(dest)} className="small">📍 {[c.locality !== dest ? c.locality : null, dest, c.province].filter(Boolean).join(', ')}</Link>}
         {rating && <span className="pill ok">⭐ {rating.rating} · {rating.reviews === 1 ? t('1 valoración') : t('{n} valoraciones', { n: rating.reviews })}</span>}
         {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
+        {c.verification_status === 'verified' && c.listing_status === 'socio' && <span className="pill ok" title={t('DiveSlot ha comprobado los permisos y la identidad de este centro')}>🛡️ {t('Centro verificado')}</span>}
       </div>
+      {c.agencies?.length > 0 && (
+        <div className="row wrap small" style={{ gap: 8, marginBottom: 12 }}>
+          <span className="muted">{t('Certifica con')}</span><Agencies list={c.agencies} />{c.agency_detail && <span className="muted">· {c.agency_detail}</span>}
+        </div>
+      )}
 
       {(c.languages?.length > 0 || c.course_languages?.length > 0) && (
         <div className="card stack small">
