@@ -8,9 +8,11 @@ export function AuthProvider({ children }) {
   const [diver, setDiver] = useState(null)
   const [center, setCenter] = useState(null) // centro que gestiona el usuario (o null)
   const [recovering, setRecovering] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false) // administrador de la plataforma (valida centros)
 
   const loadProfile = useCallback(async (s) => {
-    if (!s) { setDiver(null); setCenter(null); return }
+    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); return }
+    supabase.rpc('is_platform_admin').then(({ data }) => setIsAdmin(data === true))
     const [{ data: d }, { data: st }] = await Promise.all([
       supabase.from('divers').select('*').eq('user_id', s.user.id).maybeSingle(),
       supabase.from('center_staff').select('role, centers(*)').eq('user_id', s.user.id).maybeSingle(),
@@ -41,8 +43,9 @@ export function AuthProvider({ children }) {
 
   // Perfil: cuenta de centro (gestiona un centro o se registró como centro) o de buceador
   const isCenter = !!center || diver?.account_type === 'center' || session?.user?.user_metadata?.account_type === 'center'
+  const verified = center?.verification_status === 'verified'
   const value = {
-    session, user: session?.user || null, diver, center, isCenter, recovering, setRecovering,
+    session, user: session?.user || null, diver, center, isCenter, isAdmin, verified, recovering, setRecovering,
     refresh: () => loadProfile(session),
     signOut: () => supabase.auth.signOut(),
   }
