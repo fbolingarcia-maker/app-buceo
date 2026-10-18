@@ -9,10 +9,15 @@ export function AuthProvider({ children }) {
   const [center, setCenter] = useState(null) // centro que gestiona el usuario (o null)
   const [recovering, setRecovering] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false) // administrador de la plataforma (valida centros)
+  const [pendingCenters, setPendingCenters] = useState(0) // centros esperando validación (solo admin)
 
   const loadProfile = useCallback(async (s) => {
     if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); return }
-    supabase.rpc('is_platform_admin').then(({ data }) => setIsAdmin(data === true))
+    supabase.rpc('is_platform_admin').then(({ data }) => {
+      setIsAdmin(data === true)
+      if (data === true) supabase.from('centers').select('id', { count: 'exact', head: true }).eq('verification_status', 'pending')
+        .then(({ count }) => setPendingCenters(count || 0))
+    })
     const [{ data: d }, { data: st }] = await Promise.all([
       supabase.from('divers').select('*').eq('user_id', s.user.id).maybeSingle(),
       supabase.from('center_staff').select('role, centers(*)').eq('user_id', s.user.id).maybeSingle(),
@@ -45,7 +50,7 @@ export function AuthProvider({ children }) {
   const isCenter = !!center || diver?.account_type === 'center' || session?.user?.user_metadata?.account_type === 'center'
   const verified = center?.verification_status === 'verified'
   const value = {
-    session, user: session?.user || null, diver, center, isCenter, isAdmin, verified, recovering, setRecovering,
+    session, user: session?.user || null, diver, center, isCenter, isAdmin, pendingCenters, verified, recovering, setRecovering,
     refresh: () => loadProfile(session),
     signOut: () => supabase.auth.signOut(),
   }
