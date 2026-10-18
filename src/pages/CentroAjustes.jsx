@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AGENCIES } from '../lib/agencies'
+import { Link } from '../lib/router'
 import { t } from '../lib/i18n'
 import DestinoSelect from '../lib/DestinoSelect'
 import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
@@ -26,12 +27,13 @@ function Barcos({ center }) {
   const load = useCallback(() => supabase.from('boats').select('*').eq('center_id', center.id).order('name').then(({ data }) => setBoats(data || [])), [center.id])
   useEffect(() => { load() }, [load])
 
-  async function run(p, ok) { const { error } = await p; setMsg(error ? { ok: false, text: errMsg(error) } : { ok: true, text: ok }); load() }
+  async function run(p, ok) { const { error } = await p; setMsg(error ? { ok: false, text: errMsg(error) } : { ok: true, text: ok }); load(); return error }
 
   return (
     <div className="card">
-      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
       {boats.length === 0 && <p className="muted">{t('Añade tu primer barco para poder crear salidas.')}</p>}
+      {boats.length > 0 && boats.length < 3 && <div className="row between wrap small" style={{ gap: 8, marginBottom: 8 }}><span className="muted">{t('¿Listo? Crea tu próxima salida con este barco.')}</span><Link to="/centro/nueva" className="btn small">{t('+ Nueva salida')}</Link></div>}
       <p className="small muted" style={{ marginTop: 0 }}>{t('Los barcos sirven para organizar tus salidas y su capacidad. Tú decides si los buceadores ven el nombre del barco.')}</p>
       {boats.map((b) => (
         <div key={b.id} className="row between" style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
@@ -43,19 +45,20 @@ function Barcos({ center }) {
             </label>
           </div>
           <div className="row">
-            <input type="number" min="1" max="60" defaultValue={b.capacity} style={{ width: 70 }}
+            <input type="number" inputMode="numeric" aria-label={t('Capacidad de {name}', { name: b.name })} min="1" max="60" defaultValue={b.capacity} style={{ width: 70 }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
               onBlur={(e) => +e.target.value !== b.capacity && run(supabase.from('boats').update({ capacity: +e.target.value }).eq('id', b.id), t('Capacidad actualizada'))} />
             <button className="btn small ghost" onClick={() => run(supabase.from('boats').update({ active: !b.active }).eq('id', b.id), t('Barco actualizado'))}>{b.active ? t('Desactivar') : t('Activar')}</button>
           </div>
         </div>
       ))}
-      <form className="row" style={{ marginTop: 12 }} onSubmit={(e) => {
+      <form className="row" style={{ marginTop: 12 }} onSubmit={async (e) => {
         e.preventDefault()
-        run(supabase.from('boats').insert({ center_id: center.id, name: nb.name.trim(), capacity: +nb.capacity }), t('Barco añadido'))
-        setNb({ name: '', capacity: 10 })
+        const err = await run(supabase.from('boats').insert({ center_id: center.id, name: nb.name.trim(), capacity: +nb.capacity }), t('Barco añadido'))
+        if (!err) setNb({ name: '', capacity: 10 })
       }}>
-        <input className="grow" placeholder={t('Nombre del barco')} required value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} />
-        <input type="number" min="1" max="60" style={{ width: 80 }} value={nb.capacity} onChange={(e) => setNb({ ...nb, capacity: e.target.value })} />
+        <input className="grow" aria-label={t('Nombre del barco')} placeholder={t('Nombre del barco')} required value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} />
+        <input type="number" inputMode="numeric" aria-label={t('Capacidad')} title={t('Capacidad')} min="1" max="60" style={{ width: 80 }} value={nb.capacity} onChange={(e) => setNb({ ...nb, capacity: e.target.value })} />
         <button className="btn small">{t('Añadir')}</button>
       </form>
     </div>
@@ -68,7 +71,7 @@ function LangPicker({ label, value, onChange }) {
   return (
     <div className="field">
       <label>{label}</label>
-      <div className="lang-pick">
+      <div className="lang-pick" role="group" aria-label={label}>
         {CENTER_LANGS.map((l) => (
           <label key={l.code} className={value.includes(l.code) ? 'on' : ''}>
             <input type="checkbox" checked={value.includes(l.code)} onChange={() => toggle(l.code)} />
@@ -111,16 +114,16 @@ function Datos({ center, refresh }) {
   }
   return (
     <form className="card" onSubmit={save}>
-      <div className="field"><label>{t('Nombre')}</label><input required value={f.name} onChange={set('name')} /></div>
+      <div className="field"><label htmlFor="centroajustes-1">{t('Nombre')}</label><input id="centroajustes-1" required value={f.name} onChange={set('name')} /></div>
       <div className="grid2">
-        <div className="field"><label>{t('Teléfono / WhatsApp')}</label><input value={f.phone} onChange={set('phone')} /></div>
-        <div className="field"><label>{t('Nº GCash')}</label><input value={f.gcash_number} onChange={set('gcash_number')} /></div>
+        <div className="field"><label htmlFor="centroajustes-2">{t('Teléfono / WhatsApp')}</label><input id="centroajustes-2" type="tel" inputMode="tel" autoComplete="tel" value={f.phone} onChange={set('phone')} /></div>
+        <div className="field"><label htmlFor="centroajustes-3">{t('Nº GCash')}</label><input id="centroajustes-3" value={f.gcash_number} onChange={set('gcash_number')} /></div>
         <div className="field"><label>{t('Destino')}</label><DestinoSelect value={f.destination} onChange={(name, d) => setF((x) => ({
           ...x, destination: name, province: d?.province || '',
           ...(x.lat == null && d ? { lat: d.lat, lng: d.lng } : {}),
         }))} /></div>
-        <div className="field"><label>{t('Playa / barrio (opcional)')}</label><input placeholder={t('p. ej. Alona Beach')} value={f.locality} onChange={set('locality')} /></div>
-        <div className="field"><label>{t('Buceadores por guía')}</label><input type="number" min="1" max="10" value={f.default_divers_per_guide} onChange={set('default_divers_per_guide')} /></div>
+        <div className="field"><label htmlFor="centroajustes-4">{t('Playa / barrio (opcional)')}</label><input id="centroajustes-4" placeholder={t('p. ej. Alona Beach')} value={f.locality} onChange={set('locality')} /></div>
+        <div className="field"><label htmlFor="centroajustes-5">{t('Buceadores por guía')}</label><input id="centroajustes-5" type="number" inputMode="numeric" min="1" max="10" value={f.default_divers_per_guide} onChange={set('default_divers_per_guide')} /></div>
       </div>
       <LangPicker label={t('Idiomas en los que atendéis')} value={f.languages} onChange={(v) => setF((x) => ({ ...x, languages: v }))} />
       <LangPicker label={t('Idiomas en los que dais cursos')} value={f.course_languages} onChange={(v) => setF((x) => ({ ...x, course_languages: v }))} />
@@ -134,7 +137,7 @@ function Datos({ center, refresh }) {
           ))}
         </div>
       </div>
-      <div className="field"><label>{t('Web')}</label><input type="url" placeholder="https://" value={f.website} onChange={set('website')} /></div>
+      <div className="field"><label htmlFor="centroajustes-6">{t('Web')}</label><input id="centroajustes-6" type="url" placeholder="https://" value={f.website} onChange={set('website')} /></div>
       <div className="field">
         <label>{t('Ubicación en el mapa')}</label>
         <div className="row wrap" style={{ gap: 8 }}>
@@ -145,7 +148,7 @@ function Datos({ center, refresh }) {
         </div>
         <p className="small muted" style={{ margin: '6px 0 0' }}>{t('Hazlo desde el centro para que los buceadores te encuentren cerca.')}</p>
       </div>
-      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
       <button className="btn">{t('Guardar')}</button>
     </form>
   )

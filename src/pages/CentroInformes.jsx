@@ -132,7 +132,7 @@ function Resumen({ onPick }) {
         {trips?.length > 0 && <button className="btn small ghost" style={{ marginBottom: 12 }} onClick={exportBookings}>{t('Exportar reservas (CSV)')}</button>}
       </div>
       <p className="small muted" style={{ marginTop: -6 }}>{dayLabel(from, { day: 'numeric', month: 'short', year: 'numeric' })} – {dayLabel(addDays(to, -1), { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
       {!r ? <p className="muted">{t('Cargando…')}</p> : (
         <>
           <div className="kpis">
@@ -244,7 +244,7 @@ function Cobros() {
   ))
   return (
     <>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
       <div className="kpis">
         <div className="kpi"><span>{t('Por cobrar (próximas)')}</span><b>{php(sum(coming))}</b><small>{coming.length === 1 ? t('1 reserva') : t('{n} reservas', { n: coming.length })}</small></div>
         <div className="kpi"><span>{t('Atrasado (salidas pasadas)')}</span><b style={{ color: past.length ? 'var(--bad)' : undefined }}>{php(sum(past))}</b><small>{past.length === 1 ? t('1 reserva') : t('{n} reservas', { n: past.length })}</small></div>
@@ -302,7 +302,7 @@ function Clientes() {
   }
   return (
     <>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
       <div className="kpis">
         <div className="kpi"><span>{t('Clientes')}</span><b>{list.length}</b></div>
         <div className="kpi"><span>{t('Repiten')}</span><b>{repeat}</b><small>{pct(repeat, list.length)} %</small></div>
@@ -389,7 +389,7 @@ function Movimientos() {
           </button>
         )}
       </div>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
       {!rows ? <p className="muted">{t('Cargando…')}</p> : (
         <>
           <div className="kpis">

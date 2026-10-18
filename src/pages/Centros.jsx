@@ -65,7 +65,7 @@ export default function Centros() {
         <button className={!ag ? 'on' : ''} onClick={() => setAg('')}>{t('Todas las agencias')}</button>
         {['PADI', 'SSI', 'SDI/TDI', 'NAUI', 'RAID'].map((a) => <button key={a} className={ag === a ? 'on' : ''} onClick={() => setAg(ag === a ? '' : a)}>{a}</button>)}
       </div>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list && <p className="small muted">{shown.length === 1 ? t('1 centro') : t('{n} centros', { n: shown.length })}</p>}
       {list && shown.length === 0 && <div className="card center muted">{t('No hay centros que coincidan con tu búsqueda.')}</div>}
@@ -87,6 +87,7 @@ export default function Centros() {
                 {c.website ? <a href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a> : c.source_url && <a href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
                 {c.lat && c.lng && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + ' ' + z)}`} target="_blank" rel="noreferrer">{t('Mapa')}</a>}
                 {c.phone && <a href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
+                {c.listing_status !== 'socio' && <Link to="/login?alta=centro" className="muted" onClick={() => { try { sessionStorage.setItem('claimCenter', c.name) } catch (e) { /* sin almacenamiento */ } }}>{t('¿Es tu centro?')}</Link>}
               </div>
             </div>
           ))}

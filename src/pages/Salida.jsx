@@ -86,6 +86,16 @@ export default function Salida({ id }) {
     if (diver) supabase.from('certifications').select('level').eq('diver_id', diver.id).then(({ data }) => setCerts(data || []))
   }, [diver])
 
+  // Barra fija de reserva mientras la sección «Reservar» no está a la vista
+  const [ctaVisible, setCtaVisible] = useState(false)
+  useEffect(() => {
+    const el = document.getElementById('reservar')
+    if (!el || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(([e]) => setCtaVisible(!e.isIntersecting && e.boundingClientRect.top > 0), { rootMargin: '0px 0px -140px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [trip])
+
   if (trip === null) return <p className="muted">{t('Cargando…')}</p>
   if (trip === false) return <div className="card">{t('Esta salida ya no está disponible.')} <Link to="/">{t('Ver salidas')}</Link></div>
 
@@ -107,6 +117,7 @@ export default function Salida({ id }) {
     const { error } = await supabase.rpc('book_trip', { p_trip: trip.id, p_seats: seats, p_with_gear: gear, p_medical_signed: medical })
     setBusy(false)
     if (error) return setError(errMsg(error))
+    try { sessionStorage.setItem('justBooked', '1') } catch (e) { /* sin almacenamiento */ }
     go('/reservas')
   }
 
@@ -163,16 +174,23 @@ export default function Salida({ id }) {
             <button type="button" className="btn small ghost" onClick={share}>{t('Compartir')}</button>
           </div>
         </div>
-        {shared && <div className="msg ok">{shared}</div>}
+        {shared && <div className="msg ok" role="status">{shared}</div>}
       </div>
 
       <QuienVa tripId={trip.id} loggedIn={!!session} />
 
+      {ctaVisible && trip.available_seats > 0 && !isCenter && (
+        <div className="sticky-cta">
+          <span><b>{php(trip.price_php)}</b> <span className="small muted">· {t('{n} plazas', { n: trip.available_seats })}</span></span>
+          <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
+        </div>
+      )}
       <h2 id="reservar" style={{ scrollMarginTop: 12 }}>{t('Reservar')}</h2>
       {!session ? (
         <div className="card">
           <p>{t('Para reservar necesitas una cuenta.')}</p>
-          <Link to="/login" className="btn block">{t('Entrar o crear cuenta')}</Link>
+          <Link to="/login" className="btn block" onClick={() => { try { sessionStorage.setItem('afterLogin', '/salida/' + trip.id) } catch (e) { /* sin almacenamiento */ } }}>{t('Entrar o crear cuenta')}</Link>
+          <p className="small muted" style={{ marginBottom: 0 }}>{t('Después de entrar volverás a esta salida.')}</p>
         </div>
       ) : isCenter ? (
         <div className="card muted">{t('Estás con una cuenta de centro. Para reservar, usa una cuenta de buceador.')}</div>
@@ -181,14 +199,14 @@ export default function Salida({ id }) {
       ) : (
         <div className="card">
           {!levelOk && (
-            <div className="msg err">
+            <div className="msg warn" role="status">
               {certs.length === 0 ? t('Añade tu certificación en el perfil para poder reservar.') : t('Esta salida requiere {nivel}.', { nivel: levelName(trip.min_level) })}{' '}
-              <Link to="/perfil">{t('Ir al perfil')}</Link>
+              <Link to="/perfil" onClick={() => { try { sessionStorage.setItem('afterCert', '/salida/' + trip.id) } catch (e) { /* sin almacenamiento */ } }}>{t('Ir al perfil')}</Link>
             </div>
           )}
           <div className="field">
-            <label>{t('Plazas')}</label>
-            <select value={seats} onChange={(e) => setSeats(+e.target.value)}>
+            <label htmlFor="seats">{t('Plazas')}</label>
+            <select id="seats" value={seats} onChange={(e) => setSeats(+e.target.value)}>
               {Array.from({ length: Math.min(trip.available_seats, 6) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
             </select>
           </div>
@@ -203,10 +221,11 @@ export default function Salida({ id }) {
           <div className="row between small" style={{ marginBottom: 12 }}>
             <span className="muted">{t('Para reservar pagas como mínimo el 50 %')}</span><b>{php(Math.ceil(total / 2))}</b>
           </div>
-          {error && <div className="msg err">{error}</div>}
-          <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book}>
+          {error && <div className="msg err" role="alert">{error}</div>}
+          <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book} aria-describedby="book-hint">
             {busy ? t('Reservando…') : t('Reservar plaza')}
           </button>
+          {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Marca la declaración médica para continuar.')}</p>}
           <p className="muted small">{t('Pagas con GCash o tarjeta: al menos el 50 % para confirmar la plaza (retenida 15 min) y el resto en la app o en efectivo en el centro. Cancelación con devolución total hasta 24 h antes; después el centro se queda el 50 % del precio. Si se cancela por meteo, se devuelve todo lo pagado.')}</p>
         </div>
       )}

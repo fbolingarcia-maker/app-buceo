@@ -53,6 +53,10 @@ export default function Perfil() {
     const { error } = await supabase.from('certifications').insert({ diver_id: diver.id, agency: cert.agency, level: cert.level, card_number: cert.card_number.trim() || null })
     if (error) return note('c', false, errMsg(error))
     setCert({ ...cert, card_number: '' }); note('c', true, t('Certificación añadida')); loadCerts()
+    // Si venía de una salida, vuelve para terminar la reserva
+    let back = null
+    try { back = sessionStorage.getItem('afterCert'); sessionStorage.removeItem('afterCert') } catch (e) { /* sin almacenamiento */ }
+    if (back) go(back)
   }
   async function delCert(id) {
     if (!window.confirm(t('¿Eliminar esta certificación?'))) return
@@ -70,7 +74,7 @@ export default function Perfil() {
     e.preventDefault()
     const { error } = await supabase.rpc('register_center', { p_name: centerForm.name, p_phone: centerForm.phone })
     if (error) return note('ce', false, errMsg(error))
-    await refresh(); go('/centro')
+    await refresh(); go('/centro/verificacion')
   }
 
   if (!diver || !form) return <p className="muted">{t('Cargando perfil…')}</p>
@@ -85,15 +89,14 @@ export default function Perfil() {
       <div className="card"><LangSwitch full /></div>
 
       <form className="card" onSubmit={saveProfile}>
-        <div className="field"><label>{t('Nombre')}</label><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
+        <div className="field"><label htmlFor="perfil-1">{t('Nombre')}</label><input id="perfil-1" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
         <div className="grid2">
-          <div className="field"><label>{t('Idiomas')}</label><input placeholder={t('Español, English')} value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
-          <div className="field"><label>{t('Inmersiones registradas')}</label><input type="number" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
+          <div className="field"><label htmlFor="perfil-2">{t('Idiomas')}</label><input id="perfil-2" placeholder={t('Español, English')} value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
+          <div className="field"><label htmlFor="perfil-3">{t('Inmersiones registradas')}</label><input id="perfil-3" type="number" inputMode="numeric" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
         </div>
         {!isCenter && <>
-          <div className="field"><label>{t('País')}</label><input maxLength={60} placeholder={t('p. ej. España')} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
-          <div className="field"><label>{t('Sobre ti')} <span className="muted small" style={{ fontWeight: 400 }}>({form.bio.length}/160)</span></label>
-            <textarea rows="2" maxLength={160} placeholder={t('p. ej. Me encantan los tiburones ballena y la fotografía submarina')} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+          <div className="field"><label htmlFor="perfil-4">{t('País')}</label><input id="perfil-4" maxLength={60} autoComplete="country-name" placeholder={t('p. ej. España')} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
+          <div className="field"><label htmlFor="perfil-5">{t('Sobre ti')} <span className="muted small" style={{ fontWeight: 400 }}>({form.bio.length}/160)</span></label><textarea id="perfil-5" rows="2" maxLength={160} placeholder={t('p. ej. Me encantan los tiburones ballena y la fotografía submarina')} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
           </div>
           <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
           <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />
@@ -119,10 +122,10 @@ export default function Perfil() {
         ))}
         <form onSubmit={addCert} style={{ marginTop: 12 }}>
           <div className="grid2">
-            <div className="field"><label>{t('Agencia')}</label><select value={cert.agency} onChange={(e) => setCert({ ...cert, agency: e.target.value })}>{AGENCIES.map((a) => <option key={a} value={a}>{a === 'Otra' ? t('Otra') : a}</option>)}</select></div>
-            <div className="field"><label>{t('Nivel')}</label><select value={cert.level} onChange={(e) => setCert({ ...cert, level: e.target.value })}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+            <div className="field"><label htmlFor="perfil-6">{t('Agencia')}</label><select id="perfil-6" value={cert.agency} onChange={(e) => setCert({ ...cert, agency: e.target.value })}>{AGENCIES.map((a) => <option key={a} value={a}>{a === 'Otra' ? t('Otra') : a}</option>)}</select></div>
+            <div className="field"><label htmlFor="perfil-7">{t('Nivel')}</label><select id="perfil-7" value={cert.level} onChange={(e) => setCert({ ...cert, level: e.target.value })}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
           </div>
-          <div className="field"><label>{t('Nº de tarjeta (opcional)')}</label><input value={cert.card_number} onChange={(e) => setCert({ ...cert, card_number: e.target.value })} /></div>
+          <div className="field"><label htmlFor="perfil-8">{t('Nº de tarjeta (opcional)')}</label><input id="perfil-8" value={cert.card_number} onChange={(e) => setCert({ ...cert, card_number: e.target.value })} /></div>
           {show('c')}
           <button className="btn ghost">{t('+ Añadir certificación')}</button>
         </form>
@@ -136,8 +139,8 @@ export default function Perfil() {
         <form className="card" onSubmit={registerCenter}>
           <p className="small muted" style={{ marginTop: 0 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</p>
           <div className="grid2">
-            <div className="field"><label>{t('Nombre del centro')}</label><input required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
-            <div className="field"><label>{t('Teléfono / WhatsApp')}</label><input value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
+            <div className="field"><label htmlFor="perfil-9">{t('Nombre del centro')}</label><input id="perfil-9" required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
+            <div className="field"><label htmlFor="perfil-10">{t('Teléfono / WhatsApp')}</label><input id="perfil-10" type="tel" inputMode="tel" autoComplete="tel" value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
           </div>
           {show('ce')}
           <button className="btn ghost">{t('Registrar mi centro')}</button>
@@ -146,7 +149,7 @@ export default function Perfil() {
 
       <h2>{t('Cuenta')}</h2>
       <form className="card" onSubmit={changePw}>
-        <div className="field"><label>{t('Nueva contraseña')}</label><input type="password" minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
+        <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
         {show('pw')}
         <div className="row between">
           <button className="btn ghost" disabled={pw.length < 6}>{t('Cambiar contraseña')}</button>

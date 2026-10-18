@@ -13,15 +13,26 @@ export default function CentroPanel() {
   const today = manilaDate()
   const [trips, setTrips] = useState(null)
   const [error, setError] = useState('')
+  const [boats, setBoats] = useState(null)
+  const [anyTrip, setAnyTrip] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const [reload, setReload] = useState(0)
 
   useEffect(() => {
+    setError('')
     const from = new Date(addDays(today, -7) + 'T00:00:00+08:00').toISOString()
     const to = new Date(addDays(today, 8) + 'T00:00:00+08:00').toISOString()
     supabase.from('trips').select(TRIP_SELECT).eq('center_id', center.id)
       .gte('departs_at', from).lt('departs_at', to).order('departs_at')
-      .then(({ data, error }) => { if (error) setError(errMsg(error)); setTrips(data || []) })
-  }, [center.id, today])
+      .then(({ data, error }) => { if (error) { setError(errMsg(error)); setTrips(false) } else setTrips(data || []) })
+    // Para la guía de primeros pasos
+    supabase.from('boats').select('id', { count: 'exact', head: true }).eq('center_id', center.id).then(({ count }) => setBoats(count ?? 0))
+    supabase.from('trips').select('id', { count: 'exact', head: true }).eq('center_id', center.id).then(({ count }) => setAnyTrip(count ?? 0))
+  }, [center.id, today, reload])
 
+  if (trips === false) return (
+    <div className="msg err" role="alert">{error} <button type="button" className="linkish" onClick={() => { setTrips(null); setReload((n) => n + 1) }}>{t('Reintentar')}</button></div>
+  )
   if (trips === null) return <p className="muted">{t('Cargando panel…')}</p>
 
   const live = (tr) => tr.status === 'published' || tr.status === 'completed'
@@ -69,7 +80,9 @@ export default function CentroPanel() {
         </div>
         <Link to="/centro/nueva" className="btn small">{t('+ Salida')}</Link>
       </div>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
+
+      <FirstSteps center={center} boats={boats} anyTrip={anyTrip} />
 
       <div className="kpis">
         <div className="kpi"><span>{t('Salidas hoy')}</span><b>{todays.length}</b></div>
@@ -128,7 +141,7 @@ export default function CentroPanel() {
           <tbody>
             {week.map((w) => (
               <tr key={w.d} onClick={() => go(`/centro/agenda?dia=${w.d}`)} style={{ cursor: 'pointer' }}>
-                <td style={{ paddingLeft: 12 }}>{w.d === today ? t('Hoy') : dayLabel(w.d)}</td>
+                <td style={{ paddingLeft: 12 }}><Link to={`/centro/agenda?dia=${w.d}`} style={{ color: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' }}>{w.d === today ? t('Hoy') : dayLabel(w.d)}</Link></td>
                 <td>{w.n}</td>
                 <td>{w.op ? `${w.booked}/${w.op} · ${Math.round((w.booked / w.op) * 100)} %` : '—'}</td>
                 <td style={{ textAlign: 'right', paddingRight: 12 }}>{w.total ? php(w.total) : '—'}</td>
@@ -150,10 +163,38 @@ export default function CentroPanel() {
           <button className="btn small ghost" onClick={() => {
             const url = window.location.origin + window.location.pathname + '#/c/' + center.id
             if (navigator.share) navigator.share({ title: center.name, url }).catch(() => {})
-            else navigator.clipboard?.writeText(url)
-          }}>{t('Compartir')}</button>
+            else navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 3000) })
+          }}>{copied ? t('Enlace copiado') : t('Compartir')}</button>
         </div>
       </div>
     </>
+  )
+}
+
+// Guía para un centro nuevo: qué le falta para empezar a recibir reservas
+function FirstSteps({ center, boats, anyTrip }) {
+  if (boats === null || anyTrip === null) return null
+  const steps = [
+    [center.verification_status === 'verified', t('Verifica tu centro'), '/centro/verificacion'],
+    [boats > 0, t('Añade tu primer barco'), '/centro/ajustes'],
+    [center.lat != null, t('Marca la ubicación del centro'), '/centro/ajustes'],
+    [(center.languages || []).length > 0, t('Indica idiomas y agencias'), '/centro/ajustes'],
+    [anyTrip > 0, t('Crea tu primera salida'), '/centro/nueva'],
+  ]
+  const done = steps.filter((s) => s[0]).length
+  if (done === steps.length) return null
+  return (
+    <div className="card stack">
+      <div className="row between"><b>{t('Primeros pasos')}</b><span className="small muted">{t('{a} de {b}', { a: done, b: steps.length })}</span></div>
+      <div className="bar"><div style={{ width: (done / steps.length) * 100 + '%' }} /></div>
+      <ul className="steps">
+        {steps.map(([ok, label, to], i) => (
+          <li key={label} className={ok ? 'done' : steps.findIndex((s) => !s[0]) === i ? 'now' : ''}>
+            <span className="dot">{ok ? '✓' : i + 1}</span>
+            {ok ? <span className="muted">{label}</span> : <Link to={to}>{label}</Link>}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

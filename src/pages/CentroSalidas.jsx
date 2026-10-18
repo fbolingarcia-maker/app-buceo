@@ -39,6 +39,15 @@ export default function CentroSalidas() {
 
   async function duplicate(tr, dates) {
     const hm = hhmm(tr.departs_at)
+    // No repetir donde ya hay una salida del mismo barco a la misma hora
+    const wanted = dates.map((d) => manilaToIso(d, hm))
+    const { data: existing } = await supabase.from('trips').select('departs_at').eq('center_id', tr.center_id).eq('boat_id', tr.boat_id)
+      .in('departs_at', wanted).neq('status', 'cancelled_weather')
+    const taken = new Set((existing || []).map((x) => new Date(x.departs_at).getTime()))
+    const free = dates.filter((d) => !taken.has(new Date(manilaToIso(d, hm)).getTime()))
+    const skipped = dates.length - free.length
+    if (!free.length) return setMsg({ ok: false, text: t('Ya existen salidas en todas esas fechas.') })
+    dates = free
     const rows = dates.map((d) => ({
       center_id: tr.center_id, boat_id: tr.boat_id, departs_at: manilaToIso(d, hm), num_dives: tr.num_dives, min_level: tr.min_level,
       price_php: tr.price_php, gear_rental_php: tr.gear_rental_php, guides: tr.guides, divers_per_guide: tr.divers_per_guide,
@@ -53,7 +62,8 @@ export default function CentroSalidas() {
       if (ts.length) await supabase.from('trip_sites').insert(ts)
     }
     setDup(null)
-    setMsg({ ok: true, text: data.length === 1 ? t('{n} salida creada', { n: 1 }) : t('{n} salidas creadas', { n: data.length }) })
+    const created = data.length === 1 ? t('{n} salida creada', { n: 1 }) : t('{n} salidas creadas', { n: data.length })
+    setMsg({ ok: true, text: created + (skipped ? ' · ' + t('{n} omitidas porque ya existían', { n: skipped }) : '') + (verified ? '' : ' · ' + t('como borrador')) })
     load()
   }
 
@@ -72,7 +82,7 @@ export default function CentroSalidas() {
           <button key={k} className={filter === k ? 'on' : ''} onClick={() => setFilter(k)}>{n}</button>
         ))}
       </div>
-      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
       {trips === null && <p className="muted">{t('Cargando…')}</p>}
       {trips?.length === 0 && <div className="card muted center">{t('No hay salidas aquí.')} <Link to="/centro/nueva">{t('Crear una')}</Link></div>}
       {Object.entries(groups).map(([d, ts]) => (
@@ -103,7 +113,7 @@ export default function CentroSalidas() {
                     <button className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'completed' }).eq('id', tr.id), t('Marcada como completada'))}>{t('Completada')}</button>
                   )}
                   {nBookings === 0 && (
-                    <button className="btn small danger" onClick={() => window.confirm(t('¿Eliminar esta salida?')) && run(supabase.from('trips').delete().eq('id', tr.id), t('Salida eliminada'))}>{t('Eliminar')}</button>
+                    <button className="btn small danger" onClick={() => window.confirm(t('¿Eliminar la salida del {date}? No se puede deshacer.', { date: dayLabel(d) + ' ' + time(tr.departs_at) })) && run(supabase.from('trips').delete().eq('id', tr.id), t('Salida eliminada'))}>{t('Eliminar')}</button>
                   )}
                 </div>
                 {dup === tr.id && <DuplicateForm from={d} onSubmit={(dates) => duplicate(tr, dates)} />}
@@ -119,6 +129,7 @@ export default function CentroSalidas() {
 // Repetir una salida: N días hacia delante, solo los días de la semana marcados
 function DuplicateForm({ from, onSubmit }) {
   const [days, setDays] = useState(7)
+  const [busy, setBusy] = useState(false)
   const [wd, setWd] = useState(['0', '1', '2', '3', '4', '5', '6'])
   const start = from > manilaDate() ? from : manilaDate()
   const dates = Array.from({ length: days }, (_, i) => addDays(start, i + 1))
@@ -127,15 +138,19 @@ function DuplicateForm({ from, onSubmit }) {
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
       <div className="row wrap small">
         {t('Repetir durante los próximos')}
-        <input type="number" min="1" max="60" value={days} onChange={(e) => setDays(Math.max(1, Math.min(60, +e.target.value || 1)))} style={{ width: 70 }} />
+        <input type="number" inputMode="numeric" min="1" max="60" value={days} onChange={(e) => setDays(Math.max(1, Math.min(60, +e.target.value || 1)))} style={{ width: 70 }} />
         {t('días, los:')}
       </div>
       <div className="seg" style={{ marginTop: 6 }}>
         {WEEKDAYS.map(([k, n]) => (
-          <button key={k} className={wd.includes(k) ? 'on' : ''} onClick={() => setWd(wd.includes(k) ? wd.filter((x) => x !== k) : [...wd, k])}>{wdName(k, n)}</button>
+          <button key={k} type="button" aria-pressed={wd.includes(k)} className={wd.includes(k) ? 'on' : ''} onClick={() => setWd(wd.includes(k) ? wd.filter((x) => x !== k) : [...wd, k])}>{wdName(k, n)}</button>
         ))}
       </div>
-      <button className="btn small" disabled={!dates.length} onClick={() => onSubmit(dates)}>{dates.length === 1 ? t('Crear {n} salida', { n: 1 }) : t('Crear {n} salidas', { n: dates.length })}</button>
+      {dates.length > 0 && <p className="small muted" style={{ marginTop: 0 }}>{t('Del {from} al {to}', { from: dayLabel(dates[0]), to: dayLabel(dates[dates.length - 1]) })}</p>}
+      <button type="button" className="btn small" disabled={!dates.length || busy} onClick={async () => {
+        if (dates.length > 14 && !window.confirm(t('¿Crear {n} salidas?', { n: dates.length }))) return
+        setBusy(true); await onSubmit(dates); setBusy(false)
+      }}>{busy ? t('Creando…') : dates.length === 1 ? t('Crear {n} salida', { n: 1 }) : t('Crear {n} salidas', { n: dates.length })}</button>
     </div>
   )
 }

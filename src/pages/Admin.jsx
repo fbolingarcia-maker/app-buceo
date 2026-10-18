@@ -5,6 +5,10 @@ import { t } from '../lib/i18n'
 import { dateTime } from '../lib/format'
 import { VSTATUS } from './CentroVerificacion'
 
+const DOC_LABEL = {
+  owner_id: 'Documento de identidad del responsable', business_permit: "Permiso de negocio (Mayor's permit)", dti_sec: 'Registro DTI / SEC',
+  agency_cert: 'Certificado de la agencia (PADI, SSI…)', shop_photo: 'Foto de la fachada o del centro', other: 'Otro documento',
+}
 const TABS = ['pending', 'unverified', 'rejected', 'suspended', 'verified']
 const FIELDS = [
   ['legal_name', 'Razón social'], ['business_reg_type', 'Tipo de registro'], ['business_reg_number', 'Nº DTI/SEC'],
@@ -38,7 +42,7 @@ export default function Admin() {
       <div className="chips">
         {TABS.map((s) => <button key={s} className={tab === s ? 'on' : ''} onClick={() => { setTab(s); setOpen(null) }}>{t(VSTATUS[s][1])}</button>)}
       </div>
-      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list?.length === 0 && <div className="card muted center">{t('No hay centros en este estado.')}</div>}
       {list?.map((c) => (
@@ -77,6 +81,8 @@ function Review({ c, onDone }) {
 
   async function decide(decision) {
     if ((decision === 'rejected' || decision === 'suspended') && !note.trim()) return setError(t('Escribe el motivo para el centro'))
+    if (decision === 'suspended' && !window.confirm(t('¿Suspender {name}? Sus salidas dejarán de ser visibles.', { name: c.name }))) return
+    if (decision === 'verified' && !window.confirm(t('¿Aprobar {name}? Podrá publicar salidas y recibir reservas.', { name: c.name }))) return
     setBusy(true); setError('')
     const { error } = await supabase.rpc('review_center', { p_center: c.id, p_decision: decision, p_note: note.trim() || null })
     setBusy(false)
@@ -105,11 +111,11 @@ function Review({ c, onDone }) {
         <b className="small">{t('Documentos')}</b>
         {docs.length === 0 && <div className="small muted">{t('Sin documentos')}</div>}
         {docs.map((d) => (
-          <div key={d.id} className="doc-row"><span>{d.kind} · <span className="muted">{d.file_name}</span></span><button type="button" className="btn small ghost" onClick={() => openDoc(d)}>{t('Ver')}</button></div>
+          <div key={d.id} className="doc-row"><span>{t(DOC_LABEL[d.kind] || d.kind)} · <span className="muted">{d.file_name}</span></span><button type="button" className="btn small ghost" onClick={() => openDoc(d)}>{t('Ver')}</button></div>
         ))}
       </div>
-      <div className="field"><label>{t('Nota para el centro (obligatoria si rechazas o suspendes)')}</label><textarea rows="2" value={note} onChange={(e) => setNote(e.target.value)} /></div>
-      {error && <div className="msg err">{error}</div>}
+      <div className="field"><label htmlFor="admin-1">{t('Nota para el centro (obligatoria si rechazas o suspendes)')}</label><textarea id="admin-1" rows="2" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+      {error && <div className="msg err" role="alert">{error}</div>}
       <div className="row wrap" style={{ gap: 8 }}>
         {c.verification_status !== 'verified' && <button className="btn small" disabled={busy} onClick={() => decide('verified')}>✅ {t('Aprobar')}</button>}
         {c.verification_status !== 'rejected' && c.verification_status !== 'verified' && <button className="btn small ghost" disabled={busy} onClick={() => decide('rejected')}>{t('Rechazar')}</button>}

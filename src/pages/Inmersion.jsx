@@ -150,8 +150,7 @@ export default function Inmersion({ id }) {
             </div>
           )}
           <div className="grid2" style={{ marginTop: 8 }}>
-            <div className="field"><label>{t('Punto de buceo')}</label>
-              <select value={f.site_id || ''} onChange={(e) => pickSite(e.target.value)}>
+            <div className="field"><label htmlFor="inmersion-1">{t('Punto de buceo')}</label><select id="inmersion-1" value={f.site_id || ''} onChange={(e) => pickSite(e.target.value)}>
                 <option value="">{t('Otro (escríbelo)')}</option>
                 {Object.entries(sites.reduce((m, s) => { const k = (s.province ? s.province + ' · ' : '') + s.area; (m[k] = m[k] || []).push(s); return m }, {}))
                   .sort(([a], [b]) => a.localeCompare(b))
@@ -162,35 +161,34 @@ export default function Inmersion({ id }) {
                   ))}
               </select>
             </div>
-            <div className="field"><label>{t('Nombre')}</label><input value={f.site_name || ''} onChange={set('site_name')} placeholder={t('p. ej. Napaling')} required /></div>
-            <div className="field"><label>{t('Fecha')}</label><input type="date" required value={f.dive_date} onChange={set('dive_date')} /></div>
-            <div className="field"><label>{t('Hora de entrada')}</label><input type="time" value={f.entry_time || ''} onChange={set('entry_time')} /></div>
+            <div className="field"><label htmlFor="inmersion-2">{t('Nombre')}</label><input id="inmersion-2" value={f.site_name || ''} onChange={set('site_name')} placeholder={t('p. ej. Napaling')} required /></div>
+            <div className="field"><label htmlFor="inmersion-3">{t('Fecha')}</label><input id="inmersion-3" type="date" required value={f.dive_date} onChange={set('dive_date')} /></div>
+            <div className="field"><label htmlFor="inmersion-4">{t('Hora de entrada')}</label><input id="inmersion-4" type="time" value={f.entry_time || ''} onChange={set('entry_time')} /></div>
           </div>
         </div>
 
         <div className="card">
           <b>{t('Datos de la inmersión')}</b>
           <div className="grid2" style={{ marginTop: 8 }}>
-            <div className="field"><label>{t('Prof. máxima (m)')}</label><input type="number" step="0.1" min="0" value={f.max_depth_m ?? ''} onChange={set('max_depth_m')} /></div>
-            <div className="field"><label>{t('Prof. media (m)')}</label><input type="number" step="0.1" min="0" value={f.avg_depth_m ?? ''} onChange={set('avg_depth_m')} /></div>
-            <div className="field"><label>{t('Duración (min)')}</label><input type="number" min="0" value={f.duration_min ?? ''} onChange={set('duration_min')} /></div>
-            <div className="field"><label>{t('Temperatura agua (°C)')}</label><input type="number" step="0.1" value={f.water_temp_c ?? ''} onChange={set('water_temp_c')} /></div>
-            <div className="field"><label>{t('Visibilidad (m)')}</label><input type="number" min="0" value={f.visibility_m ?? ''} onChange={set('visibility_m')} /></div>
-            <div className="field"><label>{t('Condiciones')}</label><input value={f.conditions || ''} onChange={set('conditions')} placeholder={t('corriente suave, mar en calma…')} /></div>
+            <div className="field"><label htmlFor="inmersion-5">{t('Prof. máxima (m)')}</label><input id="inmersion-5" type="number" inputMode="decimal" step="0.1" min="0" value={f.max_depth_m ?? ''} onChange={set('max_depth_m')} /></div>
+            <div className="field"><label htmlFor="inmersion-6">{t('Prof. media (m)')}</label><input id="inmersion-6" type="number" inputMode="decimal" step="0.1" min="0" value={f.avg_depth_m ?? ''} onChange={set('avg_depth_m')} /></div>
+            <div className="field"><label htmlFor="inmersion-7">{t('Duración (min)')}</label><input id="inmersion-7" type="number" inputMode="numeric" min="0" value={f.duration_min ?? ''} onChange={set('duration_min')} /></div>
+            <div className="field"><label htmlFor="inmersion-8">{t('Temperatura agua (°C)')}</label><input id="inmersion-8" type="number" inputMode="decimal" step="0.1" value={f.water_temp_c ?? ''} onChange={set('water_temp_c')} /></div>
+            <div className="field"><label htmlFor="inmersion-9">{t('Visibilidad (m)')}</label><input id="inmersion-9" type="number" inputMode="numeric" min="0" value={f.visibility_m ?? ''} onChange={set('visibility_m')} /></div>
+            <div className="field"><label htmlFor="inmersion-10">{t('Condiciones')}</label><input id="inmersion-10" value={f.conditions || ''} onChange={set('conditions')} placeholder={t('corriente suave, mar en calma…')} /></div>
           </div>
         </div>
 
         <div className="card">
           <b>{t('Equipo y gas')}</b>
           <div className="grid2" style={{ marginTop: 8 }}>
-            <div className="field"><label>{t('Gas')}</label>
-              <select value={f.gas} onChange={set('gas')}><option value="air">{t('Aire')}</option><option value="nitrox">Nitrox</option><option value="trimix">Trimix</option></select>
+            <div className="field"><label htmlFor="inmersion-11">{t('Gas')}</label><select id="inmersion-11" value={f.gas} onChange={set('gas')}><option value="air">{t('Aire')}</option><option value="nitrox">Nitrox</option><option value="trimix">Trimix</option></select>
             </div>
-            {f.gas !== 'air' && <div className="field"><label>% O₂</label><input type="number" min="21" max="100" value={f.o2_pct ?? ''} onChange={set('o2_pct')} /></div>}
-            <div className="field"><label>{t('Botella inicio (bar)')}</label><input type="number" min="0" max="350" value={f.tank_start_bar ?? ''} onChange={set('tank_start_bar')} /></div>
-            <div className="field"><label>{t('Botella final (bar)')}</label><input type="number" min="0" max="350" value={f.tank_end_bar ?? ''} onChange={set('tank_end_bar')} /></div>
-            <div className="field"><label>{t('Lastre (kg)')}</label><input type="number" step="0.5" min="0" value={f.weights_kg ?? ''} onChange={set('weights_kg')} /></div>
-            <div className="field"><label>{t('Traje')}</label><input value={f.suit || ''} onChange={set('suit')} placeholder={t('3 mm, shorty…')} /></div>
+            {f.gas !== 'air' && <div className="field"><label htmlFor="inmersion-12">% O₂</label><input id="inmersion-12" type="number" inputMode="numeric" min="21" max="100" value={f.o2_pct ?? ''} onChange={set('o2_pct')} /></div>}
+            <div className="field"><label htmlFor="inmersion-13">{t('Botella inicio (bar)')}</label><input id="inmersion-13" type="number" inputMode="numeric" min="0" max="350" value={f.tank_start_bar ?? ''} onChange={set('tank_start_bar')} /></div>
+            <div className="field"><label htmlFor="inmersion-14">{t('Botella final (bar)')}</label><input id="inmersion-14" type="number" inputMode="numeric" min="0" max="350" value={f.tank_end_bar ?? ''} onChange={set('tank_end_bar')} /></div>
+            <div className="field"><label htmlFor="inmersion-15">{t('Lastre (kg)')}</label><input id="inmersion-15" type="number" inputMode="decimal" step="0.5" min="0" value={f.weights_kg ?? ''} onChange={set('weights_kg')} /></div>
+            <div className="field"><label htmlFor="inmersion-16">{t('Traje')}</label><input id="inmersion-16" value={f.suit || ''} onChange={set('suit')} placeholder={t('3 mm, shorty…')} /></div>
           </div>
           {used > 0 && <p className="small muted" style={{ margin: 0 }}>{t('Consumo: {n} bar', { n: used })}</p>}
         </div>
@@ -204,9 +202,9 @@ export default function Inmersion({ id }) {
               ))}
             </div>
           </div>
-          <div className="field"><label>{t('Compañero (buddy) / guía')}</label><input value={f.buddy || ''} onChange={set('buddy')} /></div>
-          <div className="field"><label>{t('Vida marina vista')}</label><input value={f.marine_life || ''} onChange={set('marine_life')} placeholder={t('tortugas, sardinas, nudibranquios…')} /></div>
-          <div className="field"><label>{t('Comentarios')}</label><textarea rows="4" value={f.notes || ''} onChange={set('notes')} /></div>
+          <div className="field"><label htmlFor="inmersion-17">{t('Compañero (buddy) / guía')}</label><input id="inmersion-17" value={f.buddy || ''} onChange={set('buddy')} /></div>
+          <div className="field"><label htmlFor="inmersion-18">{t('Vida marina vista')}</label><input id="inmersion-18" value={f.marine_life || ''} onChange={set('marine_life')} placeholder={t('tortugas, sardinas, nudibranquios…')} /></div>
+          <div className="field"><label htmlFor="inmersion-19">{t('Comentarios')}</label><textarea id="inmersion-19" rows="4" value={f.notes || ''} onChange={set('notes')} /></div>
           {f.center_id && (
             <label className="check"><input type="checkbox" checked={f.share_with_center} onChange={set('share_with_center')} /> {t('Compartir esta inmersión y mi valoración con {name}', { name: centerName || t('el centro') })}</label>
           )}
@@ -229,7 +227,7 @@ export default function Inmersion({ id }) {
           <p className="small muted" style={{ marginBottom: 0 }}>{t('Las fotos son privadas: solo las ves tú.')}</p>
         </div>
 
-        {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
+        {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
         <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : t('Guardar inmersión')}</button>
         {!isNew && <button type="button" className="btn block ghost" style={{ marginTop: 8 }} onClick={removeLog}>{t('Borrar inmersión')}</button>}
       </form>

@@ -39,13 +39,13 @@ export default function RegistrarCentro() {
       <h1>{t('Da de alta tu centro')}</h1>
       <p className="muted">{t('Si tu centro ya aparece en el directorio, escribe el mismo nombre para reclamar su ficha.')}</p>
       <form className="card" onSubmit={save}>
-        <div className="field"><label>{t('Nombre del centro')}</label><input required value={name} onChange={(e) => setName(e.target.value)} /></div>
-        <div className="field"><label>{t('Teléfono / WhatsApp')}</label><input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+        <div className="field"><label htmlFor="registrarcentro-1">{t('Nombre del centro')}</label><input id="registrarcentro-1" required value={name} onChange={(e) => setName(e.target.value)} /></div>
+        <div className="field"><label htmlFor="registrarcentro-2">{t('Teléfono / WhatsApp')}</label><input id="registrarcentro-2" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
         <div className="grid2">
           <div className="field"><label>{t('Destino')}</label><DestinoSelect required value={dest?.name} onChange={(_, d) => setDest(d || null)} /></div>
-          <div className="field"><label>{t('Playa / barrio (opcional)')}</label><input placeholder={t('p. ej. Alona Beach')} value={locality} onChange={(e) => setLocality(e.target.value)} /></div>
+          <div className="field"><label htmlFor="registrarcentro-3">{t('Playa / barrio (opcional)')}</label><input id="registrarcentro-3" placeholder={t('p. ej. Alona Beach')} value={locality} onChange={(e) => setLocality(e.target.value)} /></div>
         </div>
-        {error && <div className="msg err">{error}</div>}
+        {error && <div className="msg err" role="alert">{error}</div>}
         <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : t('Registrar centro')}</button>
       </form>
       <p className="small muted center">{t('Siguiente paso: verificar tu centro (datos del negocio, identidad del responsable y permiso de negocio). Hasta que lo validemos no serás visible ni podrás publicar salidas; mientras tanto puedes preparar barcos y borradores.')}</p>

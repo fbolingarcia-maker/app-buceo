@@ -7,7 +7,7 @@ import { t } from '../lib/i18n'
 
 export default function NuevaSalida({ id }) {
   const { center, verified } = useAuth()
-  const [boats, setBoats] = useState([])
+  const [boats, setBoats] = useState(null)
   const [sites, setSites] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,7 +20,7 @@ export default function NuevaSalida({ id }) {
   useEffect(() => {
     if (!center) return
     supabase.from('boats').select('*').eq('center_id', center.id).eq('active', true).order('name')
-      .then(({ data }) => { setBoats(data || []); if (data?.[0]) setF((x) => ({ ...x, boat_id: x.boat_id || data[0].id })) })
+      .then(({ data, error }) => { if (error) setError(errMsg(error)); setBoats(data || []); if (data?.[0]) setF((x) => ({ ...x, boat_id: x.boat_id || data[0].id })) })
     supabase.from('dive_sites').select('*').order('area').order('name').then(({ data }) => setSites(data || []))
   }, [center])
 
@@ -56,7 +56,7 @@ export default function NuevaSalida({ id }) {
     return mine(la) - mine(lb) || (a === center.destination ? -1 : b === center.destination ? 1 : a.localeCompare(b))
   })
   const set = (k, num) => (e) => setF({ ...f, [k]: num ? (e.target.value === '' ? '' : +e.target.value) : e.target.value })
-  const boat = boats.find((b) => b.id === f.boat_id)
+  const boat = (boats || []).find((b) => b.id === f.boat_id)
   const operative = boat ? Math.min(boat.capacity, f.guides * f.divers_per_guide, f.seat_override === '' ? 999 : f.seat_override) : 0
 
   async function save(e) {
@@ -88,25 +88,28 @@ export default function NuevaSalida({ id }) {
     <>
       <Link to="/centro/salidas" className="small">← {t('Salidas')}</Link>
       <h1 style={{ marginTop: 8 }}>{id ? t('Editar salida') : t('Nueva salida')}</h1>
-      {id && hasBookings && <div className="msg err">{t('Esta salida ya tiene reservas: los cambios de precio no afectan a las reservas hechas, pero avisa a los buceadores si cambias la hora o el barco.')}</div>}
-      {!loaded ? <p className="muted">{error || t('Cargando…')}</p> : boats.length === 0 ? (
-        <div className="card">{t('Antes necesitas un barco. Ve a')} <Link to="/centro/ajustes">{t('Mi centro → Barcos')}</Link>.</div>
+      {id && hasBookings && <div className="msg warn" role="status">{t('Esta salida ya tiene reservas: los cambios de precio no afectan a las reservas hechas, pero avisa a los buceadores si cambias la hora o el barco.')}</div>}
+      {!loaded || boats === null ? <p className="muted">{error || t('Cargando…')}</p> : boats.length === 0 ? (
+        <div className="card stack">
+          <p style={{ margin: 0 }}>{t('Antes de crear salidas, añade al menos un barco con su capacidad.')}</p>
+          <Link to="/centro/ajustes" className="btn">{t('Añadir un barco')}</Link>
+        </div>
       ) : (
         <form className="card" onSubmit={save}>
           <div className="grid2">
-            <div className="field"><label>{t('Día')}</label><input type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
-            <div className="field"><label>{t('Hora (Manila)')}</label><input type="time" required value={f.hour} onChange={set('hour')} /></div>
-            <div className="field"><label>{t('Barco')}</label><select value={f.boat_id} onChange={set('boat_id')}>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.capacity})</option>)}</select></div>
-            <div className="field"><label>{t('Inmersiones')}</label><select value={f.num_dives} onChange={(e) => {
+            <div className="field"><label htmlFor="nuevasalida-1">{t('Día')}</label><input id="nuevasalida-1" type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
+            <div className="field"><label htmlFor="nuevasalida-2">{t('Hora (Manila)')}</label><input id="nuevasalida-2" type="time" required value={f.hour} onChange={set('hour')} /></div>
+            <div className="field"><label htmlFor="nuevasalida-3">{t('Barco')}</label><select id="nuevasalida-3" value={f.boat_id} onChange={set('boat_id')}>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.capacity})</option>)}</select></div>
+            <div className="field"><label htmlFor="nuevasalida-4">{t('Inmersiones')}</label><select id="nuevasalida-4" value={f.num_dives} onChange={(e) => {
               const n = +e.target.value; setF({ ...f, num_dives: n, sites: Array.from({ length: n }, (_, i) => f.sites[i] || '') })
             }}>{[1, 2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}</select></div>
-            <div className="field"><label>{t('Nivel mínimo')}</label><select value={f.min_level} onChange={set('min_level')}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
-            <div className="field"><label>{t('Precio (₱/buceador)')}</label><input type="number" min="1" required value={f.price_php} onChange={set('price_php', true)} /></div>
-            <div className="field"><label>{t('Alquiler equipo (₱)')}</label><input type="number" min="0" value={f.gear_rental_php} onChange={set('gear_rental_php', true)} /></div>
-            <div className="field"><label>{t('Guías')}</label><input type="number" min="1" max="15" required value={f.guides} onChange={set('guides', true)} /></div>
-            <div className="field"><label>{t('Buceadores por guía')}</label><input type="number" min="1" max="10" required value={f.divers_per_guide} onChange={set('divers_per_guide', true)} /></div>
-            <div className="field"><label>{t('Límite manual de plazas')}</label><input type="number" min="0" placeholder={t('(opcional)')} value={f.seat_override} onChange={set('seat_override', true)} /></div>
-            <div className="field"><label>{t('Plazas reservadas fuera de la app')}</label><input type="number" min="0" value={f.blocked_seats} onChange={set('blocked_seats', true)} /></div>
+            <div className="field"><label htmlFor="nuevasalida-5">{t('Nivel mínimo')}</label><select id="nuevasalida-5" value={f.min_level} onChange={set('min_level')}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+            <div className="field"><label htmlFor="nuevasalida-6">{t('Precio (₱/buceador)')}</label><input id="nuevasalida-6" type="number" inputMode="numeric" min="1" required value={f.price_php} onChange={set('price_php', true)} /></div>
+            <div className="field"><label htmlFor="nuevasalida-7">{t('Alquiler equipo (₱)')}</label><input id="nuevasalida-7" type="number" inputMode="numeric" min="0" value={f.gear_rental_php} onChange={set('gear_rental_php', true)} /></div>
+            <div className="field"><label htmlFor="nuevasalida-8">{t('Guías')}</label><input id="nuevasalida-8" type="number" inputMode="numeric" min="1" max="15" required value={f.guides} onChange={set('guides', true)} /></div>
+            <div className="field"><label htmlFor="nuevasalida-9">{t('Buceadores por guía')}</label><input id="nuevasalida-9" type="number" inputMode="numeric" min="1" max="10" required value={f.divers_per_guide} onChange={set('divers_per_guide', true)} /></div>
+            <div className="field"><label htmlFor="nuevasalida-10">{t('Límite manual de plazas')}</label><input id="nuevasalida-10" type="number" inputMode="numeric" min="0" placeholder={t('(opcional)')} value={f.seat_override} onChange={set('seat_override', true)} /></div>
+            <div className="field"><label htmlFor="nuevasalida-11">{t('Plazas reservadas fuera de la app')}</label><input id="nuevasalida-11" type="number" inputMode="numeric" min="0" value={f.blocked_seats} onChange={set('blocked_seats', true)} /></div>
           </div>
 
           <b>{t('Puntos de buceo')}</b>
@@ -127,7 +130,7 @@ export default function NuevaSalida({ id }) {
           {verified
             ? <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> {t('Publicar ya (si no, queda como borrador)')}</label>
             : <p className="small muted">{t('Se guardará como borrador: podrás publicarla cuando tu centro esté verificado.')} <Link to="/centro/verificacion">{t('Verificar centro')}</Link></p>}
-          {error && <div className="msg err">{error}</div>}
+          {error && <div className="msg err" role="alert">{error}</div>}
           <button className="btn block" disabled={busy}>{busy ? t('Guardando…') : id ? t('Guardar cambios') : t('Crear salida')}</button>
         </form>
       )}

@@ -65,7 +65,7 @@ export default function Bitacora() {
           <Link to="/bitacora/nueva" className="btn small">{t('+ Inmersión')}</Link>
         </div>
       </div>
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
 
       <div className="stats">
         <div><b>{appDives + (diver.logged_dives || 0)}</b><span>{diver.logged_dives ? t('inmersiones ({n} aquí)', { n: appDives }) : t('inmersiones')}</span></div>
@@ -82,7 +82,10 @@ export default function Bitacora() {
       ))}
 
       {logs.length === 0 && pendingTrips.length === 0 && (
-        <div className="card center muted">{t('Aún no has registrado inmersiones. Pulsa «+ Inmersión» para añadir la primera.')}</div>
+        <div className="card center muted">
+          <p style={{ marginTop: 0 }}>{t('Aún no has registrado inmersiones. Pulsa «+ Inmersión» para añadir la primera.')}</p>
+          <Link to="/bitacora/nueva" className="btn">{t('+ Inmersión')}</Link>
+        </div>
       )}
       {logs.map((l, i) => (
         <Link key={l.id} to={'/bitacora/' + l.id} className="card row" style={{ alignItems: 'stretch' }}>

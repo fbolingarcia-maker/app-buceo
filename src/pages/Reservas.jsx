@@ -59,6 +59,7 @@ function PayBox({ b, mode, onDone }) {
 
   return (
     <div style={{ marginTop: 10 }}>
+      {pending && <p className="small muted" style={{ margin: '0 0 6px' }}>{t('¿Cuánto quieres pagar ahora?')}</p>}
       {pending ? (
         <div className="seg">
           <button className={kind === 'deposit' ? 'on' : ''} onClick={() => setKind('deposit')}>{t('Señal 50 % · {amount}', { amount: php(b.deposit_php - b.paid_php) })}</button>
@@ -71,13 +72,14 @@ function PayBox({ b, mode, onDone }) {
           <button className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}>{t('Tarjeta')}</button>
         </div>
       )}
-      {error && <div className="msg err">{error}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
       <button className="btn block" disabled={busy || amount <= 0} onClick={pay}>
         {busy ? t('Un momento…')
           : mode === 'demo' ? t('Pagar {amount} (modo demo)', { amount: php(amount) })
           : method === 'gcash' ? t('Pagar {amount} con GCash', { amount: php(amount) })
           : t('Pagar {amount} con tarjeta', { amount: php(amount) })}
       </button>
+      {mode !== 'demo' && <p className="small muted" style={{ margin: '6px 0 0' }}>🔒 {t('Pago seguro con PayMongo. DiveSlot no guarda los datos de tu tarjeta.')}</p>}
     </div>
   )
 }
@@ -100,6 +102,15 @@ export default function Reservas() {
   }, [diver])
 
   useEffect(() => { load() }, [load])
+  // Recién reservada desde la ficha de la salida
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('justBooked')) {
+        sessionStorage.removeItem('justBooked')
+        setInfo(t('¡Plaza retenida! Paga la señal en los próximos 15 min para confirmarla.'))
+      }
+    } catch (e) { /* sin almacenamiento */ }
+  }, [])
   useEffect(() => { const i = setInterval(() => tick((n) => n + 1), 15000); return () => clearInterval(i) }, [])
   useEffect(() => {
     supabase.from('app_config').select('value').eq('key', 'payments_mode').maybeSingle()
@@ -157,8 +168,8 @@ export default function Reservas() {
             {t('Pagado {amount}', { amount: php(b.paid_php) })}{balance > 0 && active ? <> · <b>{t('pendiente {amount}', { amount: php(balance) })}</b></> : ' · ' + t('todo pagado')}
           </div>
         )}
-        {b.refund_php > 0 && <div className="msg ok">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
-        {b.trips?.status === 'cancelled_weather' && <div className="msg err">{t('Salida cancelada por meteo.')}</div>}
+        {b.refund_php > 0 && <div className="msg ok" role="status">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
+        {b.trips?.status === 'cancelled_weather' && <div className="msg err" role="alert">{t('Salida cancelada por meteo.')}</div>}
         {b.status === 'pending_payment' && !expired && (
           <p className="small muted">{t('Plaza retenida {n} min más. Paga al menos la señal del 50 % ({amount}) para confirmarla.', { n: minsLeft, amount: php(b.deposit_php) })}</p>
         )}
@@ -186,8 +197,8 @@ export default function Reservas() {
   return (
     <>
       <h1>{t('Mis reservas')}</h1>
-      {error && <div className="msg err">{error}</div>}
-      {info && <div className="msg ok">{info}</div>}
+      {error && <div className="msg err" role="alert">{error}</div>}
+      {info && <div className="msg ok" role="status">{info}</div>}
       {upcoming.length === 0 && <div className="card center muted">{t('No tienes reservas próximas.')} <Link to="/">{t('Ver salidas')}</Link></div>}
       {upcoming.map(card)}
       {past.length > 0 && <><h2>{t('Anteriores')}</h2>{past.map(card)}</>}

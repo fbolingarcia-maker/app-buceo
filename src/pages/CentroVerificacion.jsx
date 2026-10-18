@@ -76,8 +76,10 @@ export default function CentroVerificacion() {
   }
 
   async function removeDoc(d) {
+    if (!window.confirm(t('¿Quitar «{name}»?', { name: d.file_name || d.kind }))) return
+    const { error } = await supabase.from('center_documents').delete().eq('id', d.id)
+    if (error) return setMsg({ ok: false, text: errMsg(error) })
     await supabase.storage.from('center-docs').remove([d.path])
-    await supabase.from('center_documents').delete().eq('id', d.id)
     loadDocs()
   }
 
@@ -126,10 +128,10 @@ export default function CentroVerificacion() {
         </ul>
       </div>
 
-      {st === 'pending' && <div className="msg ok">{t('Tu solicitud está en revisión. Mientras tanto puedes preparar tus barcos y salidas como borrador.')}</div>}
-      {st === 'verified' && <div className="msg ok">{t('Tu centro está verificado: tus salidas publicadas son visibles y reservables.')}</div>}
+      {st === 'pending' && <div className="msg ok" role="status">{t('Tu solicitud está en revisión. Mientras tanto puedes preparar tus barcos y salidas como borrador.')}</div>}
+      {st === 'verified' && <div className="msg ok" role="status">{t('Tu centro está verificado: tus salidas publicadas son visibles y reservables.')}</div>}
       {(st === 'rejected' || st === 'suspended') && (
-        <div className="msg err">
+        <div className="msg err" role="alert">
           <b>{st === 'rejected' ? t('Solicitud rechazada') : t('Centro suspendido')}</b>
           {center.review_note && <div>{t('Motivo:')} {center.review_note}</div>}
           {st === 'rejected' && <div>{t('Corrige los datos o documentos y vuelve a enviarla.')}</div>}
@@ -144,43 +146,41 @@ export default function CentroVerificacion() {
           <fieldset disabled={locked} style={{ border: 0, padding: 0, margin: 0 }}>
             <div className="card">
               <h2 style={{ marginTop: 0 }}>{t('Negocio')}</h2>
-              <div className="field"><label>{t('Razón social / nombre registrado')} *</label><input required value={f.legal_name} onChange={set('legal_name')} /></div>
+              <div className="field"><label htmlFor="centroverificacion-1">{t('Razón social / nombre registrado')} *</label><input id="centroverificacion-1" required value={f.legal_name} onChange={set('legal_name')} /></div>
               <div className="grid2">
-                <div className="field"><label>{t('Tipo de registro')}</label>
-                  <select value={f.business_reg_type} onChange={set('business_reg_type')}>
+                <div className="field"><label htmlFor="centroverificacion-2">{t('Tipo de registro')}</label><select id="centroverificacion-2" value={f.business_reg_type} onChange={set('business_reg_type')}>
                     <option value="DTI">{t('DTI (empresa individual)')}</option>
                     <option value="SEC">{t('SEC (sociedad)')}</option>
                     <option value="CDA">{t('CDA (cooperativa)')}</option>
                     <option value="foreign">{t('Registro extranjero')}</option>
                   </select>
                 </div>
-                <div className="field"><label>{t('Nº de registro DTI/SEC')}</label><input value={f.business_reg_number} onChange={set('business_reg_number')} /></div>
-                <div className="field"><label>{t("Nº de Mayor's permit")}</label><input value={f.mayors_permit_number} onChange={set('mayors_permit_number')} /></div>
-                <div className="field"><label>{t('Años operando')}</label><input type="number" min="0" max="80" value={f.years_operating} onChange={set('years_operating')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-3">{t('Nº de registro DTI/SEC')}</label><input id="centroverificacion-3" value={f.business_reg_number} onChange={set('business_reg_number')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-4">{t("Nº de Mayor's permit")}</label><input id="centroverificacion-4" value={f.mayors_permit_number} onChange={set('mayors_permit_number')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-5">{t('Años operando')}</label><input id="centroverificacion-5" type="number" inputMode="numeric" min="0" max="80" value={f.years_operating} onChange={set('years_operating')} /></div>
               </div>
               <p className="small muted" style={{ marginTop: 0 }}>{t("Rellena al menos uno de los dos números (DTI/SEC o Mayor's permit).")}</p>
-              <div className="field"><label>{t('Dirección del centro')} *</label><input required value={f.address} onChange={set('address')} placeholder={t('Calle, barangay, municipio')} /></div>
+              <div className="field"><label htmlFor="centroverificacion-6">{t('Dirección del centro')} *</label><input id="centroverificacion-6" required value={f.address} onChange={set('address')} placeholder={t('Calle, barangay, municipio')} /></div>
               <div className="grid2">
-                <div className="field"><label>{t('Agencia principal')}</label>
-                  <select value={f.agency} onChange={set('agency')}>
+                <div className="field"><label htmlFor="centroverificacion-7">{t('Agencia principal')}</label><select id="centroverificacion-7" value={f.agency} onChange={set('agency')}>
                     <option value="">—</option>
                     {AGENCIES.map((a) => <option key={a}>{a}</option>)}
                   </select>
                 </div>
-                <div className="field"><label>{t('Nº de centro en la agencia')}</label><input value={f.agency_number} onChange={set('agency_number')} placeholder={t('p. ej. PADI S-12345')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-8">{t('Nº de centro en la agencia')}</label><input id="centroverificacion-8" value={f.agency_number} onChange={set('agency_number')} placeholder={t('p. ej. PADI S-12345')} /></div>
               </div>
-              <div className="field"><label>{t('Web o red social del centro')}</label><input type="url" placeholder="https://" value={f.social_url} onChange={set('social_url')} /></div>
+              <div className="field"><label htmlFor="centroverificacion-9">{t('Web o red social del centro')}</label><input id="centroverificacion-9" type="url" placeholder="https://" value={f.social_url} onChange={set('social_url')} /></div>
             </div>
 
             <div className="card">
               <h2 style={{ marginTop: 0 }}>{t('Responsable')}</h2>
               <div className="grid2">
-                <div className="field"><label>{t('Nombre completo')} *</label><input required value={f.owner_name} onChange={set('owner_name')} /></div>
-                <div className="field"><label>{t('Cargo')}</label><input value={f.owner_role} onChange={set('owner_role')} placeholder={t('Propietario, gerente…')} /></div>
-                <div className="field"><label>{t('Email de contacto')} *</label><input type="email" required value={f.contact_email} onChange={set('contact_email')} /></div>
-                <div className="field"><label>{t('Teléfono / WhatsApp')} *</label><input required value={f.contact_phone} onChange={set('contact_phone')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-10">{t('Nombre completo')} *</label><input id="centroverificacion-10" required value={f.owner_name} onChange={set('owner_name')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-11">{t('Cargo')}</label><input id="centroverificacion-11" value={f.owner_role} onChange={set('owner_role')} placeholder={t('Propietario, gerente…')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-12">{t('Email de contacto')} *</label><input id="centroverificacion-12" type="email" required value={f.contact_email} onChange={set('contact_email')} /></div>
+                <div className="field"><label htmlFor="centroverificacion-13">{t('Teléfono / WhatsApp')} *</label><input id="centroverificacion-13" type="tel" inputMode="tel" autoComplete="tel" required value={f.contact_phone} onChange={set('contact_phone')} /></div>
               </div>
-              <div className="field"><label>{t('Notas para el equipo de revisión (opcional)')}</label><textarea rows="2" value={f.notes} onChange={set('notes')} /></div>
+              <div className="field"><label htmlFor="centroverificacion-14">{t('Notas para el equipo de revisión (opcional)')}</label><textarea id="centroverificacion-14" rows="2" value={f.notes} onChange={set('notes')} /></div>
             </div>
 
             <div className="card">
@@ -209,7 +209,7 @@ export default function CentroVerificacion() {
             </div>
           </fieldset>
 
-          {msg && <div className={msg.ok ? 'msg ok' : 'msg err'}>{msg.text}</div>}
+          {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
           {!locked && (
             <div className="row" style={{ gap: 8 }}>
               <button type="button" className="btn ghost" disabled={busy} onClick={saveDraft}>{t('Guardar borrador')}</button>
