@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useAuth } from './lib/auth'
 import { useRoute, Link, go } from './lib/router'
 import { t, LangSwitch } from './lib/i18n'
@@ -21,12 +22,23 @@ import CentroInfo from './pages/CentroInfo'
 import Destino from './pages/Destino'
 import CentroVerificacion from './pages/CentroVerificacion'
 import Admin from './pages/Admin'
+import ErrorBoundary from './lib/ErrorBoundary'
 
 function NeedLogin({ children }) {
   const { session } = useAuth()
   if (session === undefined) return <p className="muted center">{t('Cargando…')}</p>
   if (!session) return <Login />
   return children
+}
+
+// Tras iniciar sesión vuelve a donde estaba el usuario (p. ej. la salida que quería reservar)
+function AfterLogin() {
+  useEffect(() => {
+    let to = '/perfil'
+    try { to = sessionStorage.getItem('afterLogin') || to; sessionStorage.removeItem('afterLogin') } catch (e) { /* sin almacenamiento */ }
+    go(to)
+  }, [])
+  return <p className="muted center">{t('Cargando…')}</p>
 }
 
 // Páginas del centro: hace falta sesión y tener el centro dado de alta
@@ -51,7 +63,7 @@ function VerifyBanner() {
     suspended: t('Tu centro está suspendido y no es visible para los buceadores.'),
   }[st]
   return (
-    <div className={st === 'rejected' || st === 'suspended' ? 'banner bad' : 'banner'}>
+    <div className={st === 'rejected' || st === 'suspended' ? 'banner bad' : 'banner'} role="status">
       <span>{text}</span>
       <Link to="/centro/verificacion" className="btn small">{st === 'pending' ? t('Ver estado') : t('Verificar centro')}</Link>
     </div>
@@ -86,7 +98,7 @@ function Flag() {
 
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, isAdmin, recovering, signOut } = useAuth()
+  const { session, isCenter, isAdmin, pendingCenters, recovering, signOut } = useAuth()
   const seg = path.split('/').filter(Boolean)
 
   let page
@@ -96,7 +108,7 @@ export default function App() {
   else if (seg[0] === 'bitacora' && seg[1]) page = <NeedLogin><Inmersion id={seg[1]} /></NeedLogin>
   else if (seg[0] === 'bitacora') page = <NeedLogin><Bitacora /></NeedLogin>
   else if (seg[0] === 'perfil') page = <NeedLogin><Perfil /></NeedLogin>
-  else if (seg[0] === 'login') page = session ? <Perfil /> : <Login />
+  else if (seg[0] === 'login') page = session ? <AfterLogin /> : <Login />
   else if (seg[0] === 'centro' && seg[1] === 'nueva') page = <NeedCenter><NuevaSalida /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'salida' && seg[2]) page = <NeedCenter><NuevaSalida id={seg[2]} /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'agenda') page = <NeedCenter><CentroAgenda /></NeedCenter>
@@ -112,7 +124,7 @@ export default function App() {
   else page = session && isCenter ? <NeedCenter><CentroPanel /></NeedCenter> : <Explorar />
 
   const tab = (to, icon, label, match) => (
-    <Link to={to} className={match ? 'tab on' : 'tab'}>
+    <Link to={to} className={match ? 'tab on' : 'tab'} aria-current={match ? 'page' : undefined}>
       <span aria-hidden>{icon}</span>{t(label)}
     </Link>
   )
@@ -127,7 +139,7 @@ export default function App() {
           {session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>
         <div className="row" style={{ gap: 8 }}>
-          {isAdmin && <Link to="/admin" className="btn small ghost" title={t('Validación de centros')}>🛡️</Link>}
+          {isAdmin && <Link to="/admin" className="btn small ghost" title={t('Validación de centros')} aria-label={t('Validación de centros')}>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
           <LangSwitch />
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
           {session && (
@@ -135,8 +147,8 @@ export default function App() {
           )}
         </div>
       </header>
-      <main>{page}</main>
-      <nav className="tabs">
+      <main><ErrorBoundary resetKey={path}>{page}</ErrorBoundary></main>
+      <nav className="tabs" aria-label={t('Navegación principal')}>
         {session && isCenter ? (
           <>
             {tab('/centro', '📊', 'Panel', home || (seg[0] === 'centro' && !seg[1]))}

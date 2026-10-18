@@ -1,12 +1,12 @@
 :root {
   --bg: #f4f8fb; --card: #fff; --ink: #0f2533; --muted: #5d7282; --line: #dde7ee;
-  --brand: #0b5e8a; --brand-ink: #fff; --accent: #12a3a3; --ok: #1a7f4b; --warn: #b26a00; --bad: #b42318;
+  --brand: #0b5e8a; --brand-ink: #fff; --accent: #12a3a3; --ok: #157040; --warn: #8a5200; --bad: #b42318;
   --radius: 14px;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink); background: var(--bg);
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #0b1820; --card: #11232e; --ink: #e6f0f5; --muted: #93a8b6; --line: #21394a; --brand: #3aa3d8; --brand-ink: #04121a; }
+  :root { --bg: #0b1820; --card: #11232e; --ink: #e6f0f5; --muted: #93a8b6; --line: #21394a; --brand: #3aa3d8; --brand-ink: #04121a; --ok: #4cc38a; --warn: #f0a43a; --bad: #ff6b5e; }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); }
@@ -39,7 +39,7 @@ a.card:active { transform: scale(.99); }
   padding: 12px 16px; font: inherit; font-weight: 600; background: var(--brand); color: var(--brand-ink); cursor: pointer; text-decoration: none; }
 .btn:disabled { opacity: .5; cursor: default; }
 .btn.block { width: 100%; }
-.btn.small { padding: 7px 12px; font-size: 14px; }
+.btn.small { padding: 8px 14px; font-size: 14px; min-height: 44px; }
 .btn.ghost { background: transparent; color: var(--brand); border: 1px solid var(--line); }
 .btn.danger { background: var(--bad); color: #fff; }
 label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
@@ -79,7 +79,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .kpi b small, .kpi > small { font-size: 12px; color: var(--muted); font-weight: 400; }
 .alert-row { padding: 8px 0; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); font-size: 14px; }
 .alert-row:last-child { border-bottom: 0; }
-.stars button { background: none; border: 0; font-size: 24px; cursor: pointer; padding: 0 2px; color: #c9a227; }
+.stars button { background: none; border: 0; font-size: 24px; cursor: pointer; padding: 0 2px; color: #a57f00; min-width: 44px; min-height: 44px; }
 .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .photos div { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--line); }
 .photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -169,3 +169,36 @@ a.card.trip.full { opacity: .6; }
 .steps li.now .dot { background: var(--warn); color: #fff; }
 .doc-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .doc-row:first-child { border-top: 0; }
+
+/* Accesibilidad: foco visible, objetivos táctiles y avisos */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+input:focus, select:focus, textarea:focus { border-color: var(--brand); outline: 2px solid color-mix(in srgb, var(--brand) 35%, transparent); outline-offset: 0; }
+.seg button, .chips button { min-height: 40px; }
+.lang-select { min-height: 36px; }
+.photos button { width: 32px; height: 32px; }
+.linkish { min-height: 32px; }
+@media (prefers-color-scheme: dark) { .btn.danger { color: #fff; background: #c0392b; } }
+.toast { position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 7; max-width: 688px; margin: 0 auto;
+  padding: 12px 14px; border-radius: 12px; background: var(--ink); color: var(--bg); display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2); font-size: 14px; }
+.toast.err { background: var(--bad); color: #fff; }
+.toast button { background: none; border: 0; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; min-height: 32px; }
+.hint { display: block; margin-top: 6px; }
+.msg.warn { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--ink); }
+/* Filas desplazables sin barra gruesa en escritorio */
+.days, .chips { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.days::-webkit-scrollbar, .chips::-webkit-scrollbar { height: 4px; }
+.days::-webkit-scrollbar-thumb, .chips::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.badge { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 99px; font-size: 11px; font-weight: 700; line-height: 18px;
+  text-align: center; background: var(--bad); color: #fff; }
+.sticky-cta { position: fixed; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 6; max-width: 696px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 14px;
+  background: var(--card); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0,0,0,.14); }
+/* Cabecera compacta en móvil */
+@media (max-width: 420px) {
+  .top { padding: 10px 12px; }
+  .top .btn.small { min-height: 38px; padding: 6px 10px; }
+  .top .lang-select { min-height: 38px; }
+  .top .btn { white-space: nowrap; }
+  .top .brand .pill { display: none; }
+}
