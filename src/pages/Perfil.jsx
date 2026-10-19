@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, levelName } from '../lib/format'
 import { t, LangSwitch } from '../lib/i18n'
+import EliminarCuenta from './EliminarCuenta'
 
 const AGENCIES = ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'RAID', 'BSAC', 'Otra']
 
@@ -156,6 +157,8 @@ export default function Perfil() {
           <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
         </div>
       </form>
+
+      <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
     </>
   )
 }
