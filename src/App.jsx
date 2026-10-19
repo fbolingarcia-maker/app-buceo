@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from './lib/auth'
 import { useRoute, Link, go } from './lib/router'
 import { t, LangSwitch } from './lib/i18n'
@@ -68,6 +68,16 @@ function VerifyBanner() {
       <Link to="/centro/verificacion" className="btn small">{st === 'pending' ? t('Ver estado') : t('Verificar centro')}</Link>
     </div>
   )
+}
+
+// Aviso de una sola vez guardado antes de cambiar de pantalla (p. ej. tras eliminar la cuenta)
+function Flash() {
+  const [text, setText] = useState(() => {
+    try { const v = sessionStorage.getItem('flash'); sessionStorage.removeItem('flash'); return v } catch (e) { return null }
+  })
+  useEffect(() => { if (text) { const id = setTimeout(() => setText(null), 6000); return () => clearTimeout(id) } }, [text])
+  if (!text) return null
+  return <div className="toast" role="status"><span>{text}</span> <button type="button" onClick={() => setText(null)}>{t('Cerrar')}</button></div>
 }
 
 // Icono de buceador para la pestaña de salidas
@@ -148,6 +158,7 @@ export default function App() {
         </div>
       </header>
       <main><ErrorBoundary resetKey={path}>{page}</ErrorBoundary></main>
+      <Flash key={session ? 'in' : 'out'} />
       <nav className="tabs" aria-label={t('Navegación principal')}>
         {session && isCenter ? (
           <>

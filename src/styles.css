@@ -202,3 +202,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
   .top .btn { white-space: nowrap; }
   .top .brand .pill { display: none; }
 }
+
+/* Zona de peligro (eliminar cuenta) */
+.danger-zone { border-color: var(--bad); }
+.btn.danger.ghost { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
