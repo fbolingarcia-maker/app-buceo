@@ -72,4 +72,12 @@ export default {
   'Cancelar': 'Cancel',
   'Eliminando…': 'Deleting…',
   'Eliminar definitivamente': 'Delete permanently',
+  // Administradores (023)
+  'Administradores': 'Admins',
+  'Acceso de administrador concedido': 'Admin access granted',
+  '¿Quitar el acceso de administrador a {email}?': 'Remove admin access for {email}?',
+  'Acceso retirado': 'Access removed',
+  'Solo los administradores ven esta pantalla. Para añadir uno, primero crea la cuenta en la app (Entrar → Crear cuenta) con su email y contraseña y después escribe aquí ese email.': 'Only admins can see this screen. To add one, first create the account in the app (Sign in → Create account) with its email and password, then enter that email here.',
+  'Email de la cuenta': 'Account email',
+  'Dar acceso de administrador': 'Grant admin access',
 }
