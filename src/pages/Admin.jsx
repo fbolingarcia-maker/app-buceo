@@ -9,7 +9,7 @@ const DOC_LABEL = {
   owner_id: 'Documento de identidad del responsable', business_permit: "Permiso de negocio (Mayor's permit)", dti_sec: 'Registro DTI / SEC',
   agency_cert: 'Certificado de la agencia (PADI, SSI…)', shop_photo: 'Foto de la fachada o del centro', other: 'Otro documento',
 }
-const TABS = ['pending', 'unverified', 'rejected', 'suspended', 'verified']
+const TABS = ['pending', 'unverified', 'rejected', 'suspended', 'verified', 'admins']
 const FIELDS = [
   ['legal_name', 'Razón social'], ['business_reg_type', 'Tipo de registro'], ['business_reg_number', 'Nº DTI/SEC'],
   ['mayors_permit_number', "Nº de Mayor's permit"], ['address', 'Dirección'], ['owner_name', 'Responsable'], ['owner_role', 'Cargo'],
@@ -32,17 +32,18 @@ export default function Admin() {
     if (error) setMsg({ ok: false, text: errMsg(error) })
     setList(data || [])
   }
-  useEffect(() => { if (isAdmin) { setList(null); load() } }, [tab, isAdmin])
+  useEffect(() => { if (isAdmin && tab !== 'admins') { setList(null); load() } }, [tab, isAdmin])
 
-  if (!isAdmin) return <div className="card muted">{t('Solo para administradores de DiveSlot.')}</div>
+  if (!isAdmin) return null
 
   return (
     <>
       <h1>{t('Validación de centros')}</h1>
       <div className="chips">
-        {TABS.map((s) => <button key={s} className={tab === s ? 'on' : ''} onClick={() => { setTab(s); setOpen(null) }}>{t(VSTATUS[s][1])}</button>)}
+        {TABS.map((s) => <button key={s} className={tab === s ? 'on' : ''} onClick={() => { setTab(s); setOpen(null) }}>{s === 'admins' ? t('Administradores') : t(VSTATUS[s][1])}</button>)}
       </div>
       {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
+      {tab === 'admins' ? <Admins /> : <>
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list?.length === 0 && <div className="card muted center">{t('No hay centros en este estado.')}</div>}
       {list?.map((c) => (
@@ -55,7 +56,56 @@ export default function Admin() {
           {open === c.id && <Review c={c} onDone={(text) => { setMsg({ ok: true, text }); setOpen(null); load() }} />}
         </div>
       ))}
+      </>}
     </>
+  )
+}
+
+// Cuentas con acceso de administración. Nadie más puede ver esta lista ni saber que existe.
+function Admins() {
+  const [list, setList] = useState(null)
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  async function load() {
+    const { data, error } = await supabase.rpc('admin_list')
+    if (error) setMsg({ ok: false, text: errMsg(error) })
+    setList(data || [])
+  }
+  useEffect(() => { load() }, [])
+
+  async function add(e) {
+    e.preventDefault()
+    setBusy(true); setMsg(null)
+    const { error } = await supabase.rpc('admin_grant', { p_email: email.trim() })
+    setBusy(false)
+    if (error) return setMsg({ ok: false, text: errMsg(error) })
+    setEmail(''); setMsg({ ok: true, text: t('Acceso de administrador concedido') }); load()
+  }
+  async function remove(a) {
+    if (!window.confirm(t('¿Quitar el acceso de administrador a {email}?', { email: a.email }))) return
+    const { error } = await supabase.rpc('admin_revoke', { p_user: a.user_id })
+    if (error) return setMsg({ ok: false, text: errMsg(error) })
+    setMsg({ ok: true, text: t('Acceso retirado') }); load()
+  }
+
+  return (
+    <div className="card">
+      <p className="small muted" style={{ marginTop: 0 }}>{t('Solo los administradores ven esta pantalla. Para añadir uno, primero crea la cuenta en la app (Entrar → Crear cuenta) con su email y contraseña y después escribe aquí ese email.')}</p>
+      {list === null && <p className="muted">{t('Cargando…')}</p>}
+      {list?.map((a) => (
+        <div key={a.user_id} className="row between" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+          <span>{a.email} {a.is_me && <span className="pill">{t('Tú')}</span>}</span>
+          {list.length > 1 && <button type="button" className="btn small ghost" onClick={() => remove(a)}>{t('Quitar')}</button>}
+        </div>
+      ))}
+      <form onSubmit={add} style={{ marginTop: 12 }}>
+        <div className="field"><label htmlFor="admin-email">{t('Email de la cuenta')}</label><input id="admin-email" type="email" required autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+        {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
+        <button className="btn" disabled={busy}>{t('Dar acceso de administrador')}</button>
+      </form>
+    </div>
   )
 }
 
