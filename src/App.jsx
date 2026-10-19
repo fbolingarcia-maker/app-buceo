@@ -125,7 +125,8 @@ export default function App() {
   else if (seg[0] === 'centro' && seg[1] === 'salidas') page = <NeedCenter><CentroSalidas /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'informes') page = <NeedCenter><CentroInformes /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'verificacion') page = <NeedCenter><CentroVerificacion /></NeedCenter>
-  else if (seg[0] === 'admin') page = <NeedLogin><Admin /></NeedLogin>
+  // El panel de administración no existe para nadie más: sin sesión de administrador se ve la portada normal
+  else if (seg[0] === 'admin' && isAdmin) page = <Admin />
   else if (seg[0] === 'centro' && seg[1] === 'ajustes') page = <NeedCenter><CentroAjustes /></NeedCenter>
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
