@@ -37,6 +37,7 @@ const T = {
 const RPC = {
   is_platform_admin: role === 'admin', center_ratings: [{ center_id: C1, rating: 4.7, reviews: 12 }],
   delete_my_account: { ok: role !== 'centerv', blockers: role === 'centerv' ? ['Tu centro tiene 2 reserva(s) en salidas futuras. Cancélalas o avisa a los buceadores antes de eliminar la cuenta.'] : [], centers: role.startsWith('center') ? [C1] : [], dive_logs: 3, bookings_kept: 2 },
+  admin_list: [{ user_id: 'u1', email: 'admin@example.com', created_at: '2026-10-01T00:00:00Z', is_me: true }],
   trip_divers: { divers: [{ name: 'Ana L.', level: 'advanced', seats: 1, dives: 25, languages: ['es'], country: 'ES' }] },
 }
 function builder(table) {
