@@ -13,9 +13,19 @@ export function AuthProvider({ children }) {
   const [recovering, setRecovering] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false) // administrador de la plataforma (valida centros)
   const [pendingCenters, setPendingCenters] = useState(0) // centros esperando validación (solo admin)
+  const [needsMfa, setNeedsMfa] = useState(false) // contraseña correcta, falta el código de dos pasos
+  // Administrador: «Ver como» admin | diver | center (y qué centro mira, en solo lectura)
+  const [viewAs, setViewAsState] = useState(() => { try { return localStorage.getItem('adminView') || 'admin' } catch (e) { return 'admin' } })
+  const [viewCenterId, setViewCenterIdState] = useState(() => { try { return localStorage.getItem('adminCenter') || '' } catch (e) { return '' } })
+  const [viewCenter, setViewCenter] = useState(null)
 
   const loadProfile = useCallback(async (s) => {
-    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); return }
+    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); setNeedsMfa(false); return }
+    // Con el segundo paso activado, hasta que no se introduce el código la sesión no vale para nada (mfa_ok() en la base de datos)
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    const need = aal?.nextLevel === 'aal2' && aal?.currentLevel !== 'aal2'
+    setNeedsMfa(need)
+    if (need) { setDiver(null); setCenter(null); setIsAdmin(false); return }
     supabase.rpc('is_platform_admin').then(({ data }) => {
       setIsAdmin(data === true)
       if (data === true) supabase.from('centers').select('id', { count: 'exact', head: true }).eq('verification_status', 'pending')
@@ -52,11 +62,30 @@ export function AuthProvider({ children }) {
     return () => sub.subscription.unsubscribe()
   }, [loadProfile])
 
+  // Centro que mira el administrador en «Ver como centro» (lectura; escribir sigue exigiendo ser del equipo)
+  useEffect(() => {
+    if (!isAdmin || viewAs !== 'center' || !viewCenterId || viewCenterId === center?.id) { setViewCenter(null); return }
+    let live = true
+    Promise.all([
+      supabase.from('centers').select(CENTER_COLS).eq('id', viewCenterId).maybeSingle(),
+      supabase.rpc('center_private', { p_center: viewCenterId }),
+    ]).then(([{ data: c }, { data: priv }]) => { if (live) setViewCenter(c ? { ...c, ...(priv?.[0] || {}), role: 'admin' } : null) })
+    return () => { live = false }
+  }, [isAdmin, viewAs, viewCenterId, center?.id])
+
+  const setViewAs = (v) => { setViewAsState(v); try { localStorage.setItem('adminView', v) } catch (e) { /* sin almacenamiento */ } }
+  const setViewCenterId = (id) => { setViewCenterIdState(id); try { localStorage.setItem('adminCenter', id) } catch (e) { /* sin almacenamiento */ } }
+
   // Perfil: cuenta de centro (gestiona un centro o se registró como centro) o de buceador
-  const isCenter = !!center || diver?.account_type === 'center' || session?.user?.user_metadata?.account_type === 'center'
-  const verified = center?.verification_status === 'verified'
+  const ownIsCenter = !!center || diver?.account_type === 'center' || session?.user?.user_metadata?.account_type === 'center'
+  const adminView = isAdmin ? viewAs : null // null = no es administrador
+  const shownCenter = !isAdmin ? center : viewAs !== 'center' ? null : (viewCenterId && viewCenterId !== center?.id ? viewCenter : center)
+  const isCenter = isAdmin ? viewAs === 'center' : ownIsCenter
+  const readOnly = !!(isAdmin && viewAs === 'center' && shownCenter && shownCenter.id !== center?.id)
+  const verified = shownCenter?.verification_status === 'verified'
   const value = {
-    session, user: session?.user || null, diver, center, isCenter, isAdmin, pendingCenters, verified, recovering, setRecovering,
+    session, user: session?.user || null, diver, center: shownCenter, ownCenter: center, isCenter, isAdmin, pendingCenters, verified, recovering, setRecovering,
+    needsMfa, adminView, setViewAs, viewCenterId, setViewCenterId, readOnly,
     refresh: () => loadProfile(session),
     signOut: () => supabase.auth.signOut(),
   }

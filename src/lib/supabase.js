@@ -13,9 +13,20 @@ export const supabase = createClient(url, key, {
 // URL a la que vuelven los emails de confirmación / recuperación
 export const appUrl = () => window.location.origin + import.meta.env.BASE_URL
 
+// Contraseñas nuevas: lo mismo que exige Supabase (mínimo 8, letras y números). Devuelve el problema o ''
+export function pwProblem(pw) {
+  if (!pw || pw.length < 8) return t('Mínimo 8 caracteres, con letras y números')
+  if (!/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw)) return t('La contraseña necesita letras y números')
+  return ''
+}
+
 // Convierte "NO_SEATS: solo quedan 2 plazas" en "Solo quedan 2 plazas" (traducido al idioma activo)
 export function errMsg(e) {
   const m = (e && (e.message || e.error_description)) || String(e)
+  // Errores de Auth en inglés: contraseña débil, repetida o código de dos pasos incorrecto
+  if (e?.code === 'weak_password' || /^Password should/i.test(m)) return t('La contraseña es demasiado débil: usa al menos 8 caracteres, con letras y números')
+  if (e?.code === 'same_password' || /should be different from the old password/i.test(m)) return t('La nueva contraseña debe ser distinta de la actual')
+  if (/invalid totp code|mfa_verification_failed|code.*(expired|invalid)/i.test(m) || e?.code === 'mfa_verification_failed') return t('Código incorrecto o caducado. Prueba con el código actual de tu app.')
   const i = m.indexOf(': ')
   const raw = /^[A-Z_]+: /.test(m) ? m.slice(i + 2) : m
   const map = {
