@@ -44,6 +44,7 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Verificación en dos pasos (027): `src/pages/DosPasos.jsx` (tarjeta en Perfil → Seguridad y pantalla `DosPasosReto` tras la contraseña). `needsMfa` en `useAuth()` bloquea la app hasta meter el código. Si añades una tabla con RLS, añádele también la política restrictiva `mfa_required`; si una RPC nueva usa `auth.uid()` directamente, empieza con `if not public.mfa_ok() then raise exception 'MFA_REQUIRED: ...'`.
 - Vista de administrador: cabecera morada y barra «Ver como» (`src/lib/AdminBar.jsx`): `adminView` = admin (inicio en el panel, pestañas Resumen/Centros/Usuarios/Admins/Registro/Cuenta, rutas `#/admin/<sección>`), diver (la app de buceador con su cuenta) o center (cualquier centro, `readOnly`: `center` en `useAuth()` es el centro mirado y `ownCenter` el propio). Las escrituras siguen exigiendo `is_staff`, así que la vista de centro no puede cambiar nada.
 - Perfiles: `divers.account_type` ('diver' | 'center'); `isCenter` en `useAuth()` decide el menú.
+- Emails de Auth (confirmación, nueva contraseña): necesitan SMTP propio en Supabase; pasos y plantillas en `docs/EMAIL.md`. Login ofrece «Reenviar email de confirmación» (`supabase.auth.resend`).
 - `supabase/functions/`: Edge Functions de PayMongo (`crear-pago`, `paymongo-webhook`). Se despliegan en Supabase, no en GitHub Pages.
 
 ## Pagos
