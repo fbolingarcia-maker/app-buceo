@@ -4,16 +4,19 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const PM = 'https://api.paymongo.com/v1'
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
-
 const APP_URLS = (Deno.env.get('APP_URLS') ?? 'https://fbolingarcia-maker.github.io/app-buceo/,http://localhost:5173/')
   .split(',').map((s) => s.trim()).filter(Boolean)
+// CORS: solo la propia app puede llamar a esta función desde el navegador
+const ORIGINS = APP_URLS.map((u) => new URL(u).origin)
+const corsFor = (req: Request) => {
+  const o = req.headers.get('Origin') ?? ''
+  return {
+    'Access-Control-Allow-Origin': ORIGINS.includes(o) ? o : ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    Vary: 'Origin',
+  }
+}
 
 const KIND_LABEL: Record<string, string> = { deposit: 'Señal 50 %', full: 'Pago total', balance: 'Resto' }
 
@@ -31,6 +34,9 @@ async function sessionPaid(sessionId: string, key: string): Promise<boolean> {
 }
 
 Deno.serve(async (req) => {
+  const cors = corsFor(req)
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -107,6 +113,7 @@ Deno.serve(async (req) => {
     await admin.from('payments').update({ provider_ref: j.data.id, checkout_url }).eq('id', p.id)
     return json({ payment_id: p.id, checkout_url })
   } catch (e) {
-    return json({ error: String(e?.message ?? e) }, 500)
+    console.error('crear-pago', e)
+    return json({ error: 'No se pudo procesar el pago. Inténtalo de nuevo.' }, 500)
   }
 })
