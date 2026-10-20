@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './lib/auth'
 import { useRoute, Link, go } from './lib/router'
-import { t, LangSwitch } from './lib/i18n'
+import { t } from './lib/i18n'
 import Explorar from './pages/Explorar'
 import Salida from './pages/Salida'
 import Reservas from './pages/Reservas'
@@ -25,11 +25,21 @@ import Admin from './pages/Admin'
 import { DosPasosReto } from './pages/DosPasos'
 import AdminBar, { AdminCenterPicker } from './lib/AdminBar'
 import ErrorBoundary from './lib/ErrorBoundary'
+import Icon from './lib/Icon'
+import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText } from 'lucide-react'
 
-function NeedLogin({ children }) {
+// Pantallas privadas. Sin sesión: título y frase de lo que hay detrás, y el login debajo.
+// back: ruta a la que volver después de entrar (también la usa el email de confirmación)
+function NeedLogin({ children, title, intro, back }) {
   const { session } = useAuth()
+  useEffect(() => {
+    if (session === null && back) { try { sessionStorage.setItem('afterLogin', back) } catch (e) { /* sin almacenamiento */ } }
+  }, [session, back])
   if (session === undefined) return <p className="muted center">{t('Cargando…')}</p>
-  if (!session) return <Login />
+  if (!session) {
+    if (!title) return <Login />
+    return <><h1>{title}</h1><p className="muted">{intro}</p><Login embedded /></>
+  }
   return children
 }
 
@@ -57,7 +67,7 @@ function ReadOnlyBanner() {
   const { center, setViewCenterId } = useAuth()
   return (
     <div className="banner admin" role="status">
-      <span>👁️ {t('Vista de administrador de {centro}: solo lectura.', { centro: center.name })}</span>
+      <span><Icon icon={Eye} /> {t('Vista de administrador de {centro}: solo lectura.', { centro: center.name })}</span>
       <button type="button" className="btn small ghost" onClick={() => setViewCenterId('')}>{t('Cambiar')}</button>
     </div>
   )
@@ -93,23 +103,6 @@ function Flash() {
   return <div className="toast" role="status"><span>{text}</span> <button type="button" onClick={() => setText(null)}>{t('Cerrar')}</button></div>
 }
 
-// Icono de buceador para la pestaña de salidas
-function DiverIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', margin: '0 auto' }}>
-      <circle cx="21" cy="6.5" r="1" fill="#7cc4f2" />
-      <circle cx="19.6" cy="3.6" r="0.7" fill="#7cc4f2" />
-      <rect x="8.2" y="8.2" width="7.4" height="3" rx="1.5" fill="#f4b400" />
-      <path d="M5 12.6 L16.2 11.6" stroke="#1f6fb2" strokeWidth="3.4" strokeLinecap="round" />
-      <path d="M6.2 12.2 L2.4 9.6 M6.2 13.2 L2.4 15.6" stroke="#1f6fb2" strokeWidth="2" strokeLinecap="round" />
-      <path d="M2.8 9.8 L0.8 7.6 M2.8 15.4 L0.8 17.6" stroke="#f4b400" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M15 12.6 L18.6 15.8" stroke="#1f6fb2" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="18.7" cy="11.2" r="2.6" fill="#1f6fb2" />
-      <rect x="19.2" y="9.9" width="2.9" height="1.9" rx="0.8" fill="#bfe6ff" stroke="#0d3b66" strokeWidth="0.5" />
-    </svg>
-  )
-}
-
 function Flag() {
   return (
     <svg width="27" height="18" viewBox="0 0 30 20" aria-hidden="true" style={{ borderRadius: 2 }}>
@@ -128,9 +121,9 @@ export default function App() {
   if (session && needsMfa) page = <DosPasosReto />
   else if (recovering) page = <NuevaClave />
   else if (seg[0] === 'salida' && seg[1]) page = <Salida id={seg[1]} />
-  else if (seg[0] === 'reservas') page = <NeedLogin><Reservas /></NeedLogin>
+  else if (seg[0] === 'reservas') page = <NeedLogin title={t('Reservas')} intro={t('Aquí verás tus salidas reservadas y los pagos pendientes. Entra o crea una cuenta para verlas.')} back="/reservas"><Reservas /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1]) page = <NeedLogin><Inmersion id={seg[1]} /></NeedLogin>
-  else if (seg[0] === 'bitacora') page = <NeedLogin><Bitacora /></NeedLogin>
+  else if (seg[0] === 'bitacora') page = <NeedLogin title={t('Bitácora')} intro={t('Guarda cada inmersión con profundidad, tiempo, fauna y fotos. Entra o crea una cuenta para empezar.')} back="/bitacora"><Bitacora /></NeedLogin>
   else if (seg[0] === 'perfil') page = <NeedLogin><Perfil /></NeedLogin>
   else if (seg[0] === 'login') page = session ? <AfterLogin /> : <Login />
   else if (seg[0] === 'centro' && seg[1] === 'nueva') page = <NeedCenter><NuevaSalida /></NeedCenter>
@@ -149,9 +142,10 @@ export default function App() {
   else if (session && adminView === 'admin') page = <Admin />
   else page = session && isCenter ? <NeedCenter><CentroPanel /></NeedCenter> : <Explorar />
 
-  const tab = (to, icon, label, match) => (
+  // icon: componente de Lucide; extra: algo que va junto al icono (p. ej. el contador de centros pendientes)
+  const tab = (to, icon, label, match, extra) => (
     <Link to={to} className={match ? 'tab on' : 'tab'} aria-current={match ? 'page' : undefined}>
-      <span aria-hidden>{icon}</span>{t(label)}
+      <span><Icon icon={icon} size={22} />{extra}</span>{t(label)}
     </Link>
   )
   const home = !seg[0]
@@ -166,8 +160,7 @@ export default function App() {
             : session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>
         <div className="row" style={{ gap: 8 }}>
-          {isAdmin && adminView !== 'admin' && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
-          <LangSwitch />
+          {isAdmin && adminView !== 'admin' && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}><Icon icon={ShieldCheck} />{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
           {session && (
             <button type="button" className="btn small ghost" onClick={async () => { await signOut(); go('/') }}>{t('Salir')}</button>
@@ -180,29 +173,29 @@ export default function App() {
       <nav className="tabs" aria-label={t('Navegación principal')}>
         {session && adminView === 'admin' ? (
           <>
-            {tab('/admin', '📊', 'Resumen', home || (seg[0] === 'admin' && !seg[1]))}
-            {tab('/admin/centers', <>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</>, 'Centros', seg[1] === 'centers')}
-            {tab('/admin/users', '👥', 'Usuarios', seg[1] === 'users')}
-            {tab('/admin/admins', '👤', 'Admins', seg[1] === 'admins')}
-            {tab('/admin/log', '📝', 'Registro', seg[1] === 'log')}
-            {tab('/perfil', '⚙️', 'Cuenta', seg[0] === 'perfil')}
+            {tab('/admin', LayoutDashboard, 'Resumen', home || (seg[0] === 'admin' && !seg[1]))}
+            {tab('/admin/centers', ShieldCheck, 'Centros', seg[1] === 'centers', pendingCenters > 0 && <span className="badge">{pendingCenters}</span>)}
+            {tab('/admin/users', Users, 'Usuarios', seg[1] === 'users')}
+            {tab('/admin/admins', UserCog, 'Admins', seg[1] === 'admins')}
+            {tab('/admin/log', ScrollText, 'Registro', seg[1] === 'log')}
+            {tab('/perfil', Settings, 'Cuenta', seg[0] === 'perfil')}
           </>
         ) : session && isCenter ? (
           <>
-            {tab('/centro', '📊', 'Panel', home || (seg[0] === 'centro' && !seg[1]))}
-            {tab('/centro/agenda', '📅', 'Agenda', seg[1] === 'agenda')}
-            {tab('/centro/salidas', <DiverIcon />, 'Salidas', ['salidas', 'nueva', 'salida'].includes(seg[1]))}
-            {tab('/centro/informes', '📈', 'Informes', seg[1] === 'informes')}
-            {tab('/centro/ajustes', '⚙️', 'Centro', seg[1] === 'ajustes')}
-            {tab('/perfil', '👤', 'Perfil', seg[0] === 'perfil')}
+            {tab('/centro', LayoutDashboard, 'Panel', home || (seg[0] === 'centro' && !seg[1]))}
+            {tab('/centro/agenda', CalendarDays, 'Agenda', seg[1] === 'agenda')}
+            {tab('/centro/salidas', Ship, 'Salidas', ['salidas', 'nueva', 'salida'].includes(seg[1]))}
+            {tab('/centro/informes', ChartLine, 'Informes', seg[1] === 'informes')}
+            {tab('/centro/ajustes', Settings, 'Centro', seg[1] === 'ajustes')}
+            {tab('/perfil', User, 'Perfil', seg[0] === 'perfil')}
           </>
         ) : (
           <>
-            {tab('/', <DiverIcon />, 'Salidas', home || seg[0] === 'salida')}
-            {tab('/centros', '📍', 'Centros', seg[0] === 'centros' || seg[0] === 'c' || seg[0] === 'd')}
-            {tab('/reservas', '🎟️', 'Reservas', seg[0] === 'reservas')}
-            {tab('/bitacora', '📖', 'Bitácora', seg[0] === 'bitacora')}
-            {tab('/perfil', '👤', 'Perfil', seg[0] === 'perfil' || seg[0] === 'login')}
+            {tab('/', Compass, 'Salidas', home || seg[0] === 'salida')}
+            {tab('/centros', MapPin, 'Centros', seg[0] === 'centros' || seg[0] === 'c' || seg[0] === 'd')}
+            {tab('/reservas', Ticket, 'Reservas', seg[0] === 'reservas')}
+            {tab('/bitacora', BookOpen, 'Bitácora', seg[0] === 'bitacora')}
+            {tab('/perfil', User, 'Perfil', seg[0] === 'perfil' || seg[0] === 'login')}
           </>
         )}
       </nav>
