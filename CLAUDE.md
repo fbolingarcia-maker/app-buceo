@@ -5,9 +5,11 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 ## Stack
 - Frontend: React 18 + Vite, sin router externo (router por hash en `src/lib/router.jsx`). Estilos en `src/styles.css`.
 - Backend: Supabase, proyecto `app-buceo`, ref `tosgzcpnkpsrrkfqctgy` (región ap-southeast-1).
-- Hosting: GitHub Pages. `.github/workflows/deploy.yml` compila y publica en cada push a `main`.
+- Hosting: Cloudflare (Worker `diveslot` con Static Assets, `wrangler.jsonc`, dominio divingslot.com; Workers Builds compila y publica en cada push a `main`). GitHub Pages sigue publicando también (`.github/workflows/deploy.yml`). Cabeceras HTTP en `public/_headers`.
+- Diseño: sistema de diseño v0.2 (tokens en `:root` de `src/styles.css`: océano, coral, laguna, abisal y escala de profundidad `--depth-1…5`). Fuentes Figtree (texto) y Barlow Condensed (cifras, clase `.data` / `var(--font-data)`) empaquetadas con `@fontsource`. Iconos de línea de `lucide-react` siempre con `<Icon icon={…} />` (`src/lib/Icon.jsx`); nada de emojis como iconos.
 
 ## Reglas
+- Voz: sin emojis en la interfaz, sin signos de exclamación, cifras con unidad (24 m, 52 min, ₱1.750) y el verbo de la acción en los botones. Una sola acción principal (azul océano) por pantalla; el coral es para hitos, valoraciones y «Última plaza», nunca para botones ni errores.
 - Toda la lógica de negocio y la seguridad están en la base de datos (RLS + funciones `SECURITY DEFINER`). El frontend solo usa la clave publishable.
 - Nunca pongas la `service_role` / secret key en el repo ni en GitHub Actions.
 - Nada de `select('*')` sobre `centers` ni `centers(*)` en joins (columnas privadas).
@@ -54,5 +56,6 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 
 ## Comprobar antes de hacer push
 - `npm run build` sin errores.
-- Sin red (sandbox de Claude): `tools/smoke/` compila la app con un Supabase simulado y recorre todas las pantallas con Chromium por rol (`anon`, `diver`, `center`, `centerv`, `centerr`, `admin`, `admind`/`adminc` = admin viendo como buceador/centro, `mfa` = falta el código de dos pasos). Ver `tools/smoke/README.md`.
+- Sin red (sandbox de Claude): `tools/smoke/` (roles también `vacio` = semana sin salidas; avisa si algo se sale de 375 px) compila la app con un Supabase simulado y recorre todas las pantallas con Chromium por rol (`anon`, `diver`, `center`, `centerv`, `centerr`, `admin`, `admind`/`adminc` = admin viendo como buceador/centro, `mfa` = falta el código de dos pasos). Ver `tools/smoke/README.md`.
 - Si cambias reglas de reserva, prueba con un usuario buceador y con uno de centro.
+- Si añades un icono nuevo de `lucide-react`, regenera `tools/smoke/lucide-shim.js` con `node tools/smoke/gen-lucide-shim.mjs <carpeta icons/ de lucide>` (ver `tools/smoke/README.md`).
