@@ -73,8 +73,7 @@ export default {
 
   // Zonas y ubicación (Explorar, Centros, CentroAjustes)
   'Buscar zona, centro o punto de buceo…': 'Search area, centre or dive site…',
-  '📍 Cerca de mí': '📍 Near me',
-  '📍 Cerca de mí ✕': '📍 Near me ✕',
+  'Cerca de mí': 'Near me',
   'Buscando…': 'Locating…',
   'Todas las zonas': 'All areas',
   'No hay salidas cerca de ti. Te mostramos primero las más próximas.': 'There are no trips near you. Showing the closest ones first.',
