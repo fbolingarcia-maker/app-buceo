@@ -5,7 +5,10 @@ const plan = {
   center: ['/', '/perfil', '/centro', '/centro/agenda', '/centro/salidas', '/centro/nueva', '/centro/ajustes', '/centro/informes', '/centro/verificacion'],
   centerv: ['/centro', '/perfil', '/centro/agenda', '/centro/salidas', '/centro/verificacion'],
   centerr: ['/centro/verificacion', '/centro'],
-  admin: ['/admin', '/centro'],
+  admin: ['/', '/admin', '/admin/centers', '/admin/users', '/admin/admins', '/admin/log', '/perfil', '/centro'],
+  admind: ['/', '/perfil', '/reservas', '/admin'],
+  adminc: ['/', '/centro', '/centro/agenda', '/centro/informes', '/perfil'],
+  mfa: ['/', '/perfil', '/reservas'],
 }
 const shots = process.argv[2] === 'shots'
 const only = (process.argv[3] || '').split(',').filter(Boolean)

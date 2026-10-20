@@ -1,5 +1,11 @@
 // Supabase simulado para pruebas de humo (sin red). Rol en localStorage 'mockRole': anon|diver|center|centerv|admin
-const role = (() => { try { return localStorage.getItem('mockRole') || 'anon' } catch { return 'anon' } })()
+const rawRole = (() => { try { return localStorage.getItem('mockRole') || 'anon' } catch { return 'anon' } })()
+// admind / adminc: administrador en «Ver como buceador / centro»; mfa: buceador al que le falta el código de dos pasos
+try {
+  if (rawRole.startsWith('admin')) localStorage.setItem('adminView', rawRole === 'admind' ? 'diver' : rawRole === 'adminc' ? 'center' : 'admin')
+  if (rawRole === 'adminc') localStorage.setItem('adminCenter', '4ec918c7-1b17-477e-acb7-2c33276224ac'); else localStorage.removeItem('adminCenter')
+} catch { /* sin almacenamiento */ }
+const role = rawRole.startsWith('admin') ? 'admin' : rawRole === 'mfa' ? 'diver' : rawRole
 const H = 3600e3, D = 24 * H
 const now = Date.now()
 const iso = (ms) => new Date(ms).toISOString()
@@ -88,6 +94,14 @@ export function createClient() {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: () => Promise.resolve({}), signInWithPassword: () => Promise.resolve({ error: { message: 'Invalid login credentials' } }),
       signUp: () => Promise.resolve({ data: {}, error: null }), resetPasswordForEmail: () => Promise.resolve({}), updateUser: () => Promise.resolve({}),
+      refreshSession: () => Promise.resolve({ data: { session } }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: () => Promise.resolve({ data: { currentLevel: 'aal1', nextLevel: rawRole === 'mfa' ? 'aal2' : 'aal1' } }),
+        listFactors: () => Promise.resolve({ data: { all: [], totp: rawRole === 'mfa' ? [{ id: 'f1', status: 'verified', factor_type: 'totp' }] : [] } }),
+        enroll: () => Promise.resolve({ data: { id: 'f2', totp: { qr_code: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>', secret: 'JBSWY3DPEHPK3PXP' } } }),
+        challengeAndVerify: () => Promise.resolve({ error: { message: 'Invalid TOTP code entered', code: 'mfa_verification_failed' } }),
+        unenroll: () => Promise.resolve({}),
+      },
     },
     storage: { from: () => ({ upload: () => Promise.resolve({ error: null }), remove: () => Promise.resolve({}), createSignedUrl: () => Promise.resolve({ data: { signedUrl: 'about:blank' } }), createSignedUrls: () => Promise.resolve({ data: [] }) }) },
     functions: { invoke: () => Promise.resolve({ data: {}, error: null }) },
