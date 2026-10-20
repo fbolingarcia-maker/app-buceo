@@ -12,6 +12,14 @@ async function hmacHex(secret: string, msg: string) {
   return [...new Uint8Array(sig)].map((x) => x.toString(16).padStart(2, '0')).join('')
 }
 
+// Comparación en tiempo constante (evita ataques de temporización al comprobar la firma)
+function safeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false
+  let r = 0
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return r === 0
+}
+
 async function sessionPaid(sessionId: string, key: string): Promise<boolean> {
   const r = await fetch(`${PM}/checkout_sessions/${sessionId}`, { headers: { Authorization: 'Basic ' + btoa(key + ':') } })
   if (!r.ok) return false
@@ -34,7 +42,7 @@ Deno.serve(async (req) => {
   const attrs = evt?.data?.attributes ?? {}
   const expected = await hmacHex(secret, `${parts.t}.${raw}`)
   const given = attrs.livemode ? parts.li : parts.te
-  if (!parts.t || !given || given !== expected) return new Response('bad signature', { status: 401 })
+  if (!parts.t || !given || !safeEqual(given, expected)) return new Response('bad signature', { status: 401 })
 
   const type = attrs.type ?? evt?.data?.type
   const session = attrs.data ?? evt?.data?.data
@@ -45,7 +53,7 @@ Deno.serve(async (req) => {
   if (!p) return new Response('unknown session')
   if (p.status !== 'paid' && (await sessionPaid(session.id, key))) {
     const { error } = await admin.rpc('settle_payment', { p_payment: p.id })
-    if (error) return new Response(error.message, { status: 500 })
+    if (error) { console.error('settle_payment', error.message); return new Response('error', { status: 500 }) }
   }
   return new Response('ok')
 })
