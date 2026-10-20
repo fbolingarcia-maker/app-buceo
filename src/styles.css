@@ -16,8 +16,12 @@ a { color: var(--brand); }
   padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .brand { font-weight: 700; font-size: 18px; text-decoration: none; color: var(--ink); }
 .brand-name { white-space: nowrap; }
-/* En móvil el nombre puede ir en dos líneas para no empujar los botones */
-@media (max-width: 420px) { .top .brand { min-width: 0; } .brand-name { white-space: normal; font-size: 15px; line-height: 1.15; } }
+/* En móvil, más pequeño para que quepa en una sola línea junto a los botones */
+@media (max-width: 420px) {
+  .top .brand { gap: 6px !important; } .brand-name { font-size: 13px; letter-spacing: -0.2px; }
+  .top > .row { gap: 6px !important; } .top .btn.small { padding: 6px 8px; }
+}
+@media (max-width: 380px) { .top { padding-left: 10px; padding-right: 10px; } .brand-name { font-size: 12px; letter-spacing: -0.3px; } .top .lang-select { padding-left: 6px; padding-right: 4px; } }
 main { padding: 16px; }
 h1 { font-size: 22px; margin: 4px 0 12px; }
 h2 { font-size: 17px; margin: 20px 0 8px; }
