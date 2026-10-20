@@ -72,11 +72,11 @@ export default function Login() {
         {mode !== 'reset' && (
           <div className="field"><label htmlFor="li-pw">{t('Contraseña')}</label>
             <div className="row" style={{ gap: 6 }}>
-              <input id="li-pw" className="grow" type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
+              <input id="li-pw" className="grow" type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode === 'signup' ? 8 : 6}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'} aria-describedby={mode === 'signup' ? 'pw-hint' : undefined} />
               <button type="button" className="btn small ghost" onClick={() => setShowPw(!showPw)} aria-pressed={showPw}>{showPw ? t('Ocultar') : t('Mostrar')}</button>
             </div>
-            {mode === 'signup' && <span id="pw-hint" className="small muted hint">{t('Mínimo 6 caracteres')}</span>}
+            {mode === 'signup' && <span id="pw-hint" className="small muted hint">{t('Mínimo 8 caracteres')}</span>}
           </div>
         )}
         {error && <div className="msg err" role="alert">{error}</div>}

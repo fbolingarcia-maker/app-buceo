@@ -150,10 +150,10 @@ export default function Perfil() {
 
       <h2>{t('Cuenta')}</h2>
       <form className="card" onSubmit={changePw}>
-        <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
+        <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
         {show('pw')}
         <div className="row between">
-          <button className="btn ghost" disabled={pw.length < 6}>{t('Cambiar contraseña')}</button>
+          <button className="btn ghost" disabled={pw.length < 8}>{t('Cambiar contraseña')}</button>
           <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
         </div>
       </form>

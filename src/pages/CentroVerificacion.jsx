@@ -200,7 +200,7 @@ export default function CentroVerificacion() {
                     {!locked && (
                       <label className="btn small ghost" style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         {up === kind ? t('Subiendo…') : mine.length ? t('Añadir otro') : t('Subir')}
-                        <input type="file" accept="image/*,application/pdf" hidden onChange={(e) => { upload(kind, e.target.files[0]); e.target.value = '' }} />
+                        <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" hidden onChange={(e) => { upload(kind, e.target.files[0]); e.target.value = '' }} />
                       </label>
                     )}
                   </div>
