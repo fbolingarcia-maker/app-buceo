@@ -150,7 +150,7 @@ export default function App() {
           {session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>
         <div className="row" style={{ gap: 8 }}>
-          {isAdmin && <Link to="/admin" className="btn small ghost" title={t('Validación de centros')} aria-label={t('Validación de centros')}>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
+          {isAdmin && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
           <LangSwitch />
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
           {session && (
