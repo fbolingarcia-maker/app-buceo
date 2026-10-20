@@ -93,8 +93,8 @@ export function createClient() {
       getSession: () => Promise.resolve({ data: { session } }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: () => Promise.resolve({}), signInWithPassword: () => Promise.resolve({ error: { message: 'Invalid login credentials' } }),
-      signUp: () => Promise.resolve({ data: {}, error: null }), resetPasswordForEmail: () => Promise.resolve({}), updateUser: () => Promise.resolve({}),
-      refreshSession: () => Promise.resolve({ data: { session } }),
+      signUp: () => Promise.resolve({ data: { user: { id: 'n' }, session: null }, error: null }), resetPasswordForEmail: () => Promise.resolve({}), updateUser: () => Promise.resolve({}),
+      refreshSession: () => Promise.resolve({ data: { session } }), resend: () => Promise.resolve({ error: null }),
       mfa: {
         getAuthenticatorAssuranceLevel: () => Promise.resolve({ data: { currentLevel: 'aal1', nextLevel: rawRole === 'mfa' ? 'aal2' : 'aal1' } }),
         listFactors: () => Promise.resolve({ data: { all: [], totp: rawRole === 'mfa' ? [{ id: 'f1', status: 'verified', factor_type: 'totp' }] : [] } }),
