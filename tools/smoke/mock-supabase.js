@@ -5,7 +5,8 @@ try {
   if (rawRole.startsWith('admin')) localStorage.setItem('adminView', rawRole === 'admind' ? 'diver' : rawRole === 'adminc' ? 'center' : 'admin')
   if (rawRole === 'adminc') localStorage.setItem('adminCenter', '4ec918c7-1b17-477e-acb7-2c33276224ac'); else localStorage.removeItem('adminCenter')
 } catch { /* sin almacenamiento */ }
-const role = rawRole.startsWith('admin') ? 'admin' : rawRole === 'mfa' ? 'diver' : rawRole
+// vacio: visitante sin sesión en una semana sin salidas publicadas
+const role = rawRole.startsWith('admin') ? 'admin' : rawRole === 'mfa' ? 'diver' : rawRole === 'vacio' ? 'anon' : rawRole
 const H = 3600e3, D = 24 * H
 const now = Date.now()
 const iso = (ms) => new Date(ms).toISOString()
@@ -15,6 +16,9 @@ const UID = '03a20db7-3776-4425-b95c-56f2144b5cee'
 const pubTrips = []
 for (let d = 0; d < 8; d++) {
   pubTrips.push({ id: 't1-' + d, center_id: C1, departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, center_name: 'Demo · Centro Alona', boat_name: d % 2 ? 'Banca Uno' : null, sites: ['Balicasag – Black Forest', 'Pamilacan'], available_seats: d === 2 ? 0 : 10, center_area: 'Panglao', center_locality: 'Alona Beach', center_lat: 9.5487, center_lng: 123.7745, booked_seats: d % 3, center_destination: 'Panglao', center_province: 'Bohol', center_languages: ['en', 'es'], center_agencies: ['PADI'], center_course_languages: ['en', 'es'] })
+  // Más horarios del mismo centro: última plaza (Advanced) y completa (Divemaster)
+  pubTrips.push({ ...pubTrips[pubTrips.length - 1], id: 't3-' + d, departs_at: iso(day0 + d * D + 13.5 * H), min_level: 'advanced', price_php: 6200, available_seats: 1, booked_seats: 5 })
+  pubTrips.push({ ...pubTrips[pubTrips.length - 1], id: 't4-' + d, departs_at: iso(day0 + d * D + 18 * H), min_level: 'divemaster', price_php: 3500, available_seats: 0, booked_seats: 6, sites: ['Alona House Reef'] })
   pubTrips.push({ id: 't2-' + d, center_id: C2, departs_at: iso(day0 + d * D + 13.5 * H), num_dives: 2, min_level: 'advanced', price_php: 4500, gear_rental_php: 0, center_name: 'Demo · Centro Danao', boat_name: null, sites: [], available_seats: 2, center_area: 'Panglao', center_locality: 'Danao', center_lat: 9.553, center_lng: 123.79, booked_seats: 4, center_destination: 'Panglao', center_province: 'Bohol', center_languages: ['en', 'tl'], center_agencies: ['SSI'], center_course_languages: ['en'] })
 }
 const centerRow = (st) => ({ id: MY, name: 'PRUEBA', area: 'Panglao', destination: 'Panglao', province: 'Bohol', phone: '+63 900', lat: null, lng: null, languages: [], course_languages: [], agencies: [], verification_status: st, listing_status: 'socio', review_note: st === 'rejected' ? 'Documento ilegible' : null, default_divers_per_guide: 4, created_at: iso(now - 3 * D) })
@@ -23,9 +27,11 @@ const diverRow = role === 'anon' ? null : { id: 'dv1', user_id: UID, full_name: 
 const booking = (id, st, paid, ci) => ({ id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
 const myTrips = myCenter ? [0, 1, 2].map((d) => ({ id: 'mt' + d, center_id: MY, boat_id: 'b1', departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, guides: 2, divers_per_guide: 4, seat_override: null, blocked_seats: 0, status: d === 2 ? 'draft' : 'published', boats: { name: 'Banca Uno', capacity: 12 }, trip_sites: [{ position: 1, dive_sites: { name: 'Napaling' } }], bookings: d === 0 ? [booking('bk1', 'confirmed', 5800, null), booking('bk2', 'pending_payment', 0, null)] : [] })) : []
 const T = {
-  published_trips: pubTrips,
+  published_trips: rawRole === 'vacio' ? [] : pubTrips,
   destinations: [{ name: 'Panglao', province: 'Bohol', island_group: 'Visayas', lat: 9.58, lng: 123.75 }, { name: 'Moalboal', province: 'Cebu', island_group: 'Visayas', lat: 9.94, lng: 123.39 }],
-  dive_sites: [{ id: 's1', name: 'Napaling', area: 'Panglao', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines', highlight_es: 'Sardinas' }],
+  dive_sites: [{ id: 's1', name: 'Napaling', area: 'Panglao', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines', highlight_es: 'Sardinas' },
+    { id: 's2', name: 'Balicasag – Black Forest', area: 'Panglao', province: 'Bohol', max_depth_m: 40, min_depth_m: 8, recommended_min: 'advanced', highlight: 'Black coral, jacks', highlight_es: 'Coral negro, jureles' },
+    { id: 's3', name: 'Alona House Reef', area: 'Panglao', province: 'Bohol', max_depth_m: 14, min_depth_m: 3, recommended_min: 'open_water', highlight: 'Night dive', highlight_es: 'Inmersión nocturna' }],
   centers: [{ id: C1, name: 'Demo · Centro Alona', area: 'Panglao', destination: 'Panglao', province: 'Bohol', listing_status: 'socio', verification_status: 'verified', languages: ['en', 'es'], course_languages: ['es'], agencies: ['PADI', 'SSI'], agency_detail: 'PADI 5★ IDC', phone: '+63 912', website: 'https://example.com', lat: 9.5, lng: 123.7, location_precision: 'zona' },
     { id: 'dir1', name: 'Directorio Divers', area: 'Moalboal', destination: 'Moalboal', province: 'Cebu', listing_status: 'directorio', verification_status: 'unverified', languages: [], agencies: ['SSI'], source_url: 'https://example.org' },
     ...(role === 'admin' ? [{ ...centerRow('pending'), id: 'pend1', name: 'Nuevo Centro Pendiente', claims_center_id: 'dir1' }] : [])],
@@ -34,11 +40,22 @@ const T = {
   certifications: role === 'diver' ? [{ id: 'c1', level: 'open_water', agency: 'PADI', card_number: null, verified_at: null }] : [],
   boats: myCenter ? [{ id: 'b1', name: 'Banca Uno', capacity: 12, active: true, show_to_divers: false, center_id: MY }] : [],
   trips: myTrips,
-  bookings: role === 'diver' ? [{ ...booking('bk9', 'pending_payment', 0, null), trips: { departs_at: iso(day0 + D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912' }, boats: { name: 'Banca', show_to_divers: false } } }] : [],
+  bookings: role === 'diver' ? [
+    { ...booking('bk9', 'pending_payment', 0, null), trip_id: 't1-1', hold_until: iso(now + 10 * 60e3), trips: { departs_at: iso(day0 + D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: false } } },
+    { ...booking('bk8', 'confirmed', 2900, null), trip_id: 't1-3', trips: { departs_at: iso(day0 + 3 * D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: true } } },
+    { ...booking('bk6', 'confirmed', 5800, null), trip_id: 't1-x', trips: { departs_at: iso(day0 - 2 * D + 7.5 * H), num_dives: 2, status: 'completed', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: null } },
+    { ...booking('bk7', 'cancelled_by_center', 2900, null), trip_id: 't2-4', refund_php: 2900, trips: { departs_at: iso(day0 + 4 * D + 13.5 * H), num_dives: 2, status: 'cancelled_weather', centers: { name: 'Demo · Centro Danao', phone: '+63 913', destination: 'Panglao' }, boats: null } },
+  ] : [],
   app_config: [{ key: 'payments_mode', value: 'demo' }],
   center_verifications: role === 'admin' ? [{ center_id: 'pend1', legal_name: 'Nuevo SA', owner_name: 'Juan', contact_email: 'j@x.com', contact_phone: '1', address: 'Panglao', business_reg_type: 'DTI', business_reg_number: '123', submitted_at: iso(now - D) }] : [],
   center_documents: role === 'admin' ? [{ id: 'd1', center_id: 'pend1', kind: 'owner_id', path: 'pend1/a.pdf', file_name: 'id.pdf' }] : [],
-  dive_logs: [], dive_log_photos: [], payments: [], trip_sites: [],
+  dive_logs: role === 'diver' ? [
+    { id: 'lg5', diver_id: 'dv1', site_name: 'Napaling', dive_date: '2026-10-18', entry_time: '08:10', max_depth_m: 24, avg_depth_m: 14, duration_min: 52, water_temp_c: 28, rating: 5, marine_life: 'Sardinas, tortugas', centers: { name: 'Casa Azul Divers' }, dive_log_photos: [] },
+    { id: 'lg4', diver_id: 'dv1', site_name: 'Balicasag – Black Forest', dive_date: '2026-10-17', entry_time: '10:30', max_depth_m: 31, avg_depth_m: 19, duration_min: 45, water_temp_c: 28, rating: 4, centers: { name: 'Casa Azul Divers' }, dive_log_photos: [] },
+    { id: 'lg3', diver_id: 'dv1', site_name: 'Balicasag – Turtle Point', dive_date: '2026-10-17', entry_time: '08:00', max_depth_m: 18, duration_min: 48, centers: { name: 'Casa Azul Divers' }, dive_log_photos: [] },
+    { id: 'lg2', diver_id: 'dv1', site_name: 'Alona House Reef', dive_date: '2026-10-12', entry_time: '19:00', max_depth_m: 14, duration_min: 55, centers: { name: 'Napaling Dive Co.' }, dive_log_photos: [] },
+    { id: 'lg1', diver_id: 'dv1', site_name: 'Doljo Point', dive_date: '2026-09-28', entry_time: '09:00', max_depth_m: 22, duration_min: 50, centers: null, dive_log_photos: [] },
+  ] : [], dive_log_photos: [], payments: [], trip_sites: [],
   admin_audit: role === 'admin' ? [{ id: 1, at: iso(now - H), action: 'center_status', target: C1, detail: { name: 'Demo · Centro Alona', from: 'pending', to: 'verified' } }, { id: 2, at: iso(now - 2 * H), action: 'admin_grant', detail: { email: 'admin@example.com' } }] : [],
 }
 const RPC = {

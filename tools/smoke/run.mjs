@@ -9,6 +9,7 @@ const plan = {
   admind: ['/', '/perfil', '/reservas', '/admin'],
   adminc: ['/', '/centro', '/centro/agenda', '/centro/informes', '/perfil'],
   mfa: ['/', '/perfil', '/reservas'],
+  vacio: ['/', '/d/Panglao'],
 }
 const shots = process.argv[2] === 'shots'
 const only = (process.argv[3] || '').split(',').filter(Boolean)
@@ -17,7 +18,7 @@ let fails = 0
 for (const [role, routes] of Object.entries(plan)) {
   if (only.length && !only.includes(role)) continue
   for (const lang of ['es', 'en']) {
-    if (lang === 'en' && role !== 'anon' && role !== 'center') continue
+    if (lang === 'en' && !['anon', 'center', 'vacio'].includes(role)) continue
     const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1 })
     await ctx.addInitScript(([r, l]) => { localStorage.setItem('mockRole', r); localStorage.setItem('lang', l) }, [role, lang])
     await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.abort())
@@ -31,6 +32,9 @@ for (const [role, routes] of Object.entries(plan)) {
       await page.waitForTimeout(350)
       const txt = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 140)
       const bad = errs.filter((e) => !/favicon|flagcdn|ERR_|Failed to load resource/.test(e))
+      // Nada debe salirse de la pantalla de 375 px (botones que no caben, filas sin wrap…)
+      const wide = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1 && !e.closest('.days, .chips, .slots, table, .scroll-x') }).slice(0, 3).map((e) => e.tagName + '.' + (e.className?.baseVal ?? e.className) + ' «' + (e.textContent || '').trim().slice(0, 30) + '»'))
+      if (wide.length) bad.push('DESBORDA ' + wide.join(', '))
       if (bad.length) fails++
       console.log(`[${role}/${lang}] ${r} :: ${bad.length ? 'ERR ' + bad.join(' | ') : 'ok'} :: ${txt}`)
       if (shots) await page.screenshot({ path: `shots/${role}-${lang}-${r.replace(/\W+/g, '_')}.png`, fullPage: true })
