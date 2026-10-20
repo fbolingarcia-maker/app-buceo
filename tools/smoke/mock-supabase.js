@@ -33,10 +33,34 @@ const T = {
   center_verifications: role === 'admin' ? [{ center_id: 'pend1', legal_name: 'Nuevo SA', owner_name: 'Juan', contact_email: 'j@x.com', contact_phone: '1', address: 'Panglao', business_reg_type: 'DTI', business_reg_number: '123', submitted_at: iso(now - D) }] : [],
   center_documents: role === 'admin' ? [{ id: 'd1', center_id: 'pend1', kind: 'owner_id', path: 'pend1/a.pdf', file_name: 'id.pdf' }] : [],
   dive_logs: [], dive_log_photos: [], payments: [], trip_sites: [],
+  admin_audit: role === 'admin' ? [{ id: 1, at: iso(now - H), action: 'center_status', target: C1, detail: { name: 'Demo · Centro Alona', from: 'pending', to: 'verified' } }, { id: 2, at: iso(now - 2 * H), action: 'admin_grant', detail: { email: 'admin@example.com' } }] : [],
 }
 const RPC = {
   is_platform_admin: role === 'admin', center_ratings: [{ center_id: C1, rating: 4.7, reviews: 12 }],
   delete_my_account: { ok: role !== 'centerv', blockers: role === 'centerv' ? ['Tu centro tiene 2 reserva(s) en salidas futuras. Cancélalas o avisa a los buceadores antes de eliminar la cuenta.'] : [], centers: role.startsWith('center') ? [C1] : [], dive_logs: 3, bookings_kept: 2 },
+  center_private: [{ gcash_number: '0917 000 0000', review_note: role === 'centerr' ? 'Falta el permiso de negocio' : null, notes: null }],
+  admin_users: [
+    { diver_id: 'dv1', user_id: UID, full_name: 'Fernando B', email: 'fernando@example.com', account_type: 'center', country: 'España', languages: ['es', 'en'], logged_dives: 40, bio: null, seeks_buddy: false, show_on_trips: false, signed_up_at: '2026-10-15T03:46:26Z', last_sign_in_at: '2026-10-19T11:42:30Z', email_confirmed: true, auth_provider: 'email', certifications: [{ agency: 'PADI', level: 'advanced', verified: true }], bookings_total: 0, bookings_upcoming: 0, centers: [{ id: MY, name: 'PRUEBA', role: 'owner', status: 'verified' }], is_admin: true },
+    { diver_id: 'dv2', user_id: 'u2', full_name: 'Ana López', email: 'ana@example.com', account_type: 'diver', country: 'Filipinas', languages: ['en'], logged_dives: 12, bio: 'Me encantan los tiburones', seeks_buddy: true, show_on_trips: true, signed_up_at: '2026-10-15T09:20:06Z', last_sign_in_at: null, email_confirmed: true, auth_provider: 'google', certifications: [], bookings_total: 2, bookings_upcoming: 1, centers: [], is_admin: false },
+  ],
+  admin_dashboard: (() => {
+    const days = [...Array(30)].map((_, i) => new Date(now - (29 - i) * D + 8 * H).toISOString().slice(0, 10))
+    return {
+      days: 30, generated_at: iso(now),
+      users: { total: 48, divers: 41, center_accounts: 7, new: 12, active: 30, unconfirmed: 3, countries: [{ country: 'Filipinas', n: 14 }, { country: 'España', n: 11 }, { country: 'Alemania', n: 6 }, { country: '—', n: 17 }],
+        signups: days.map((day, i) => ({ day, n: [0, 1, 0, 2, 0, 0, 1, 3, 0, 1][i % 10] })) },
+      centers: { by_status: { verified: 6, pending: 2, unverified: 3, rejected: 1 }, directory: 186, claims_pending: 1, new: 3,
+        top: [{ id: C1, name: 'Demo · Centro Alona', destination: 'Panglao', bookings: 18, divers: 31, revenue: 179800 }, { id: C2, name: 'Demo · Centro Danao', destination: 'Panglao', bookings: 9, divers: 12, revenue: 54000 }],
+        by_destination: [{ destination: 'Panglao', n: 3 }, { destination: 'Moalboal', n: 2 }, { destination: 'Anilao', n: 1 }] },
+      trips: { upcoming: 77, seats_total: 497, seats_booked: 121, empty_upcoming: 30, completed: 41, cancelled_weather: 2, drafts: 4 },
+      bookings: { by_status: { confirmed: 27, pending_payment: 3, cancelled_by_diver: 4, cancelled_by_center: 1 }, by_source: { app: 22, walk_in: 5, phone: 3 }, divers: 43,
+        gross: 233800, collected: 190200, outstanding: 43600, commission: 11690, refunds: 5800,
+        per_day: days.map((day, i) => ({ day, n: [1, 0, 2, 3, 1, 0, 0, 4, 2, 1][i % 10], php: [5800, 0, 11600, 17400, 5800, 0, 0, 23200, 9000, 4500][i % 10] })) },
+      payments: { by_method: { gcash: 98000, card: 52200, cash: 40000 }, failed: 1, pending_online: 2 },
+      activity: { dive_logs: 37, certs_unverified: 9 },
+      alerts: { centers_pending: 2, expired_holds: 1, unpaid_soon: 2 },
+    }
+  })(),
   admin_list: [{ user_id: 'u1', email: 'admin@example.com', created_at: '2026-10-01T00:00:00Z', is_me: true }],
   trip_divers: { divers: [{ name: 'Ana L.', level: 'advanced', seats: 1, dives: 25, languages: ['es'], country: 'ES' }] },
 }
