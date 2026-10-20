@@ -29,7 +29,9 @@ export default function Centros() {
     loadDestinations().then(setDests)
     loadRatings().then(setRatings)
     supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url, languages, agencies')
-      .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%').order('name')
+      .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%')
+      // Los centros dados de alta solo se ven cuando DiveSlot los ha verificado
+      .or('listing_status.neq.socio,verification_status.eq.verified').order('name')
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setList(data || []) })
   }, [])
 
