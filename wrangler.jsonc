@@ -5,7 +5,9 @@
   "name": "diveslot",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "./dist",
+    // De momento divingslot.com solo muestra la página «En construcción» (carpeta construccion/).
+    // Para publicar la app otra vez, vuelve a poner "./dist".
+    "directory": "./construccion",
     // Router por hash: cualquier ruta desconocida devuelve index.html
     "not_found_handling": "single-page-application"
   },
