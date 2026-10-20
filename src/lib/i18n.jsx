@@ -50,21 +50,14 @@ export function LangProvider({ children }) {
 
 export const useLang = () => useContext(LangCtx)
 
-// Selector compacto (cabecera) o en forma de botones (perfil / login)
-export function LangSwitch({ full }) {
+// Selector de idioma como control segmentado (Perfil → Ajustes). Cada idioma se nombra en su propio idioma.
+export function LangSwitch() {
   const { lang, setLang } = useLang()
-  if (full) {
-    return (
-      <div className="row" style={{ gap: 8 }}>
-        {LANGS.map(([k, n]) => (
-          <button key={k} type="button" className={lang === k ? 'btn small' : 'btn small ghost'} onClick={() => setLang(k)}>{n}</button>
-        ))}
-      </div>
-    )
-  }
   return (
-    <select aria-label="Language / Idioma" value={lang} onChange={(e) => setLang(e.target.value)} className="lang-select">
-      {LANGS.map(([k]) => <option key={k} value={k}>{k.toUpperCase()}</option>)}
-    </select>
+    <div className="seg" role="group" aria-label="Language / Idioma" style={{ margin: 0, flexWrap: 'nowrap' }}>
+      {LANGS.map(([k, n]) => (
+        <button key={k} type="button" className={lang === k ? 'on' : ''} aria-pressed={lang === k} onClick={() => setLang(k)}>{n}</button>
+      ))}
+    </div>
   )
 }

@@ -60,3 +60,11 @@ export const dayLabel = (ymd, opts = { weekday: 'short', day: 'numeric', month: 
   new Intl.DateTimeFormat(locale(), { timeZone: TZ, ...opts }).format(new Date(ymd + 'T12:00:00+08:00'))
 export const dateTime = (iso) =>
   new Intl.DateTimeFormat(locale(), { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+
+// Color de la escala de profundidad según el nivel mínimo (límites reales de cada certificación)
+export const levelColor = (l) => ({ open_water: 'var(--depth-2)', advanced: 'var(--depth-3)', rescue: 'var(--depth-3)', divemaster: 'var(--depth-4)', instructor: 'var(--depth-4)' })[l] || 'var(--depth-2)'
+// Iniciales de un centro para su avatar, sin palabras genéricas (Dive, Divers, Center…)
+export const initials = (name) => (name || '').split(/\s+/).filter((w) => /^[\p{L}]/u.test(w) && !/^(dive|divers|diving|center|centre|resort)$/i.test(w)).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '·'
+// Color de la escala de profundidad para una profundidad en metros
+export const depthColor = (m) => (m <= 5 ? 'var(--depth-1)' : m <= 18 ? 'var(--depth-2)' : m <= 30 ? 'var(--depth-3)' : m <= 40 ? 'var(--depth-4)' : 'var(--depth-5)')
+

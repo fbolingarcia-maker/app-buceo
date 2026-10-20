@@ -66,9 +66,10 @@ export function suggestPlaces(q, dests, sites = []) {
   if (!w) return []
   const out = []
   const seen = new Set()
-  const add = (kind, name, sub) => {
+  // site: la sugerencia viene de un punto de buceo o una isla (la pantalla le pone el icono de olas)
+  const add = (kind, name, sub, site = false) => {
     const k = kind + ':' + name
-    if (!seen.has(k)) { seen.add(k); out.push({ kind, name, sub }) }
+    if (!seen.has(k)) { seen.add(k); out.push({ kind, name, sub, site }) }
   }
   for (const d of dests) if (norm(d.name).includes(w)) add('dest', d.name, d.province)
   for (const d of dests) if (norm(d.province).includes(w)) add('prov', d.province, d.island_group)
@@ -78,7 +79,7 @@ export function suggestPlaces(q, dests, sites = []) {
     for (const st of sites) {
       if (!norm(st.name).includes(w) && !norm(st.area || '').includes(w)) continue
       const dest = destForArea(st.area, dests)
-      if (dest) add('dest', dest, '🤿 ' + (norm(st.area || '').includes(w) && st.area !== dest ? st.area : st.name))
+      if (dest) add('dest', dest, norm(st.area || '').includes(w) && st.area !== dest ? st.area : st.name, true)
     }
   }
   // Las coincidencias que empiezan por el texto, primero

@@ -5,7 +5,7 @@ export function Agencies({ list, small }) {
   if (!list?.length) return null
   return (
     <span className="agencies">
-      {list.map((a) => <span key={a} className={'agency' + (small ? ' sm' : '')}>{a}</span>)}
+      {[...new Set(list.map((a) => a.toUpperCase()))].map((a) => <span key={a} className={'agency' + (small ? ' sm' : '')}>{a}</span>)}
     </span>
   )
 }
