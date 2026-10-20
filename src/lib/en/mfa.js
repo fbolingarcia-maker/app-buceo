@@ -50,4 +50,13 @@ export default {
   'Panel de cualquier centro, solo lectura': "Any centre's dashboard, read-only",
   'Administrador · vista de centro': 'Admin · centre view',
   'Administrador · vista de buceador': 'Admin · diver view',
+  // Emails de confirmación y recuperación
+  'Hemos enviado demasiados emails en poco tiempo. Espera unos minutos y vuelve a intentarlo.': "We've sent too many emails in a short time. Wait a few minutes and try again.",
+  'No hemos podido enviar el email ahora mismo. Inténtalo de nuevo más tarde.': "We couldn't send the email right now. Please try again later.",
+  'Demasiados intentos seguidos. Espera unos minutos y vuelve a intentarlo.': 'Too many attempts in a row. Wait a few minutes and try again.',
+  'Te hemos vuelto a enviar el email de confirmación a {email}. Revisa también la carpeta de spam o promociones.': "We've resent the confirmation email to {email}. Please also check your spam or promotions folder.",
+  'Te hemos enviado un email a {email} para confirmar tu cuenta. Ábrelo y pulsa el enlace (mira también en spam o promociones).': "We've sent an email to {email} to confirm your account. Open it and tap the link (check spam or promotions too).",
+  'Si el email existe, recibirás un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.': "If the email exists, you'll receive a link to create a new password. Please also check your spam folder.",
+  '¿No te ha llegado?': "Didn't get it?",
+  'Reenviar email de confirmación': 'Resend confirmation email',
 }
