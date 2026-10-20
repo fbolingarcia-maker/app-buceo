@@ -1,0 +1,13 @@
+// DiveSlot en Cloudflare (Workers + Static Assets).
+// Cloudflare compila con `npm run build` y publica con `npx wrangler deploy` en cada push a main.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "diveslot",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Router por hash: cualquier ruta desconocida devuelve index.html
+    "not_found_handling": "single-page-application"
+  },
+  "observability": { "enabled": true }
+}
