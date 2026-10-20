@@ -206,3 +206,32 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 /* Zona de peligro (eliminar cuenta) */
 .danger-zone { border-color: var(--bad); }
 .btn.danger.ghost { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+
+/* Administrador: cabecera propia y barra «Ver como» */
+:root { --admin: #2b1d5c; --admin-2: #4a35a0; --admin-ink: #fff; }
+.top.admin { background: linear-gradient(90deg, var(--admin), var(--admin-2)); border-bottom-color: transparent; color: var(--admin-ink); }
+.top.admin .brand { color: var(--admin-ink); }
+.top.admin .btn.ghost { color: var(--admin-ink); border-color: rgba(255,255,255,.35); }
+.top.admin .btn.ghost[aria-pressed="true"], .top.admin .btn.ghost.on { background: rgba(255,255,255,.18); }
+.pill.admin-pill { background: #f4b400; color: #1d1300; white-space: nowrap; }
+.top.admin .brand .pill.admin-pill { display: inline-block; }
+.adminbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px;
+  background: color-mix(in srgb, var(--admin-2) 10%, var(--bg)); border-bottom: 1px solid color-mix(in srgb, var(--admin-2) 25%, transparent); }
+.adminbar > .small { color: var(--muted); font-weight: 600; }
+.adminbar .seg { margin: 0; gap: 4px; }
+.adminbar .seg button { padding: 4px 10px; min-height: 36px; font-size: 13px; }
+.adminbar .seg button.on { background: var(--admin-2); border-color: var(--admin-2); color: #fff; }
+.adminbar select { flex: 1 1 160px; min-width: 0; min-height: 36px; padding: 4px 8px; font-size: 13px; }
+.banner.admin { background: color-mix(in srgb, var(--admin-2) 12%, transparent); border-color: color-mix(in srgb, var(--admin-2) 35%, transparent); }
+.is-admin .tab.on { color: var(--admin-2); }
+.admin-card { background: linear-gradient(135deg, var(--admin), var(--admin-2)); color: var(--admin-ink); border: 0; }
+.admin-card .small { opacity: .9; }
+.admin-avatar { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; background: rgba(255,255,255,.15); }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.view-opt { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; font: inherit; color: inherit; cursor: pointer; margin: 0; padding: 12px 8px; }
+.view-opt.on { border: 2px solid var(--admin-2); background: color-mix(in srgb, var(--admin-2) 8%, var(--card)); }
+.card.pick { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+@media (prefers-color-scheme: dark) {
+  :root { --admin: #1a1238; --admin-2: #7b66e0; }
+}
+@media (max-width: 420px) { .grid3 { grid-template-columns: 1fr; } .view-opt { flex-direction: row; text-align: left; flex-wrap: wrap; } .view-opt .small { flex-basis: 100%; } }

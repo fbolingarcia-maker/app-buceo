@@ -22,6 +22,8 @@ import CentroInfo from './pages/CentroInfo'
 import Destino from './pages/Destino'
 import CentroVerificacion from './pages/CentroVerificacion'
 import Admin from './pages/Admin'
+import { DosPasosReto } from './pages/DosPasos'
+import AdminBar, { AdminCenterPicker } from './lib/AdminBar'
 import ErrorBoundary from './lib/ErrorBoundary'
 
 function NeedLogin({ children }) {
@@ -43,11 +45,22 @@ function AfterLogin() {
 
 // Páginas del centro: hace falta sesión y tener el centro dado de alta
 function NeedCenter({ children }) {
-  const { session, center, diver } = useAuth()
+  const { session, center, diver, isAdmin, readOnly } = useAuth()
   if (session === undefined || (session && !diver)) return <p className="muted center">{t('Cargando…')}</p>
   if (!session) return <Login />
-  if (!center) return <RegistrarCentro />
-  return <><VerifyBanner />{children}</>
+  if (!center) return isAdmin ? <AdminCenterPicker /> : <RegistrarCentro />
+  return <>{readOnly && <ReadOnlyBanner />}<VerifyBanner />{children}</>
+}
+
+// El administrador mira un centro ajeno: puede verlo todo, pero no cambiar nada
+function ReadOnlyBanner() {
+  const { center, setViewCenterId } = useAuth()
+  return (
+    <div className="banner admin" role="status">
+      <span>👁️ {t('Vista de administrador de {centro}: solo lectura.', { centro: center.name })}</span>
+      <button type="button" className="btn small ghost" onClick={() => setViewCenterId('')}>{t('Cambiar')}</button>
+    </div>
+  )
 }
 
 // Aviso permanente mientras el centro no está verificado por la plataforma
@@ -108,11 +121,12 @@ function Flag() {
 
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, isAdmin, pendingCenters, recovering, signOut } = useAuth()
+  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, signOut } = useAuth()
   const seg = path.split('/').filter(Boolean)
 
   let page
-  if (recovering) page = <NuevaClave />
+  if (session && needsMfa) page = <DosPasosReto />
+  else if (recovering) page = <NuevaClave />
   else if (seg[0] === 'salida' && seg[1]) page = <Salida id={seg[1]} />
   else if (seg[0] === 'reservas') page = <NeedLogin><Reservas /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1]) page = <NeedLogin><Inmersion id={seg[1]} /></NeedLogin>
@@ -126,12 +140,13 @@ export default function App() {
   else if (seg[0] === 'centro' && seg[1] === 'informes') page = <NeedCenter><CentroInformes /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'verificacion') page = <NeedCenter><CentroVerificacion /></NeedCenter>
   // El panel de administración no existe para nadie más: sin sesión de administrador se ve la portada normal
-  else if (seg[0] === 'admin' && isAdmin) page = <Admin />
+  else if (seg[0] === 'admin' && isAdmin) page = <Admin section={seg[1]} />
   else if (seg[0] === 'centro' && seg[1] === 'ajustes') page = <NeedCenter><CentroAjustes /></NeedCenter>
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
   else if (seg[0] === 'c' && seg[1]) page = <CentroInfo id={seg[1]} />
   else if (seg[0] === 'd' && seg[1]) page = <Destino name={decodeURIComponent(seg[1])} />
+  else if (session && adminView === 'admin') page = <Admin />
   else page = session && isCenter ? <NeedCenter><CentroPanel /></NeedCenter> : <Explorar />
 
   const tab = (to, icon, label, match) => (
@@ -142,15 +157,16 @@ export default function App() {
   const home = !seg[0]
 
   return (
-    <div className="app">
-      <header className="top">
+    <div className={isAdmin ? 'app is-admin' : 'app'}>
+      <header className={isAdmin ? 'top admin' : 'top'}>
         <Link to="/" className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Flag />
           DiveSlot
-          {session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
+          {isAdmin ? <span className="pill admin-pill" style={{ fontSize: 11 }}>{t('Admin')}</span>
+            : session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>
         <div className="row" style={{ gap: 8 }}>
-          {isAdmin && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
+          {isAdmin && adminView !== 'admin' && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
           <LangSwitch />
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
           {session && (
@@ -158,10 +174,20 @@ export default function App() {
           )}
         </div>
       </header>
+      {isAdmin && !needsMfa && <AdminBar />}
       <main><ErrorBoundary resetKey={path}>{page}</ErrorBoundary></main>
       <Flash key={session ? 'in' : 'out'} />
       <nav className="tabs" aria-label={t('Navegación principal')}>
-        {session && isCenter ? (
+        {session && adminView === 'admin' ? (
+          <>
+            {tab('/admin', '📊', 'Resumen', home || (seg[0] === 'admin' && !seg[1]))}
+            {tab('/admin/centers', <>🛡️{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</>, 'Centros', seg[1] === 'centers')}
+            {tab('/admin/users', '👥', 'Usuarios', seg[1] === 'users')}
+            {tab('/admin/admins', '👤', 'Admins', seg[1] === 'admins')}
+            {tab('/admin/log', '📝', 'Registro', seg[1] === 'log')}
+            {tab('/perfil', '⚙️', 'Cuenta', seg[0] === 'perfil')}
+          </>
+        ) : session && isCenter ? (
           <>
             {tab('/centro', '📊', 'Panel', home || (seg[0] === 'centro' && !seg[1]))}
             {tab('/centro/agenda', '📅', 'Agenda', seg[1] === 'agenda')}
