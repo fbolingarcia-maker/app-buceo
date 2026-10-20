@@ -5,5 +5,6 @@ import buceador from './en/buceador'
 import centro from './en/centro'
 import verificacion from './en/verificacion'
 import ux from './en/ux'
+import seguridad from './en/seguridad'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad }
