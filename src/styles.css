@@ -15,6 +15,9 @@ a { color: var(--brand); }
 .top { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center;
   padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .brand { font-weight: 700; font-size: 18px; text-decoration: none; color: var(--ink); }
+.brand-name { white-space: nowrap; }
+/* En móvil el nombre puede ir en dos líneas para no empujar los botones */
+@media (max-width: 420px) { .top .brand { min-width: 0; } .brand-name { white-space: normal; font-size: 15px; line-height: 1.15; } }
 main { padding: 16px; }
 h1 { font-size: 22px; margin: 4px 0 12px; }
 h2 { font-size: 17px; margin: 20px 0 8px; }
