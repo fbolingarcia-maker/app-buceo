@@ -2,7 +2,30 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // En GitHub Pages la app vive en /<nombre-del-repo>/. El workflow pasa BASE_PATH.
+// Cabeceras de seguridad para la versión publicada (GitHub Pages no permite cabeceras HTTP propias,
+// así que van como <meta>). Solo en build: en desarrollo Vite necesita scripts en línea y websockets locales.
+const SUPABASE = 'https://tosgzcpnkpsrrkfqctgy.supabase.co'
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://flagcdn.com " + SUPABASE,
+  "connect-src 'self' " + SUPABASE + ' ' + SUPABASE.replace('https://', 'wss://'),
+  "font-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  'upgrade-insecure-requests',
+].join('; ')
+const securityHeaders = {
+  name: 'security-headers',
+  apply: 'build',
+  transformIndexHtml: (html) => html.replace('<meta charset="UTF-8" />',
+    '<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="' + CSP + '" />\n    <meta name="referrer" content="strict-origin-when-cross-origin" />'),
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), securityHeaders],
   base: process.env.BASE_PATH || '/',
 })
