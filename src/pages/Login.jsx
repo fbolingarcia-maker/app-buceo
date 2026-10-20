@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, appUrl, errMsg } from '../lib/supabase'
+import { supabase, appUrl, errMsg, pwProblem } from '../lib/supabase'
 import { t, LangSwitch } from '../lib/i18n'
 
 // Página a la que volver tras entrar (la guarda la ficha de la salida)
@@ -24,6 +24,7 @@ export default function Login() {
 
   async function submit(e) {
     e.preventDefault()
+    if (mode === 'signup' && pwProblem(password)) return setError(pwProblem(password))
     setBusy(true); setError(''); setInfo('')
     let res
     if (mode === 'login') {
@@ -76,7 +77,7 @@ export default function Login() {
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'} aria-describedby={mode === 'signup' ? 'pw-hint' : undefined} />
               <button type="button" className="btn small ghost" onClick={() => setShowPw(!showPw)} aria-pressed={showPw}>{showPw ? t('Ocultar') : t('Mostrar')}</button>
             </div>
-            {mode === 'signup' && <span id="pw-hint" className="small muted hint">{t('Mínimo 8 caracteres')}</span>}
+            {mode === 'signup' && <span id="pw-hint" className="small muted hint">{t('Mínimo 8 caracteres, con letras y números')}</span>}
           </div>
         )}
         {error && <div className="msg err" role="alert">{error}</div>}

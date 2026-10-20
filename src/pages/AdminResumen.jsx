@@ -34,7 +34,7 @@ export default function AdminResumen({ go }) {
   return (
     <>
       <div className="row between wrap" style={{ gap: 8 }}>
-        <h2 style={{ margin: 0 }}>{t('Resumen')}</h2>
+        <h1 style={{ margin: 0 }}><span aria-hidden>📊</span> {t('Resumen')}</h1>
         <div className="row wrap" style={{ gap: 6 }}>
           <div className="seg" role="group" aria-label={t('Periodo')}>
             {PERIODS.map((n) => <button key={n} type="button" className={days === n ? 'on' : ''} aria-pressed={days === n} onClick={() => setDays(n)}>{t('{n} días', { n })}</button>)}

@@ -1,15 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, errMsg } from '../lib/supabase'
+import { supabase, errMsg, pwProblem } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, levelName } from '../lib/format'
 import { t, LangSwitch } from '../lib/i18n'
 import EliminarCuenta from './EliminarCuenta'
+import DosPasos from './DosPasos'
+import { VIEWS } from '../lib/AdminBar'
 
 const AGENCIES = ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'RAID', 'BSAC', 'Otra']
 
 export default function Perfil() {
-  const { user, diver, center, isCenter, refresh, signOut } = useAuth()
+  const { user, diver, ownCenter: center, isCenter, isAdmin, adminView, setViewAs, refresh, signOut } = useAuth()
   const [form, setForm] = useState(null)
   const [certs, setCerts] = useState([])
   const [cert, setCert] = useState({ agency: 'PADI', level: 'open_water', card_number: '' })
@@ -67,6 +69,7 @@ export default function Perfil() {
 
   async function changePw(e) {
     e.preventDefault()
+    if (pwProblem(pw)) return note('pw', false, pwProblem(pw))
     const { error } = await supabase.auth.updateUser({ password: pw })
     error ? note('pw', false, errMsg(error)) : (note('pw', true, t('Contraseña cambiada')), setPw(''))
   }
@@ -80,10 +83,59 @@ export default function Perfil() {
 
   if (!diver || !form) return <p className="muted">{t('Cargando perfil…')}</p>
 
+  const account = (
+    <>
+      <h2>{t('Seguridad')}</h2>
+      <DosPasos recommend={isAdmin} />
+      <form className="card" onSubmit={changePw}>
+        <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" aria-describedby="perfil-pw-hint" />
+          <span id="perfil-pw-hint" className="small muted hint">{t('Mínimo 8 caracteres, con letras y números')}</span></div>
+        {show('pw')}
+        <div className="row between">
+          <button className="btn ghost" disabled={pw.length < 8}>{t('Cambiar contraseña')}</button>
+          <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
+        </div>
+      </form>
+    </>
+  )
+
+  // Administrador en su vista propia: cuenta de plataforma, sin datos de buceo
+  if (adminView === 'admin') return (
+    <>
+      <div className="card admin-card">
+        <div className="row" style={{ gap: 14 }}>
+          <div className="admin-avatar" aria-hidden>🛡️</div>
+          <div>
+            <div className="big">{diver.full_name || user.email}</div>
+            <div className="small">{user.email}</div>
+            <span className="pill admin-pill" style={{ marginTop: 6 }}>{t('Administrador de la plataforma')}</span>
+          </div>
+        </div>
+        <p className="small" style={{ marginBottom: 0 }}>{t('Tu acceso de administrador no aparece en ningún sitio público: los demás usuarios no ven este perfil ni saben que existe.')}</p>
+      </div>
+
+      <h2>{t('Ver la app como')}</h2>
+      <div className="grid3">
+        {VIEWS.map(([k, icon, label]) => (
+          <button key={k} type="button" className={adminView === k ? 'card view-opt on' : 'card view-opt'} aria-pressed={adminView === k}
+            onClick={() => { setViewAs(k); go(k === 'admin' ? '/admin' : k === 'center' ? '/centro' : '/') }}>
+            <span style={{ fontSize: 26 }} aria-hidden>{icon}</span>
+            <b>{t(label)}</b>
+            <span className="small muted">{t(k === 'admin' ? 'Panel de la plataforma' : k === 'diver' ? 'Salidas, reservas y bitácora con tu cuenta' : 'Panel de cualquier centro, solo lectura')}</span>
+          </button>
+        ))}
+      </div>
+
+      <h2>{t('Idioma')}</h2>
+      <div className="card"><LangSwitch full /></div>
+      {account}
+    </>
+  )
+
   return (
     <>
       <h1>{t('Tu perfil')}</h1>
-      <p className="pill" style={{ marginTop: -4 }}>{isCenter ? t('Cuenta de centro de buceo') : t('Cuenta de buceador')}</p>
+      <p className="pill" style={{ marginTop: -4 }}>{isAdmin ? (isCenter ? t('Administrador · vista de centro') : t('Administrador · vista de buceador')) : isCenter ? t('Cuenta de centro de buceo') : t('Cuenta de buceador')}</p>
       <p className="muted small">{user.email}</p>
 
       <h2>{t('Idioma')}</h2>
@@ -148,15 +200,7 @@ export default function Perfil() {
         </form>
       )}
 
-      <h2>{t('Cuenta')}</h2>
-      <form className="card" onSubmit={changePw}>
-        <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
-        {show('pw')}
-        <div className="row between">
-          <button className="btn ghost" disabled={pw.length < 8}>{t('Cambiar contraseña')}</button>
-          <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
-        </div>
-      </form>
+      {account}
 
       <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
     </>

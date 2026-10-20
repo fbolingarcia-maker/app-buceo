@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { go } from '../lib/router'
 import { t } from '../lib/i18n'
 import { dateTime, levelName } from '../lib/format'
 import { VSTATUS } from './CentroVerificacion'
@@ -21,25 +22,19 @@ const FIELDS = [
 // Panel de la plataforma (solo administradores): centros, usuarios, administradores y registro de cambios
 const SECTIONS = [['summary', '📊', 'Resumen'], ['centers', '🛡️', 'Centros'], ['users', '👥', 'Usuarios'], ['admins', '👤', 'Administradores'], ['log', '📝', 'Registro']]
 
-export default function Admin() {
+export default function Admin({ section }) {
   const { isAdmin } = useAuth()
-  const [section, setSection] = useState('summary')
+  const sec = SECTIONS.find(([k]) => k === section) || SECTIONS[0]
   if (!isAdmin) return null
+  const open = (k) => go(k === 'summary' ? '/admin' : '/admin/' + k)
   return (
     <>
-      <h1 style={{ marginBottom: 8 }}>{t('Administración')}</h1>
-      <nav className="row wrap" style={{ gap: 6, marginBottom: 12 }} aria-label={t('Administración')}>
-        {SECTIONS.map(([k, icon, label]) => (
-          <button key={k} type="button" className={section === k ? 'btn small' : 'btn small ghost'} aria-current={section === k ? 'page' : undefined} onClick={() => setSection(k)}>
-            <span aria-hidden>{icon}</span> {t(label)}
-          </button>
-        ))}
-      </nav>
-      {section === 'summary' && <AdminResumen go={setSection} />}
-      {section === 'centers' && <Centers />}
-      {section === 'users' && <Users />}
-      {section === 'admins' && <Admins />}
-      {section === 'log' && <AuditLog />}
+      {sec[0] !== 'summary' && <h1 style={{ marginBottom: 12 }}><span aria-hidden>{sec[1]}</span> {t(sec[2])}</h1>}
+      {sec[0] === 'summary' && <AdminResumen go={open} />}
+      {sec[0] === 'centers' && <Centers />}
+      {sec[0] === 'users' && <Users />}
+      {sec[0] === 'admins' && <Admins />}
+      {sec[0] === 'log' && <AuditLog />}
     </>
   )
 }
@@ -101,7 +96,7 @@ function Users() {
 
   return (
     <>
-      <h2 style={{ marginTop: 0 }}>{t('Usuarios')} {list && <span className="muted small">({shown.length}/{list.length})</span>}</h2>
+      <h2 style={{ marginTop: 0 }}>{t('Todas las cuentas')} {list && <span className="muted small">({shown.length}/{list.length})</span>}</h2>
       <div className="row wrap" style={{ gap: 8, marginBottom: 10 }}>
         <input className="grow" type="search" placeholder={t('Buscar por nombre, email o país')} aria-label={t('Buscar por nombre, email o país')} value={q} onChange={(e) => setQ(e.target.value)} />
         <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label={t('Tipo de cuenta')}>
@@ -162,7 +157,7 @@ function AuditLog() {
       : t('Acceso de administrador retirado a {email}', { email: a.detail?.email || '' })
   return (
     <>
-      <h2 style={{ marginTop: 0 }}>{t('Registro')}</h2>
+      <h2 style={{ marginTop: 0 }}>{t('Cambios recientes')}</h2>
       {err && <div className="msg err" role="alert">{err}</div>}
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list?.length === 0 && <div className="card muted center">{t('Todavía no hay cambios registrados.')}</div>}
