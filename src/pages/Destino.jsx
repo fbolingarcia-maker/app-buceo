@@ -4,6 +4,8 @@ import { Link } from '../lib/router'
 import { t, getLang } from '../lib/i18n'
 import { levelName } from '../lib/format'
 import { loadDestinations, openTripsIn, loadRatings, EXTRA_AREAS } from '../lib/places'
+import Icon from '../lib/Icon'
+import { ArrowLeft } from 'lucide-react'
 
 // Página de un destino: puntos de buceo, centros y acceso a sus salidas
 export default function Destino({ name }) {
@@ -31,8 +33,8 @@ export default function Destino({ name }) {
 
   return (
     <>
-      <Link to="/" className="small">← {t('Salidas')}</Link>
-      <h1 style={{ marginTop: 8, marginBottom: 2 }}>📍 {dest.name}</h1>
+      <Link to="/" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Salidas')}</Link>
+      <h1 style={{ marginTop: 8, marginBottom: 2 }}>{dest.name}</h1>
       <p className="muted" style={{ marginTop: 0 }}>{dest.province} · {dest.island_group}</p>
 
       <div className="card row between wrap" style={{ gap: 8 }}>
@@ -61,7 +63,7 @@ export default function Destino({ name }) {
         <Link key={c.id} to={'/c/' + c.id} className="card row between" style={{ gap: 8 }}>
           <span><b>{c.name}</b>{c.locality && c.locality !== dest.name ? <span className="small muted"> · {c.locality}</span> : null}</span>
           <span className="row" style={{ gap: 6 }}>
-            {ratings[c.id] && <span className="small">⭐ {ratings[c.id].rating}</span>}
+            {ratings[c.id] && <span className="small">★ {ratings[c.id].rating}</span>}
             {c.listing_status === 'socio' && <span className="pill ok">{t('Reserva en la app')}</span>}
           </span>
         </Link>

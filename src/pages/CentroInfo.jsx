@@ -6,6 +6,8 @@ import { dateTime, levelName, php } from '../lib/format'
 import { loadRatings } from '../lib/places'
 import { Flags, langName } from '../lib/langs'
 import { Agencies } from '../lib/agencies'
+import Icon from '../lib/Icon'
+import { ArrowLeft, MapPin, ShieldCheck } from 'lucide-react'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
 export default function CentroInfo({ id }) {
@@ -32,13 +34,13 @@ export default function CentroInfo({ id }) {
 
   return (
     <>
-      <Link to="/centros" className="small">← {t('Centros')}</Link>
+      <Link to="/centros" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Centros')}</Link>
       <h1 style={{ marginTop: 8, marginBottom: 4 }}>{c.name}</h1>
       <div className="row wrap" style={{ gap: 8, marginBottom: 12 }}>
-        {dest && <Link to={'/d/' + encodeURIComponent(dest)} className="small">📍 {[c.locality !== dest ? c.locality : null, dest, c.province].filter(Boolean).join(', ')}</Link>}
-        {rating && <span className="pill ok">⭐ {rating.rating} · {rating.reviews === 1 ? t('1 valoración') : t('{n} valoraciones', { n: rating.reviews })}</span>}
+        {dest && <Link to={'/d/' + encodeURIComponent(dest)} className="small"><Icon icon={MapPin} size={14} /> {[c.locality !== dest ? c.locality : null, dest, c.province].filter(Boolean).join(', ')}</Link>}
+        {rating && <span className="pill ok">★ {rating.rating} · {rating.reviews === 1 ? t('1 valoración') : t('{n} valoraciones', { n: rating.reviews })}</span>}
         {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
-        {c.verification_status === 'verified' && c.listing_status === 'socio' && <span className="pill ok" title={t('DiveSlot ha comprobado los permisos y la identidad de este centro')}>🛡️ {t('Centro verificado')}</span>}
+        {c.verification_status === 'verified' && c.listing_status === 'socio' && <span className="pill ok" title={t('DiveSlot ha comprobado los permisos y la identidad de este centro')}><Icon icon={ShieldCheck} size={14} /> {t('Centro verificado')}</span>}
       </div>
       {c.agencies?.length > 0 && (
         <div className="row wrap small" style={{ gap: 8, marginBottom: 12 }}>

@@ -5,6 +5,9 @@ import { Link, go } from '../lib/router'
 import { manilaDate } from '../lib/format'
 import { hashParam } from '../lib/centro'
 import { t } from '../lib/i18n'
+import Icon from '../lib/Icon'
+import { ArrowLeft, Share } from 'lucide-react'
+import { drawShareCard } from '../lib/shareCard'
 
 const EMPTY = {
   site_id: '', site_name: '', center_id: null, booking_id: null, dive_date: manilaDate(), entry_time: '',
@@ -39,6 +42,7 @@ export default function Inmersion({ id }) {
   const [newFiles, setNewFiles] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
+  const [sharing, setSharing] = useState(false)
 
   useEffect(() => {
     supabase.from('dive_sites').select('id, name, area, province').order('area').order('name').then(({ data }) => setSites(data || []))
@@ -133,10 +137,39 @@ export default function Inmersion({ id }) {
 
   const used = f.tank_start_bar && f.tank_end_bar ? f.tank_start_bar - f.tank_end_bar : null
 
+  // Imagen para stories con los datos reales de la inmersión (se genera en el móvil y no se sube a ningún sitio)
+  async function share() {
+    setSharing(true); setMsg(null)
+    try {
+      const max = +f.max_depth_m || 0
+      let isRecord = false
+      if (max) {
+        const { data } = await supabase.from('dive_logs').select('max_depth_m').eq('diver_id', diver.id).neq('id', id)
+          .not('max_depth_m', 'is', null).order('max_depth_m', { ascending: false }).limit(1)
+        isRecord = max > (+data?.[0]?.max_depth_m || 0)
+      }
+      const blob = await drawShareCard(f, { photoUrl: photos[0]?.url, centerName, isRecord })
+      const name = 'diveslot-' + ((f.site_name || 'inmersion').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').toLowerCase()) + '.png'
+      const file = new File([blob], name, { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file] })
+      else {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob); a.download = name; a.click()
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') setMsg({ ok: false, text: t('No se ha podido crear la imagen. Inténtalo de nuevo.') })
+    }
+    setSharing(false)
+  }
+
   return (
     <>
-      <Link to="/bitacora" className="small">← {t('Bitácora')}</Link>
-      <h1 style={{ marginTop: 8 }}>{isNew ? t('Nueva inmersión') : f.site_name || t('Inmersión')}</h1>
+      <Link to="/bitacora" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Bitácora')}</Link>
+      <div className="row between" style={{ gap: 8, alignItems: 'flex-start' }}>
+        <h1 style={{ marginTop: 8 }}>{isNew ? t('Nueva inmersión') : f.site_name || t('Inmersión')}</h1>
+        {!isNew && <button type="button" className="btn ghost small" style={{ marginTop: 8 }} disabled={sharing} onClick={share}><Icon icon={Share} /> {t('Compartir')}</button>}
+      </div>
       {centerName && <p className="muted small" style={{ marginTop: -6 }}>{t('Con {name}', { name: centerName })}</p>}
       <form onSubmit={save}>
         <div className="card">

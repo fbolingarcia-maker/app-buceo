@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { supabase, appUrl, errMsg, pwProblem } from '../lib/supabase'
-import { t, LangSwitch } from '../lib/i18n'
+import { t, useLang } from '../lib/i18n'
+import Icon from '../lib/Icon'
+import { Languages, Ship, Waves } from 'lucide-react'
 
 // Página a la que volver tras entrar (la guarda la ficha de la salida)
 function afterLogin() {
   try { return sessionStorage.getItem('afterLogin') || '' } catch (e) { return '' }
 }
 
-export default function Login() {
+// embedded: el login va debajo del título de otra pantalla (Reservas, Bitácora), así que su título es un h2
+export default function Login({ embedded }) {
+  const { lang, setLang } = useLang()
   // #/login?alta=centro abre directamente el alta de centro (p. ej. desde «¿Es tu centro?» del directorio)
   const alta = new URLSearchParams(window.location.hash.split('?')[1] || '').get('alta')
   const [mode, setMode] = useState(alta ? 'signup' : 'login') // login | signup | reset
@@ -61,14 +65,14 @@ export default function Login() {
 
   return (
     <div style={{ maxWidth: 420, margin: '0 auto' }}>
-      <h1>{mode === 'login' ? t('Entrar') : mode === 'signup' ? t('Crear cuenta') : t('Recuperar acceso')}</h1>
+      {(() => { const H = embedded ? 'h2' : 'h1'; return <H>{mode === 'login' ? t('Entrar') : mode === 'signup' ? t('Crear cuenta') : t('Recuperar acceso')}</H> })()}
       <form className="card" onSubmit={submit}>
         {mode === 'signup' && (
           <>
             <label id="acc-type">{t('Tipo de cuenta')}</label>
             <div className="grid2 field" role="group" aria-labelledby="acc-type">
-              <button type="button" aria-pressed={type === 'diver'} className={type === 'diver' ? 'btn' : 'btn ghost'} onClick={() => setType('diver')}>{t('🤿 Soy buceador')}</button>
-              <button type="button" aria-pressed={type === 'center'} className={type === 'center' ? 'btn' : 'btn ghost'} onClick={() => setType('center')}>{t('⚓ Soy centro de buceo')}</button>
+              <button type="button" aria-pressed={type === 'diver'} className={type === 'diver' ? 'btn' : 'btn ghost'} onClick={() => setType('diver')}><Icon icon={Waves} />{t('Soy buceador')}</button>
+              <button type="button" aria-pressed={type === 'center'} className={type === 'center' ? 'btn' : 'btn ghost'} onClick={() => setType('center')}><Icon icon={Ship} />{t('Soy centro de buceo')}</button>
             </div>
             <p className="small muted" style={{ marginTop: -4 }}>
               {type === 'diver'
@@ -103,15 +107,13 @@ export default function Login() {
         <button className="btn block" disabled={busy}>
           {busy ? t('Un momento…') : mode === 'login' ? t('Entrar') : mode === 'signup' ? t('Crear cuenta') : t('Enviar enlace')}
         </button>
-        <div className="row between wrap" style={{ marginTop: 14, gap: 8 }}>
-          <span className="small muted">{t('Idioma')}</span>
-          <LangSwitch full />
-        </div>
       </form>
       <div className="center small stack">
         {mode !== 'login' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('login') }}>{t('Ya tengo cuenta')}</a></div>}
         {mode !== 'signup' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('signup') }}>{t('Crear cuenta nueva')}</a></div>}
         {mode !== 'reset' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('reset') }}>{t('He olvidado mi contraseña')}</a></div>}
+        {/* Cambio de idioma para quien aún no tiene cuenta: el otro idioma, nombrado en su propio idioma (sin t()) */}
+        <div><button type="button" className="linkish small" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}><Icon icon={Languages} size={16} /> {lang === 'es' ? 'English' : 'Español'}</button></div>
       </div>
     </div>
   )

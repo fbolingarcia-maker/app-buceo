@@ -6,6 +6,8 @@ import { loadDestinations, GROUPS, loadRatings } from '../lib/places'
 import { Link } from '../lib/router'
 import { Flags } from '../lib/langs'
 import { Agencies } from '../lib/agencies'
+import Icon from '../lib/Icon'
+import { LocateFixed, MapPin, X } from 'lucide-react'
 
 export default function Centros() {
   const [list, setList] = useState(null)
@@ -40,7 +42,7 @@ export default function Centros() {
   const words = norm(q).split(/\s+/).filter(Boolean)
   const shown = (list || [])
     .filter((c) => !group || groupOf(c) === group)
-    .filter((c) => !ag || (c.agencies || []).includes(ag))
+    .filter((c) => !ag || (c.agencies || []).some((a) => a.toUpperCase() === ag.toUpperCase()))
     .filter((c) => words.every((w) => norm([c.name, c.locality, destOf(c), c.province, groupOf(c)].join(' ')).includes(w)))
     .map((c) => ({ ...c, km: here && c.lat != null ? distKm(here, { lat: c.lat, lng: c.lng }) : null }))
   const byDest = shown.reduce((m, c) => { (m[destOf(c)] = m[destOf(c)] || []).push(c); return m }, {})
@@ -52,11 +54,11 @@ export default function Centros() {
 
   return (
     <>
-      <h1>{t('Centros de buceo en Filipinas')}</h1>
+      <h1>{t('Centros de buceo')}</h1>
       <div className="row" style={{ gap: 8, marginBottom: 10 }}>
         <input type="search" className="grow" placeholder={t('Buscar centro, zona o isla…')} value={q} onChange={(e) => setQ(e.target.value)} />
         <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>
-          {locating ? t('Buscando…') : here ? t('📍 Cerca de mí ✕') : t('📍 Cerca de mí')}
+          {locating ? t('Buscando…') : <><Icon icon={LocateFixed} />{t('Cerca de mí')}{here && <Icon icon={X} />}</>}
         </button>
       </div>
       <div className="chips">
@@ -70,17 +72,18 @@ export default function Centros() {
       {error && <div className="msg err" role="alert">{error}</div>}
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list && <p className="small muted">{shown.length === 1 ? t('1 centro') : t('{n} centros', { n: shown.length })}</p>}
+      {list && <p className="small muted" style={{ marginTop: -6 }}>{t('Los centros con «Reserva en la app» aceptan reservas en DiveSlot. Con el resto, de momento, contacta directamente.')}</p>}
       {list && shown.length === 0 && <div className="card center muted">{t('No hay centros que coincidan con tu búsqueda.')}</div>}
       {order.map((z) => (
         <div key={z}>
           <h2>
-            📍 <Link to={'/d/' + encodeURIComponent(z)} style={{ color: 'inherit' }}>{z}</Link><span className="muted small" style={{ fontWeight: 400 }}>{byDest[z][0].province ? ', ' + byDest[z][0].province : ''} · {byDest[z].length}{here && destKm(z) < 1e9 ? ' · ' + kmLabel(destKm(z)) : ''}</span>
+            <Icon icon={MapPin} /> <Link to={'/d/' + encodeURIComponent(z)} style={{ color: 'inherit' }}>{z}</Link><span className="muted small" style={{ fontWeight: 400 }}>{byDest[z][0].province ? ', ' + byDest[z][0].province : ''} · {byDest[z].length}{here && destKm(z) < 1e9 ? ' · ' + kmLabel(destKm(z)) : ''}</span>
           </h2>
           {byDest[z].map((c) => (
             <div key={c.id} className="card">
               <div className="row between" style={{ gap: 8 }}>
-                <Link to={'/c/' + c.id} style={{ color: 'inherit' }}><b>{c.name}</b> <Flags codes={c.languages} />{ratings[c.id] && <span className="small"> · ⭐ {ratings[c.id].rating}</span>}</Link>
-                {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
+                <Link to={'/c/' + c.id} style={{ color: 'inherit' }}><b>{c.name}</b> <Flags codes={c.languages} />{ratings[c.id] && <span className="small"> · ★ {ratings[c.id].rating}</span>}</Link>
+                {c.listing_status === 'socio' && <span className="pill ok">{t('Reserva en la app')}</span>}
               </div>
               {(c.agencies?.length > 0 || (c.locality && c.locality !== z)) && (
                 <div className="small muted row wrap" style={{ gap: 6, marginTop: 2 }}><Agencies list={c.agencies} small />{c.locality && c.locality !== z && <span>{c.locality}</span>}</div>

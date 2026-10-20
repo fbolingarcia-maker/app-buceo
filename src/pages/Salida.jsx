@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
-import { levelName, levelRank, dateTime, php } from '../lib/format'
+import { levelName, levelRank, levelColor, dateTime, php } from '../lib/format'
+import DepthBar from '../lib/DepthBar'
 import { t, getLang } from '../lib/i18n'
 import { Flags } from '../lib/langs'
+import Icon from '../lib/Icon'
+import { ArrowLeft, Check, MapPin, MessageCircle, Waves } from 'lucide-react'
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
@@ -25,15 +28,13 @@ function QuienVa({ tripId, loggedIn }) {
             <div className="row between wrap" style={{ gap: 6 }}>
               <b>{d.name}{d.is_me ? ' · ' + t('Tú') : ''}{d.seats > 1 ? ' ' + (d.seats === 2 ? t('+1 acompañante') : t('+{n} acompañantes', { n: d.seats - 1 })) : ''}</b>
               {d.level
-                ? <span className="pill">{levelName(d.level)}{d.verified ? ' ✅' : ''}</span>
+                ? <span className="pill">{levelName(d.level)}{d.verified && <Icon icon={Check} size={14} aria-label={t('Verificada')} />}</span>
                 : <span className="pill warn">{t('Sin certificación')}</span>}
             </div>
-            <div className="small muted" style={{ marginTop: 2 }}>
-              {[
-                d.dives ? t('🤿 {n} inmersiones', { n: d.dives }) : t('🤿 Primeras inmersiones'),
-                d.country && '📍 ' + d.country,
-                d.languages?.length ? '💬 ' + d.languages.join(', ') : null,
-              ].filter(Boolean).join(' · ')}
+            <div className="small muted row wrap" style={{ marginTop: 2, gap: '2px 10px' }}>
+              <span><Icon icon={Waves} size={14} /> {d.dives ? t('{n} inmersiones', { n: d.dives }) : t('Primeras inmersiones')}</span>
+              {d.country && <span><Icon icon={MapPin} size={14} /> {d.country}</span>}
+              {d.languages?.length > 0 && <span><Icon icon={MessageCircle} size={14} /> {d.languages.join(', ')}</span>}
             </div>
             {(d.fav_site || d.seeks_buddy) && (
               <div className="row wrap small" style={{ marginTop: 4, gap: 6 }}>
@@ -123,7 +124,7 @@ export default function Salida({ id }) {
 
   return (
     <>
-      <Link to="/" className="small">{t('← Salidas')}</Link>
+      <Link to="/" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Salidas')}</Link>
       <h1 style={{ marginTop: 8 }}>{trip.center_name}</h1>
       {trip.available_seats > 0 && !isCenter && (
         <div className="row between" style={{ gap: 8, marginBottom: 12 }}>
@@ -135,36 +136,41 @@ export default function Salida({ id }) {
         <div className="row between"><span className="muted">{t('Salida')}</span><b>{dateTime(trip.departs_at)}</b></div>
         {trip.boat_name && <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>}
         <div className="row between"><span className="muted">{t('Inmersiones')}</span><span>{trip.num_dives}</span></div>
-        <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill">{levelName(trip.min_level)}</span></div>
+        <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill lvl"><i style={{ background: levelColor(trip.min_level) }} />{levelName(trip.min_level)}</span></div>
         <div className="row between"><span className="muted">{t('Precio por buceador')}</span><b>{php(trip.price_php)}</b></div>
         <div className="row between"><span className="muted">{t('Alquiler de equipo')}</span><span>{trip.gear_rental_php ? php(trip.gear_rental_php) : '—'}</span></div>
         <div className="row between"><span className="muted">{t('Plazas libres')}</span><b>{trip.available_seats}</b></div>
-        {trip.sites?.length > 0 && (
-          <div>
-            <div className="muted">{t('Puntos de buceo')}</div>
-            <ol style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+      </div>
+
+      {trip.sites?.length > 0 && (() => {
+        // Regla de 0 a 40 m, o hasta el máximo de la salida redondeado a 10 si algún punto pasa de 40 m
+        const deepest = Math.max(0, ...siteInfo.map((x) => x.max_depth_m || 0))
+        const scale = deepest > 40 ? Math.ceil(deepest / 10) * 10 : 40
+        return (
+          <div className="card">
+            <div className="over" style={{ marginBottom: 12 }}>{t('Puntos de esta salida')}</div>
+            <div className="sites">
               {trip.sites.map((s) => {
                 const info = siteInfo.find((x) => x.name === s)
+                const desc = info && (getLang() === 'es' ? (info.highlight_es || info.highlight) : info.highlight)
                 return (
-                  <li key={s} style={{ marginBottom: 4 }}>
-                    <b>{s}</b>
-                    {info && (info.max_depth_m || info.recommended_min === 'advanced') && (
-                      <span className="small muted"> · {info.min_depth_m != null && info.max_depth_m ? t('{a}–{b} m', { a: info.min_depth_m, b: info.max_depth_m }) : info.max_depth_m ? t('hasta {b} m', { b: info.max_depth_m }) : ''}{info.recommended_min === 'advanced' ? ' · ' + t('recomendado Advanced') : ''}</span>
-                    )}
-                    {info?.highlight && <div className="small muted">{getLang() === 'es' ? (info.highlight_es || info.highlight) : info.highlight}</div>}
-                  </li>
+                  <div key={s} className="site-row">
+                    <div style={{ minWidth: 0 }}><b>{s}</b>{desc && <small className="muted">{desc}</small>}</div>
+                    <DepthBar min={info?.min_depth_m} max={info?.max_depth_m} scale={scale} />
+                  </div>
                 )
               })}
-            </ol>
+            </div>
+            <div className="depth-axis" aria-hidden="true"><span /><div><span>0</span><span>{scale / 2}</span><span>{scale} m</span></div></div>
           </div>
-        )}
-      </div>
+        )
+      })()}
 
       <div className="card">
         <div className="row between wrap" style={{ gap: 8 }}>
           <div>
             <Link to={'/c/' + trip.center_id}><b>{trip.center_name}</b></Link> <Flags codes={center?.languages} />
-            <div className="small muted">📍 {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}
+            <div className="small muted"><Icon icon={MapPin} size={14} /> {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}
               {(center?.destination || trip.center_destination) && <> · <Link to={'/d/' + encodeURIComponent(center?.destination || trip.center_destination)}>{t('Guía del destino')}</Link></>}
             </div>
           </div>
@@ -218,15 +224,22 @@ export default function Salida({ id }) {
             <span>{t('Declaro que estoy en condiciones médicas para bucear y que he respondido "no" a todas las preguntas del cuestionario médico RSTC (o tengo autorización médica).')}</span>
           </label>
           <div className="row between" style={{ margin: '12px 0 4px' }}><span>{t('Total')}</span><span className="big">{php(total)}</span></div>
-          <div className="row between small" style={{ marginBottom: 12 }}>
+          <div className="row between small" style={{ marginBottom: 8 }}>
             <span className="muted">{t('Para reservar pagas como mínimo el 50 %')}</span><b>{php(Math.ceil(total / 2))}</b>
           </div>
+          <details className="small how-pay">
+            <summary>{t('¿Cómo funciona el pago?')}</summary>
+            <ul>
+              <li>{t('Ahora pagas la señal (50 %) con GCash o tarjeta. Tu plaza queda guardada 15 minutos mientras pagas.')}</li>
+              <li>{t('El resto lo pagas en la app o en efectivo en el centro el día de la salida.')}</li>
+              <li>{t('Si cancelas con 24 h o más, te devolvemos todo. Si el centro cancela por el mar, también.')}</li>
+            </ul>
+          </details>
           {error && <div className="msg err" role="alert">{error}</div>}
           <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book} aria-describedby="book-hint">
             {busy ? t('Reservando…') : t('Reservar plaza')}
           </button>
           {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Marca la declaración médica para continuar.')}</p>}
-          <p className="muted small">{t('Pagas con GCash o tarjeta: al menos el 50 % para confirmar la plaza (retenida 15 min) y el resto en la app o en efectivo en el centro. Cancelación con devolución total hasta 24 h antes; después el centro se queda el 50 % del precio. Si se cancela por meteo, se devuelve todo lo pagado.')}</p>
         </div>
       )}
     </>

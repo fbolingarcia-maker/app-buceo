@@ -1,42 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { Link } from '../lib/router'
-import { LEVELS, levelName, levelRank, manilaDate, addDays, dayLabel, time, php } from '../lib/format'
+import { LEVELS, levelName, levelRank, levelColor, initials, manilaDate, addDays, dayLabel, time, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
 import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings, loadSiteAreas } from '../lib/places'
 import { useAuth } from '../lib/auth'
-import { Flags, langName } from '../lib/langs'
-import { Agencies } from '../lib/agencies'
+import { langName } from '../lib/langs'
+import Icon from '../lib/Icon'
+import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves } from 'lucide-react'
 
 const DAYS = 8
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
-
-// Buceadores apuntados a una salida: iniciales, nombre y nivel (los perfiles visibles) y el resto como número
-function Apuntados({ trip }) {
-  const { session } = useAuth()
-  const [d, setD] = useState(null)
-  useEffect(() => {
-    if (trip.booked_seats > 0) supabase.rpc('trip_divers', { p_trip: trip.id }).then(({ data }) => setD(data || null))
-  }, [trip.id, trip.booked_seats, session])
-  if (!trip.booked_seats) return <span className="small muted">{t('Aún no hay nadie apuntado')}</span>
-  const divers = d?.divers || []
-  const shownDivers = divers.slice(0, 3)
-  const rest = trip.booked_seats - shownDivers.reduce((n, x) => n + (x.seats || 1), 0)
-  return (
-    <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
-      <div className="faces" aria-hidden="true">
-        {shownDivers.map((x, i) => <span key={i} className="face">{(x.name || '?').charAt(0).toUpperCase()}</span>)}
-        {(!shownDivers.length || rest > 0) && <span className="face more">{shownDivers.length ? '+' + rest : '👥'}</span>}
-      </div>
-      <span className="small muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {shownDivers.length
-          ? shownDivers.map((x) => x.name + (x.level ? ' · ' + levelName(x.level) : '')).join(', ') + (rest > 0 ? ' ' + t('y {n} más', { n: rest }) : '')
-          : trip.booked_seats === 1 ? t('👥 1 apuntado') : t('👥 {n} apuntados', { n: trip.booked_seats })}
-      </span>
-    </div>
-  )
-}
 
 export default function Explorar() {
   const today = manilaDate()
@@ -99,7 +74,7 @@ export default function Explorar() {
   // Filtros comunes (todo menos el día)
   const filtered = useMemo(() => (trips || [])
     .filter((tr) => level === 'all' || levelRank(tr.min_level) <= levelRank(level))
-    .filter((tr) => !agency || (tr.center_agencies || []).includes(agency))
+    .filter((tr) => !agency || (tr.center_agencies || []).some((a) => a.toUpperCase() === agency.toUpperCase()))
     .filter((tr) => !lang || (tr.center_languages || []).includes(lang) || (tr.center_course_languages || []).includes(lang))
     .filter((tr) => inPlace({ destination: destOf(tr), province: tr.center_province }, place, dests))
     .filter((tr) => {
@@ -132,9 +107,6 @@ export default function Explorar() {
   if (sort === 'price') groups.sort((a, b) => a.min - b.min)
   else if (sort === 'near' && here) groups.sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9))
   else groups.sort((a, b) => a.trips[0].departs_at.localeCompare(b.trips[0].departs_at))
-  const [open, setOpen] = useState(() => new Set())
-  const toggle = (id) => setOpen((o) => { const n = new Set(o); n.has(id) ? n.delete(id) : n.add(id); return n })
-  const isOpen = (id) => open.has(id) || groups.length === 1
 
   // Primera visita: abre el primer día que tenga salidas (hoy si aún quedan)
   const [autoDay, setAutoDay] = useState(!savedDay)
@@ -144,6 +116,8 @@ export default function Explorar() {
     if (!perDay[day]) { const first = days.find((d) => perDay[d]); if (first) setDay(first) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trips, autoDay])
+  // Semana entera sin salidas (y sin búsqueda): en vez de «prueba otro día», dar un siguiente paso
+  const weekEmpty = trips && Object.keys(perDay).length === 0 && !place && !q
   const nextDay = days.find((d) => d > day && perDay[d]) || days.find((d) => perDay[d])
   const nearest = here ? Math.min(...filtered.map((tr) => tr.km ?? 1e9)) : null
 
@@ -152,7 +126,7 @@ export default function Explorar() {
     .sort((a, b) => b[1] - a[1]).slice(0, 10).map(([d]) => d)
 
   // Opciones de filtro según las salidas que hay
-  const agencyOpts = [...new Set((trips || []).flatMap((tr) => tr.center_agencies || []))].sort()
+  const agencyOpts = [...new Set((trips || []).flatMap((tr) => (tr.center_agencies || []).map((a) => a.toUpperCase())))].sort()
   const langOpts = [...new Set((trips || []).flatMap((tr) => [...(tr.center_languages || []), ...(tr.center_course_languages || [])]))]
 
   const pickPlace = (p) => { setPlace(p); setQ(''); setFocus(false); if (sort === 'near') setSort('time') }
@@ -167,15 +141,15 @@ export default function Explorar() {
             onChange={(e) => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)}
             aria-label={t('¿Dónde quieres bucear? Zona, isla, centro…')} />
           <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>
-            {locating ? t('Buscando…') : here ? t('📍 Cerca de mí ✕') : t('📍 Cerca de mí')}
+            {locating ? t('Buscando…') : <><Icon icon={LocateFixed} />{t('Cerca de mí')}{here && <Icon icon={X} />}</>}
           </button>
         </div>
         {suggestions.length > 0 && (
           <div className="suggest">
             {suggestions.map((s) => (
               <button key={s.kind + s.name} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => pickPlace({ kind: s.kind, name: s.name })}>
-                <span>📍 {s.name}</span>
-                <span className="muted small">{s.kind === 'dest' ? s.sub : s.kind === 'prov' ? t('Provincia') : t('Región')}</span>
+                <span><Icon icon={MapPin} /> {s.name}</span>
+                <span className="muted small">{s.site && <Icon icon={Waves} size={14} />} {s.kind === 'dest' ? s.sub : s.kind === 'prov' ? t('Provincia') : t('Región')}</span>
               </button>
             ))}
           </div>
@@ -185,7 +159,7 @@ export default function Explorar() {
       {place && (
         <div className="row wrap" style={{ gap: 6, marginBottom: 10 }}>
           <button className="pill" style={{ border: 0, cursor: 'pointer', fontSize: 14, padding: '6px 12px' }} onClick={() => setPlace(null)}>
-            📍 {placeLabel(place, dests)} ✕
+            <Icon icon={MapPin} size={16} /> {placeLabel(place, dests)} <Icon icon={X} size={16} aria-label={t('Quitar')} />
           </button>
           {place.kind === 'dest' && <Link to={'/d/' + encodeURIComponent(place.name)} className="small">{t('Guía del destino')}</Link>}
         </div>
@@ -200,10 +174,11 @@ export default function Explorar() {
 
       <div className="days">
         {days.map((d, i) => (
-          <button key={d} type="button" aria-pressed={d === day} className={d === day ? 'day on' : 'day'} onClick={() => setDay(d)}>
-            <small>{i === 0 ? t('Hoy') : i === 1 ? t('Mañana') : dayLabel(d, { weekday: 'short' })}</small>
+          <button key={d} type="button" aria-pressed={d === day} className={d === day ? 'day on' : 'day'} onClick={() => setDay(d)}
+            aria-label={t('{dia}: {n} salidas', { dia: dayLabel(d, { weekday: 'long', day: 'numeric' }), n: perDay[d] || 0 })}>
+            <small>{i === 0 ? t('Hoy') : dayLabel(d, { weekday: 'short' })}</small>
             <b>{dayLabel(d, { day: 'numeric' })}</b>
-            <small className={perDay[d] ? 'count' : 'count none'}>{trips ? (perDay[d] || 0) : '·'}</small>
+            <i className={perDay[d] ? 'dot' : 'dot none'} aria-hidden="true" />
           </button>
         ))}
       </div>
@@ -234,7 +209,18 @@ export default function Explorar() {
 
       {error && <div className="msg err" role="alert">{error}</div>}
       {trips === null && [0, 1, 2].map((i) => <div key={i} className="card skeleton" aria-hidden="true"><div /><div /><div /></div>)}
-      {trips && shown.length === 0 && (
+      {weekEmpty && (
+        <div className="empty">
+          <span className="empty-glyph" aria-hidden="true"><CalendarDays size={26} strokeWidth={1.75} /></span>
+          <h2>{t('No hay salidas publicadas esta semana')}</h2>
+          <p className="muted">{t('Los centros de Panglao están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de la zona.')}</p>
+          <div className="list">
+            <Link to="/d/Panglao" className="li"><span className="tile"><Waves size={20} /></span><span className="grow"><b>{t('Puntos de buceo de Panglao')}</b><small>{t('Profundidad, nivel y qué se ve')}</small></span><ChevronRight size={18} /></Link>
+            <Link to="/centros" className="li"><span className="tile"><MapPin size={20} /></span><span className="grow"><b>{t('Centros de buceo')}</b><small>{t('Contacto, agencias e idiomas')}</small></span><ChevronRight size={18} /></Link>
+          </div>
+        </div>
+      )}
+      {trips && !weekEmpty && shown.length === 0 && (
         <div className="card center muted">
           {place || q ? t('No hay salidas que coincidan con tu búsqueda este día.') : t('No hay salidas para este día. Prueba otro día.')}
           <div className="row wrap" style={{ justifyContent: 'center', gap: 8, marginTop: 10 }}>
@@ -253,63 +239,36 @@ export default function Explorar() {
         </p>
       )}
       {groups.map((g) => (
-        <div key={g.id} className={isOpen(g.id) ? 'card center-group open' : 'card center-group'}>
-          <button type="button" className="center-head" aria-expanded={isOpen(g.id)} onClick={() => toggle(g.id)}>
-            <div className="row between" style={{ gap: 8, alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 17 }}>{g.name}{ratings[g.id] && <span className="small" style={{ fontWeight: 400 }}> · ⭐ {ratings[g.id].rating}</span>}</div>
-                <div className="muted small">📍 {g.dest}{g.prov ? ', ' + g.prov : ''}{g.km != null ? ' · ' + kmLabel(g.km) : ''}</div>
-                {(g.langs.length > 0 || g.agencies.length > 0) && <div className="row wrap" style={{ marginTop: 4, gap: 6 }}><Flags codes={g.langs} size={18} /><Agencies list={g.agencies} small /></div>}
-              </div>
-              <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                <div className="small muted">{t('desde')}</div>
-                <div className="big">{php(g.min)}</div>
-              </div>
-            </div>
-            <div className="slots">
-              {g.trips.map((tr) => (
-                <span key={tr.id} className={tr.available_seats > 0 ? 'slot' : 'slot full'}>
-                  <b>{time(tr.departs_at)}</b> <small>{tr.available_seats > 0 ? t('{n} libres', { n: tr.available_seats }) : t('Completa')}</small>
-                </span>
-              ))}
-            </div>
-            <div className="row between small" style={{ marginTop: 8, gap: 8 }}>
-              <span className="muted">
-                {g.trips.length === 1 ? t('1 salida') : t('{n} salidas', { n: g.trips.length })} · {g.seats === 1 ? t('1 plaza libre') : t('{n} plazas libres', { n: g.seats })}
-                {g.booked > 0 ? ' · ' + (g.booked === 1 ? t('👥 1 apuntado') : t('👥 {n} apuntados', { n: g.booked })) : ''}
+        <section key={g.id} className="card centre-card" aria-label={g.name}>
+          <Link to={'/c/' + g.id} className="centre-head">
+            <span className="centre-avatar" aria-hidden="true">{initials(g.name)}</span>
+            <span className="grow" style={{ minWidth: 0 }}>
+              <b className="centre-name">{g.name}</b>
+              <span className="small muted centre-meta">
+                {g.dest}{g.km != null ? ' · ' + kmLabel(g.km) : ''}
+                {ratings[g.id] && <> · <span className="rating">{ratings[g.id].rating}</span></>}
+                {g.agencies.length > 0 && <> · <span className="agency-text">{[...new Set(g.agencies.map((a) => a.toUpperCase()))].join(' · ')}</span></>}
               </span>
-              <span className="chev" aria-hidden="true">{isOpen(g.id) ? '▲' : '▼'}</span>
-            </div>
-          </button>
-          {isOpen(g.id) && (
-            <div className="center-trips">
-              {g.trips.map((tr) => (
-                <Link key={tr.id} to={'/salida/' + tr.id} className={tr.available_seats > 0 ? 'trip-row' : 'trip-row full'}>
-                  <div className="row between" style={{ gap: 8 }}>
-                    <div className="big">{time(tr.departs_at)}</div>
-                    <div><b>{php(tr.price_php)}</b></div>
-                  </div>
-                  <div className="muted small">{t('{n} inmersiones', { n: tr.num_dives })} · {(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</div>
-                  <div className="row wrap" style={{ marginTop: 6, gap: 6 }}>
-                    <span className="pill">{t('Mín. {nivel}', { nivel: levelName(tr.min_level) })}</span>
-                    <span className={tr.available_seats > 2 ? 'pill ok' : tr.available_seats > 0 ? 'pill warn' : 'pill bad'}>
-                      {tr.available_seats > 0 ? t('{n} plazas', { n: tr.available_seats }) : t('Completa')}
-                    </span>
-                    {tr.boat_name && <span className="muted small">⛵ {tr.boat_name}</span>}
-                  </div>
-                  <div className="row between" style={{ marginTop: 8, gap: 8, flexWrap: 'nowrap' }}>
-                    <Apuntados trip={tr} />
-                    <span className="btn small" style={{ flex: '0 0 auto' }}>{tr.available_seats > 0 ? t('Reservar') : t('Ver')}</span>
-                  </div>
+            </span>
+            <span className="from small muted">{t('desde')}<b className="data">{php(g.min)}</b></span>
+          </Link>
+          <div className="slots">
+            {g.trips.map((tr) => {
+              const free = Math.max(0, tr.available_seats)
+              const cap = Math.min(8, Math.max(free + (tr.booked_seats || 0), 1))
+              const label = free === 0 ? t('Completa') : free === 1 ? t('Última plaza') : t('{n} libres', { n: free })
+              return (
+                <Link key={tr.id} to={'/salida/' + tr.id} className={'slot' + (free === 0 ? ' full' : free === 1 ? ' low' : '')}
+                  aria-label={t('{hora}, {plazas}, nivel mínimo {nivel}', { hora: time(tr.departs_at), plazas: label, nivel: levelName(tr.min_level) })}>
+                  <span className="slot-level" style={{ background: levelColor(tr.min_level) }} title={levelName(tr.min_level)} />
+                  <b className="data">{time(tr.departs_at)}</b>
+                  <span className="seats" aria-hidden="true">{Array.from({ length: cap }, (_, i) => <i key={i} className={i < free ? 'on' : ''} />)}</span>
+                  <small>{label}</small>
                 </Link>
-              ))}
-              <div className="row wrap small" style={{ gap: 14, marginTop: 4 }}>
-                <Link to={'/c/' + g.id}>{t('Ficha del centro')}</Link>
-                {g.dest && <Link to={'/d/' + encodeURIComponent(g.dest)}>{t('Guía del destino')}</Link>}
-              </div>
-            </div>
-          )}
-        </div>
+              )
+            })}
+          </div>
+        </section>
       ))}
       {trips && <p className="small muted center" style={{ marginTop: 16 }}>{t('¿Tu centro no aparece?')} <Link to="/centros">{t('Ver el directorio de centros')}</Link></p>}
     </>

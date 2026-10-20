@@ -7,6 +7,8 @@ import { t, LangSwitch } from '../lib/i18n'
 import EliminarCuenta from './EliminarCuenta'
 import DosPasos from './DosPasos'
 import { VIEWS } from '../lib/AdminBar'
+import Icon from '../lib/Icon'
+import { ShieldCheck } from 'lucide-react'
 
 const AGENCIES = ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'RAID', 'BSAC', 'Otra']
 
@@ -91,7 +93,7 @@ export default function Perfil() {
         <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" aria-describedby="perfil-pw-hint" />
           <span id="perfil-pw-hint" className="small muted hint">{t('Mínimo 8 caracteres, con letras y números')}</span></div>
         {show('pw')}
-        <div className="row between">
+        <div className="row between wrap" style={{ gap: 8 }}>
           <button className="btn ghost" disabled={pw.length < 8}>{t('Cambiar contraseña')}</button>
           <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
         </div>
@@ -104,7 +106,7 @@ export default function Perfil() {
     <>
       <div className="card admin-card">
         <div className="row" style={{ gap: 14 }}>
-          <div className="admin-avatar" aria-hidden>🛡️</div>
+          <div className="admin-avatar" aria-hidden><Icon icon={ShieldCheck} size={28} /></div>
           <div>
             <div className="big">{diver.full_name || user.email}</div>
             <div className="small">{user.email}</div>
@@ -126,9 +128,15 @@ export default function Perfil() {
         ))}
       </div>
 
-      <h2>{t('Idioma')}</h2>
-      <div className="card"><LangSwitch full /></div>
       {account}
+
+      <h2>{t('Ajustes')}</h2>
+      <div className="list">
+        <div className="li">
+          <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
+          <LangSwitch />
+        </div>
+      </div>
     </>
   )
 
@@ -137,9 +145,6 @@ export default function Perfil() {
       <h1>{t('Tu perfil')}</h1>
       <p className="pill" style={{ marginTop: -4 }}>{isAdmin ? (isCenter ? t('Administrador · vista de centro') : t('Administrador · vista de buceador')) : isCenter ? t('Cuenta de centro de buceo') : t('Cuenta de buceador')}</p>
       <p className="muted small">{user.email}</p>
-
-      <h2>{t('Idioma')}</h2>
-      <div className="card"><LangSwitch full /></div>
 
       <form className="card" onSubmit={saveProfile}>
         <div className="field"><label htmlFor="perfil-1">{t('Nombre')}</label><input id="perfil-1" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
@@ -168,7 +173,7 @@ export default function Perfil() {
           <div key={c.id} className="row between" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
             <div>
               <b>{c.agency} · {levelName(c.level)}</b>
-              <div className="small muted">{c.card_number || t('Sin nº de tarjeta')} · {c.verified_at ? t('✅ Verificada por {centro}', { centro: c.centers?.name || t('un centro') }) : t('Sin verificar')}</div>
+              <div className="small muted">{c.card_number || t('Sin nº de tarjeta')} · {c.verified_at ? t('Verificada por {centro}', { centro: c.centers?.name || t('un centro') }) : t('Sin verificar')}</div>
             </div>
             {!c.verified_at && <button className="btn small ghost" onClick={() => delCert(c.id)}>{t('Quitar')}</button>}
           </div>
@@ -201,6 +206,14 @@ export default function Perfil() {
       )}
 
       {account}
+
+      <h2>{t('Ajustes')}</h2>
+      <div className="list">
+        <div className="li">
+          <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
+          <LangSwitch />
+        </div>
+      </div>
 
       <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
     </>
