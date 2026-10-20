@@ -21,11 +21,23 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(() => { const e = sessionStorage.getItem('authError'); sessionStorage.removeItem('authError'); return e || '' })
   const [info, setInfo] = useState('')
+  const [resend, setResend] = useState(false) // mostrar «Reenviar email de confirmación»
+  const [resent, setResent] = useState(false)
+
+  // Vuelve a enviar el email de confirmación (si el primero no llegó)
+  async function resendEmail() {
+    setBusy(true); setError('')
+    const back = afterLogin()
+    const { error: re } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: appUrl() + (back ? '#' + back : '') } })
+    setBusy(false)
+    if (re) return setError(errMsg(re))
+    setResent(true); setInfo(t('Te hemos vuelto a enviar el email de confirmación a {email}. Revisa también la carpeta de spam o promociones.', { email }))
+  }
 
   async function submit(e) {
     e.preventDefault()
     if (mode === 'signup' && pwProblem(password)) return setError(pwProblem(password))
-    setBusy(true); setError(''); setInfo('')
+    setBusy(true); setError(''); setInfo(''); setResend(false); setResent(false)
     let res
     if (mode === 'login') {
       res = await supabase.auth.signInWithPassword({ email, password })
@@ -35,13 +47,16 @@ export default function Login() {
         data: { full_name: name, account_type: type, ...(type === 'center' ? { center_name: centerName, center_phone: centerPhone } : {}) },
         emailRedirectTo: appUrl() + (back && type === 'diver' ? '#' + back : ''),
       } })
-      if (!res.error && !res.data.session) setInfo(t('Te hemos enviado un email para confirmar tu cuenta. Ábrelo y pulsa el enlace.'))
+      if (!res.error && !res.data.session) { setInfo(t('Te hemos enviado un email a {email} para confirmar tu cuenta. Ábrelo y pulsa el enlace (mira también en spam o promociones).', { email })); setResend(true) }
     } else {
       res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: appUrl() })
-      if (!res.error) setInfo(t('Si el email existe, recibirás un enlace para crear una contraseña nueva.'))
+      if (!res.error) setInfo(t('Si el email existe, recibirás un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.'))
     }
     setBusy(false)
-    if (res.error) setError(errMsg(res.error))
+    if (res.error) {
+      setError(errMsg(res.error))
+      if (res.error.code === 'email_not_confirmed' || /email not confirmed/i.test(res.error.message || '')) setResend(true)
+    }
   }
 
   return (
@@ -82,6 +97,9 @@ export default function Login() {
         )}
         {error && <div className="msg err" role="alert">{error}</div>}
         {info && <div className="msg ok" role="status">{info}</div>}
+        {resend && !resent && (
+          <p className="small" style={{ marginTop: 0 }}>{t('¿No te ha llegado?')} <button type="button" className="linkish" disabled={busy || !email} onClick={resendEmail}>{t('Reenviar email de confirmación')}</button></p>
+        )}
         <button className="btn block" disabled={busy}>
           {busy ? t('Un momento…') : mode === 'login' ? t('Entrar') : mode === 'signup' ? t('Crear cuenta') : t('Enviar enlace')}
         </button>
