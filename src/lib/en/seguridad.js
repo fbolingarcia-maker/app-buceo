@@ -69,7 +69,7 @@ export default {
   '{d}: {n} altas': '{d}: {n} sign-ups',
   '{d}: {n} reservas · {amount}': '{d}: {n} bookings · {amount}',
   'Cancelada por el buceador': 'Cancelled by the diver',
-  'Comisión DiveSlot': 'DiveSlot commission',
+  'Comisión DivingSlot': 'DivingSlot commission',
   'Cobrado': 'Collected',
   'Negocio': 'Business',
   'Resumen': 'Summary',

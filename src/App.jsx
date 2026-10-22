@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './lib/auth'
+import { trackView } from './lib/track'
 import { useRoute, Link, go } from './lib/router'
 import { t } from './lib/i18n'
 import Explorar from './pages/Explorar'
@@ -117,6 +118,7 @@ export default function App() {
   const path = useRoute()
   const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, signOut } = useAuth()
   const seg = path.split('/').filter(Boolean)
+  useEffect(() => { trackView(path) }, [path])
 
   let page
   if (session && needsMfa) page = <DosPasosReto />

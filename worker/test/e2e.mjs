@@ -93,7 +93,7 @@ for (const [role, [who, routes]] of Object.entries(plan)) {
     // Entrar con el formulario de verdad
     await page.goto(ORIGIN + '/#/login', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('input[type=email]')
-    await page.fill('input[type=email]', `${who}@diveslot.test`)
+    await page.fill('input[type=email]', `${who}@divingslot.test`)
     await page.fill('input[type=password]', 'Clave1234')
     await page.press('input[type=password], #mfa-code', 'Enter')
     await page.waitForTimeout(700)

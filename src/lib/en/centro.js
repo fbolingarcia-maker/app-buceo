@@ -165,7 +165,7 @@ export default {
   'Clientes': 'Customers',
   'Cobrado': 'Collected',
   'Cobrado de estas salidas': 'Collected for these trips',
-  'Comisión DiveSlot': 'DiveSlot commission',
+  'Comisión DivingSlot': 'DivingSlot commission',
   'Concepto': 'Type',
   'De dónde vienen las reservas': 'Where bookings come from',
   'Dinero recibido en el periodo': 'Money received in this period',

@@ -43,6 +43,8 @@ export default function AdminResumen({ go }) {
       </div>
       <label className="check small" style={{ marginTop: 8 }}><input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} /> {t('Incluir centros de demostración')}</label>
 
+      <Visitas days={days} />
+
       {err && <div className="msg err" role="alert">{err}</div>}
       {!r && !err && <p className="muted">{t('Cargando…')}</p>}
       {r && <>
@@ -59,7 +61,7 @@ export default function AdminResumen({ go }) {
         <div className="kpis">
           <Kpi label={t('Facturado')} value={php(b.gross)} sub={t('{n} buceadores', { n: b.divers })} />
           <Kpi label={t('Cobrado')} value={php(b.collected)} sub={t('{p} % de lo facturado', { p: pct(b.collected, b.gross) })} />
-          <Kpi label={t('Comisión DiveSlot')} value={php(b.commission)} sub={t('reembolsos {amount}', { amount: php(b.refunds) })} />
+          <Kpi label={t('Comisión DivingSlot')} value={php(b.commission)} sub={t('reembolsos {amount}', { amount: php(b.refunds) })} />
           <Kpi label={t('Pendiente de cobro')} value={php(b.outstanding)} sub={t('en salidas futuras')} />
         </div>
         <Bars title={t('Reservas por día')} data={b.per_day} value={(x) => x.n} label={(x) => t('{d}: {n} reservas · {amount}', { d: dayLabel(x.day), n: x.n, amount: php(x.php) })} />
@@ -118,6 +120,62 @@ export default function AdminResumen({ go }) {
     </>
   )
 }
+
+// Visitas de la web comercial y de la app (las cuenta el Worker en /api/hit; ver worker/stats.js)
+const PAGE = { '/': 'Web comercial', '/app': 'App: Salidas' }
+function Visitas({ days }) {
+  const [v, setV] = useState(null)
+  const [err, setErr] = useState('')
+  useEffect(() => {
+    // Este navegador es de un administrador: sus visitas no cuentan
+    try { localStorage.setItem('ds_notrack', '1') } catch { /* nada */ }
+    let off = false
+    setV(null); setErr('')
+    ;(async () => {
+      const token = (await supabase.auth.getSession())?.data?.session?.access_token
+      const res = await fetch(window.location.origin + '/api/stats?days=' + days, {
+        credentials: 'same-origin', headers: token ? { Authorization: 'Bearer ' + token } : {},
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok || !body?.data) throw new Error(body?.error?.message || String(res.status))
+      if (!off) setV(body.data)
+    })().catch(() => { if (!off) setErr(t('Las visitas solo se ven en divingslot.com.')) })
+    return () => { off = true }
+  }, [days])
+  if (err) return <p className="muted small" style={{ marginTop: 12 }}>{err}</p>
+  if (!v) return null
+  const f = v.funnel
+  return (
+    <>
+      <h3>{t('Visitas')} <span className="muted small">· {t('últimos {n} días', { n: v.days })}</span></h3>
+      <div className="kpis">
+        <Kpi label={t('Visitantes')} value={v.totals.visitors} sub={t('{n} páginas vistas', { n: v.totals.views })} />
+        <Kpi label={t('Hoy')} value={v.today.visitors} sub={t('{n} páginas vistas', { n: v.today.views })} />
+        <Kpi label={t('Web comercial')} value={f.landing} sub={t('visitantes que la vieron')} />
+        <Kpi label={t('De la web a la app')} value={pct(f.to_app, f.landing) + ' %'} sub={t('{a} de {b} entraron en la app', { a: f.to_app, b: f.landing })} />
+      </div>
+      <Bars title={t('Visitantes por día')} data={v.per_day} value={(x) => x.visitors} label={(x) => t('{d}: {a} visitantes · {b} páginas', { d: dayLabel(x.day), a: x.visitors, b: x.views })} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+        <Breakdown title={t('Páginas más vistas')} rows={v.pages.map((x) => [PAGE[x.path] ? t(PAGE[x.path]) : x.path, x.n])} />
+        <Breakdown title={t('De dónde llegan')} rows={v.refs.map((x) => [x.ref || t('Directo o sin datos'), x.n])} />
+        <Breakdown title={t('Países de los visitantes')} rows={v.countries.map((x) => [x.country || '—', x.n])} />
+        <Breakdown title={t('Dispositivo')} rows={v.devices.map((x) => [t(DEVICE[x.device] || x.device), x.n])} />
+      </div>
+      {v.events?.length > 0 && (
+        <div className="card">
+          <b>{t('Últimos avisos')}</b>
+          {v.events.map((e, i) => (
+            <div key={i} className="small" style={{ marginTop: 8 }}>
+              <span>{e.title}</span> <span className="muted">· {dateTime(e.ts)}</span>
+              {e.detail && <div className="muted">{e.detail}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+const DEVICE = { mobile: 'Móvil', desktop: 'Ordenador', tablet: 'Tablet' }
 
 function Kpi({ label, value, sub }) {
   return <div className="kpi"><span>{label}</span><b>{value}</b>{sub && <small>{sub}</small>}</div>

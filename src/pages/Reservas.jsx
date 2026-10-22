@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, errMsg, appUrl } from '../lib/supabase'
+import { supabase, errMsg, appUrl, siteUrl } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link } from '../lib/router'
 import { BOOKING_STATUS, dateTime, php } from '../lib/format'
@@ -15,15 +15,15 @@ function addToCalendar(b) {
   const end = new Date(start.getTime() + Math.max(3, (b.trips.num_dives || 2) * 1.5) * 3600000)
   const f = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
   const ics = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DiveSlot//ES', 'BEGIN:VEVENT',
-    'UID:' + b.id + '@diveslot', 'DTSTAMP:' + f(new Date()), 'DTSTART:' + f(start), 'DTEND:' + f(end),
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DivingSlot//ES', 'BEGIN:VEVENT',
+    'UID:' + b.id + '@divingslot.com', 'DTSTAMP:' + f(new Date()), 'DTSTART:' + f(start), 'DTEND:' + f(end),
     'SUMMARY:' + t('Buceo con {centro}', { centro: b.trips.centers?.name || '' }),
     'DESCRIPTION:' + t('{n} inmersiones', { n: b.trips.num_dives }) + (b.trips.boats?.show_to_divers ? ' · ' + b.trips.boats.name : ''),
     'END:VEVENT', 'END:VCALENDAR',
   ].join('\r\n')
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
-  a.download = 'diveslot-' + b.id.slice(0, 8) + '.ics'
+  a.download = 'divingslot-' + b.id.slice(0, 8) + '.ics'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
@@ -45,7 +45,7 @@ function Confirmada({ b, onClose }) {
     const url = appUrl() + '#/salida/' + b.trip_id
     const text = t('Salida de buceo con {centro} el {fecha}', { centro: b.trips?.centers?.name || '', fecha: dateTime(b.trips?.departs_at) })
     try {
-      if (navigator.share) await navigator.share({ title: 'DiveSlot', text, url })
+      if (navigator.share) await navigator.share({ title: 'DivingSlot', text, url })
       else { await navigator.clipboard.writeText(text + ' ' + url); setCopied(t('Enlace copiado')) }
     } catch {}
   }
@@ -92,7 +92,7 @@ function PayBox({ b, mode, onDone }) {
       return error ? setError(errMsg(error)) : onDone(null, b.id)
     }
     const { data, error } = await supabase.functions.invoke('crear-pago', {
-      body: { booking_id: b.id, kind, method, return_url: appUrl() },
+      body: { booking_id: b.id, kind, method, return_url: siteUrl() },
     })
     if (error) { setBusy(false); return setError(await fnError(error)) }
     window.location.href = data.checkout_url
@@ -120,7 +120,7 @@ function PayBox({ b, mode, onDone }) {
           : method === 'gcash' ? t('Pagar {amount} con GCash', { amount: php(amount) })
           : t('Pagar {amount} con tarjeta', { amount: php(amount) })}
       </button>
-      {mode !== 'demo' && <p className="small muted" style={{ margin: '6px 0 0' }}><Icon icon={Lock} size={14} /> {t('Pago seguro con PayMongo. DiveSlot no guarda los datos de tu tarjeta.')}</p>}
+      {mode !== 'demo' && <p className="small muted" style={{ margin: '6px 0 0' }}><Icon icon={Lock} size={14} /> {t('Pago seguro con PayMongo. DivingSlot no guarda los datos de tu tarjeta.')}</p>}
     </div>
   )
 }

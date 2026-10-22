@@ -38,7 +38,7 @@ export function DosPasosReto() {
   return (
     <form className="card" onSubmit={submit} style={{ maxWidth: 420, margin: '0 auto' }}>
       <h1>🔐 {t('Verificación en dos pasos')}</h1>
-      <p className="muted">{t('Abre tu app de autenticación y escribe el código de 6 cifras de DiveSlot.')}</p>
+      <p className="muted">{t('Abre tu app de autenticación y escribe el código de 6 cifras de DivingSlot.')}</p>
       <div className="field"><label htmlFor="mfa-code">{t('Código')}</label><CodeInput id="mfa-code" value={code} onChange={setCode} /></div>
       {error && <div className="msg err" role="alert">{error}</div>}
       <div className="row between">
@@ -69,7 +69,7 @@ export default function DosPasos({ recommend }) {
     // Restos de un intento anterior sin terminar
     const { data } = await supabase.auth.mfa.listFactors()
     for (const f of (data?.all || []).filter((x) => x.factor_type === 'totp' && x.status !== 'verified')) await supabase.auth.mfa.unenroll({ factorId: f.id })
-    const { data: en, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'DiveSlot', friendlyName: 'DiveSlot ' + Date.now() })
+    const { data: en, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'DivingSlot', friendlyName: 'DivingSlot ' + Date.now() })
     setBusy(false)
     if (error) return setMsg({ ok: false, text: errMsg(error) })
     setSetup({ id: en.id, qr: en.totp.qr_code, secret: en.totp.secret }); setCode('')

@@ -13,7 +13,7 @@ export default {
   'Primeros pasos': 'Getting started',
   '{a} de {b}': '{a} of {b}',
   '¿Cuánto quieres pagar ahora?': 'How much do you want to pay now?',
-  'Pago seguro con PayMongo. DiveSlot no guarda los datos de tu tarjeta.': "Secure payment with PayMongo. DiveSlot doesn't store your card details.",
+  'Pago seguro con PayMongo. DivingSlot no guarda los datos de tu tarjeta.': "Secure payment with PayMongo. DivingSlot doesn't store your card details.",
   '¡Plaza retenida! Paga la señal en los próximos 15 min para confirmarla.': 'Spot held! Pay the deposit within 15 min to confirm it.',
   'No se pudo cargar la agenda.': "Couldn't load the schedule.",
   'Deshacer': 'Undo',
@@ -54,7 +54,7 @@ export default {
   // Eliminar cuenta (022)
   'Cerrar': 'Close',
   'ELIMINAR': 'DELETE',
-  'Tu cuenta se ha eliminado. Gracias por bucear con DiveSlot.': 'Your account has been deleted. Thanks for diving with DiveSlot.',
+  'Tu cuenta se ha eliminado. Gracias por bucear con DivingSlot.': 'Your account has been deleted. Thanks for diving with DivingSlot.',
   'Tienes {n} reserva(s) futura(s). Cancélalas antes de eliminar la cuenta.': 'You have {n} upcoming booking(s). Cancel them before deleting your account.',
   'Tu centro tiene {n} reserva(s) en salidas futuras. Cancélalas o avisa a los buceadores antes de eliminar la cuenta.': 'Your centre has {n} booking(s) on upcoming trips. Cancel them or let the divers know before deleting the account.',
   'Eliminar cuenta': 'Delete account',

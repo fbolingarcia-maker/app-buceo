@@ -149,7 +149,7 @@ export default function Inmersion({ id }) {
         isRecord = max > (+data?.[0]?.max_depth_m || 0)
       }
       const blob = await drawShareCard(f, { photoUrl: photos[0]?.url, centerName, isRecord })
-      const name = 'diveslot-' + ((f.site_name || 'inmersion').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').toLowerCase()) + '.png'
+      const name = 'divingslot-' + ((f.site_name || 'inmersion').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').toLowerCase()) + '.png'
       const file = new File([blob], name, { type: 'image/png' })
       if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file] })
       else {

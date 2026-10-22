@@ -40,7 +40,7 @@ globalThis.fetch = async (url, opt = {}) => {
 class Client {
   constructor(name) { this.name = name; this.cookie = ''; this.ip = '10.0.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250) }
   async raw(method, path, body, headers = {}) {
-    const h = { Origin: ORIGIN, 'X-DiveSlot': '1', 'CF-Connecting-IP': this.ip, ...headers }
+    const h = { Origin: ORIGIN, 'X-DivingSlot': '1', 'CF-Connecting-IP': this.ip, ...headers }
     if (this.cookie) h.Cookie = this.cookie
     if (body !== undefined && !(body instanceof Uint8Array)) h['Content-Type'] = 'application/json'
     const req = new Request(ORIGIN + path, { method, headers: h, body: body === undefined ? undefined : body instanceof Uint8Array ? body : JSON.stringify(body), redirect: 'manual' })
@@ -74,15 +74,15 @@ await db.batch([
 // ── Prueba de aceptación ──
 section('alta del centro, documentos y aprobación')
 const admin = new Client('admin'), centro = new Client('centro'), A = new Client('A'), B = new Client('B'), anon = new Client('anon')
-await admin.signup('admin@diveslot.test')
-const adminUser = await db.prepare("SELECT id FROM users WHERE email = 'admin@diveslot.test'").first()
+await admin.signup('admin@divingslot.test')
+const adminUser = await db.prepare("SELECT id FROM users WHERE email = 'admin@divingslot.test'").first()
 await db.prepare('INSERT INTO platform_admins (user_id) VALUES (?)').bind(adminUser.id).run()
 
-const s1 = await centro.signup('centro@diveslot.test', { full_name: 'Ana Centro', account_type: 'center', center_name: 'Casa Azul Divers' })
+const s1 = await centro.signup('centro@divingslot.test', { full_name: 'Ana Centro', account_type: 'center', center_name: 'Casa Azul Divers' })
 ok(s1.r.status === 200 && s1.r.session === null, 'signup devuelve sin sesión (pide confirmar)', s1.r)
 ok(s1.v.status === 302 && centro.cookie, 'el enlace del email confirma y abre sesión')
 const sess = await centro.call('GET', '/api/auth/session')
-ok(sess.session?.user?.email === 'centro@diveslot.test' && sess.session.user.user_metadata.center_name === 'Casa Azul Divers', 'sesión con user_metadata', sess)
+ok(sess.session?.user?.email === 'centro@divingslot.test' && sess.session.user.user_metadata.center_name === 'Casa Azul Divers', 'sesión con user_metadata', sess)
 
 const reg = await centro.rpc('register_center', { p_name: 'casa azul divers', p_phone: '' })
 ok(reg.data?.claims_center_id === 'dir1' && reg.data?.listing_status === 'socio' && reg.data?.phone === '+63 900', 'reclama la ficha del directorio', reg)
@@ -130,7 +130,7 @@ for (const [kind, path] of [['owner_id', `${CID}/owner_id-1.pdf`], ['dti_sec', `
 r = await centro.rpc('submit_center_verification')
 ok(r.data?.verification_status === 'pending', 'envía la verificación', r)
 
-await admin.login('admin@diveslot.test')
+await admin.login('admin@divingslot.test')
 r = await admin.call('POST', '/api/storage/sign', { bucket: 'center-docs', paths: [`${CID}/owner_id-1.pdf`], expiresIn: 300 })
 const signed = r.data?.[0]?.signedUrl
 ok(!!signed, 'el admin obtiene un enlace firmado de 5 min', r)
@@ -146,8 +146,8 @@ ok(errCode(r) === 'NO_NOTE', 'rechazar exige motivo')
 r = await admin.rpc('review_center', { p_center: CID, p_decision: 'verified' })
 ok(r.data?.verification_status === 'verified', 'el admin aprueba', r)
 ok((await db.prepare("SELECT listing_status FROM centers WHERE id = 'dir1'").first()).listing_status === 'cerrado', 'la ficha reclamada se cierra')
-ok(mails.some((m) => m.to === 'centro@diveslot.test' && m.url?.includes('#/centro')), 'email al centro aprobado')
-await centro.login('centro@diveslot.test') // vuelve a cargar permisos
+ok(mails.some((m) => m.to === 'centro@divingslot.test' && m.url?.includes('#/centro')), 'email al centro aprobado')
+await centro.login('centro@divingslot.test') // vuelve a cargar permisos
 
 section('salida, reservas y retención')
 r = await centro.rest({ table: 'trips', op: 'insert', values: { center_id: CID, boat_id: BOAT, departs_at: dep(48), price_php: 3000, gear_rental_php: 500, divers_per_guide: 4, guides: 2, status: 'published' }, returning: true, select: 'id' })
@@ -157,7 +157,7 @@ await centro.rest({ table: 'trip_sites', op: 'insert', values: [{ trip_id: T1, s
 r = await anon.rest({ table: 'published_trips', select: '*', filters: [['center_id', 'eq', CID]] })
 ok(r.data?.[0]?.available_seats === 6 && r.data[0].sites?.[1] === 'Balicasag' && r.data[0].boat_name === 'Banca Azul', 'published_trips: 6 plazas (barco 6 < 2×4), sitios ordenados', r.data?.[0])
 
-for (const [c, e] of [[A, 'a@diveslot.test'], [B, 'b@diveslot.test']]) {
+for (const [c, e] of [[A, 'a@divingslot.test'], [B, 'b@divingslot.test']]) {
   await c.signup(e, { full_name: e[0].toUpperCase() + ' Buceador Pérez' })
 }
 ok(errCode(await A.rpc('book_trip', { p_trip: T1, p_seats: 2, p_with_gear: true, p_medical_signed: true })) === 'LEVEL', 'sin certificación no reserva')
@@ -238,7 +238,7 @@ ok(r.data?.some((a) => a.action === 'center_status' && a.detail?.to === 'verifie
 r = await admin.rpc('admin_dashboard', { p_days: 30, p_demo: false })
 ok(r.data?.bookings?.commission === 0 && r.data.bookings.by_status.cancelled_by_diver === 1 && r.data.bookings.refunds === 6000 && r.data.centers.by_status.verified === 1 && r.data.users.total === 4, 'admin_dashboard', r.data && { b: r.data.bookings, c: r.data.centers, u: r.data.users.total })
 r = await admin.rpc('admin_users')
-ok(r.data?.length === 4 && r.data.find((u) => u.email === 'a@diveslot.test')?.certifications?.[0]?.verified === true, 'admin_users', r.data?.[0])
+ok(r.data?.length === 4 && r.data.find((u) => u.email === 'a@divingslot.test')?.certifications?.[0]?.verified === true, 'admin_users', r.data?.[0])
 ok(errCode(await admin.rpc('admin_revoke', { p_user: adminUser.id })) === 'LAST_ADMIN', 'no se quita el último admin')
 ok((await A.rpc('admin_users')).status === 403, 'admin_users solo admin')
 
@@ -272,7 +272,7 @@ const T3 = r.data[0].id
 const many = []
 for (let i = 0; i < 20; i++) many.push(new Client('d' + i))
 for (const [i, c] of many.entries()) {
-  await c.signup(`d${i}@diveslot.test`)
+  await c.signup(`d${i}@divingslot.test`)
   const d = (await c.rest({ table: 'divers', select: 'id', single: 'single' })).data
   await c.rest({ table: 'certifications', op: 'insert', values: { diver_id: d.id, agency: 'PADI', level: 'open_water' } })
 }
@@ -282,7 +282,7 @@ const seats = (await db.prepare(`SELECT sum(seats) AS n FROM bookings WHERE trip
 ok(okN === 6 && seats === 6 && results.filter((x) => errCode(x) === 'NO_SEATS').length === 14, '6 reservas y 14 NO_SEATS', { okN, seats })
 
 section('verificación en dos pasos')
-await A.login('a@diveslot.test')
+await A.login('a@divingslot.test')
 r = await A.call('POST', '/api/auth/mfa/enroll', { friendlyName: 'Móvil' })
 ok(r.totp?.qr_code?.startsWith('data:image/svg+xml') && r.totp.secret.length === 32, 'alta TOTP con QR', r)
 const fid = r.id, secret = r.totp.secret
@@ -290,7 +290,7 @@ const code = await totpAt(secret, Math.floor(Date.now() / 30000))
 r = await A.call('POST', '/api/auth/mfa/verify', { factorId: fid, code })
 ok(r.ok, 'activa el factor', r)
 ok((await A.call('POST', '/api/auth/mfa/verify', { factorId: fid, code })).error?.code === 'mfa_verification_failed', 'el mismo código no vale dos veces')
-await A.login('a@diveslot.test')
+await A.login('a@divingslot.test')
 r = await A.call('GET', '/api/auth/session')
 ok(r.aal?.currentLevel === 'aal1' && r.aal.nextLevel === 'aal2', 'tras la contraseña falta el segundo paso', r.aal)
 r = await A.rest({ table: 'bookings', select: 'id' })
@@ -305,25 +305,25 @@ r = await A.rest({ table: 'bookings', select: 'id' })
 ok(r.data?.length >= 1, 'con el código vuelve a ver sus reservas', r)
 
 section('contraseñas y emails')
-r = await anon.login('a@diveslot.test', 'mala1234')
+r = await anon.login('a@divingslot.test', 'mala1234')
 ok(r.error?.message === 'Invalid login credentials', 'contraseña incorrecta', r)
-r = await anon.call('POST', '/api/auth/signup', { email: 'c@diveslot.test', password: 'corta' })
+r = await anon.call('POST', '/api/auth/signup', { email: 'c@divingslot.test', password: 'corta' })
 ok(r.error?.code === 'weak_password', 'contraseña débil', r)
-await anon.call('POST', '/api/auth/signup', { email: 'c@diveslot.test', password: 'Clave1234' })
-r = await anon.login('c@diveslot.test')
+await anon.call('POST', '/api/auth/signup', { email: 'c@divingslot.test', password: 'Clave1234' })
+r = await anon.login('c@divingslot.test')
 ok(r.error?.code === 'email_not_confirmed', 'sin confirmar no entra', r)
-r = await anon.call('POST', '/api/auth/signup', { email: 'a@diveslot.test', password: 'Clave1234' })
+r = await anon.call('POST', '/api/auth/signup', { email: 'a@divingslot.test', password: 'Clave1234' })
 ok(r.status === 200 && r.session === null, 'no revela si el email ya existe', r)
 // contraseña migrada de Supabase (bcrypt) → entra y se guarda en PBKDF2
 const legacyId = crypto.randomUUID()
-await db.prepare("INSERT INTO users (id, email, password_hash, email_confirmed_at) VALUES (?, 'old@diveslot.test', 'bcrypt$$2b$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW', '2026-01-01T00:00:00.000Z')").bind(legacyId).run()
+await db.prepare("INSERT INTO users (id, email, password_hash, email_confirmed_at) VALUES (?, 'old@divingslot.test', 'bcrypt$$2b$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW', '2026-01-01T00:00:00.000Z')").bind(legacyId).run()
 const old = new Client('old')
-r = await old.login('old@diveslot.test', 'U*U')
+r = await old.login('old@divingslot.test', 'U*U')
 ok(r.user?.id === legacyId && (await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(legacyId).first()).password_hash.startsWith('pbkdf2$'), 'login con hash bcrypt de Supabase y rehash', r)
 // recuperar contraseña
-await anon.call('POST', '/api/auth/recover', { email: 'b@diveslot.test' })
+await anon.call('POST', '/api/auth/recover', { email: 'b@divingslot.test' })
 const rec = new Client('rec')
-const recLink = new URL(mails.filter((m) => m.to === 'b@diveslot.test').pop().url)
+const recLink = new URL(mails.filter((m) => m.to === 'b@divingslot.test').pop().url)
 const rv = await rec.raw('GET', recLink.pathname + recLink.search)
 ok(rv.headers.get('Location')?.endsWith('/#/perfil'), 'el enlace de recuperación lleva al perfil')
 r = await rec.call('GET', '/api/auth/session')
@@ -331,16 +331,16 @@ ok(r.session?.recovery === true, 'sesión de recuperación', r.session)
 r = await rec.call('POST', '/api/auth/update', { password: 'Nueva12345' })
 ok(r.user, 'cambia la contraseña', r)
 ok((await rec.raw('GET', recLink.pathname + recLink.search)).headers.get('Location')?.includes('error_description'), 'el enlace no sirve dos veces')
-ok((await new Client('x').login('b@diveslot.test', 'Nueva12345')).user, 'entra con la contraseña nueva')
+ok((await new Client('x').login('b@divingslot.test', 'Nueva12345')).user, 'entra con la contraseña nueva')
 
 section('CSRF')
-const req = new Request(ORIGIN + '/api/rpc/book_trip', { method: 'POST', headers: { Origin: 'https://malo.example', 'X-DiveSlot': '1', Cookie: B.cookie, 'Content-Type': 'application/json' }, body: '{}' })
+const req = new Request(ORIGIN + '/api/rpc/book_trip', { method: 'POST', headers: { Origin: 'https://malo.example', 'X-DivingSlot': '1', Cookie: B.cookie, 'Content-Type': 'application/json' }, body: '{}' })
 ok((await handleApi(req, env, {})).status === 403, 'otro origen: 403')
 const req2 = new Request(ORIGIN + '/api/rpc/book_trip', { method: 'POST', headers: { Cookie: B.cookie, 'Content-Type': 'application/json' }, body: '{}' })
-ok((await handleApi(req2, env, {})).status === 403, 'sin cabecera X-DiveSlot: 403')
+ok((await handleApi(req2, env, {})).status === 403, 'sin cabecera X-DivingSlot: 403')
 
 section('PayMongo')
-await B.login('b@diveslot.test', 'Nueva12345') // cambiar la contraseña cerró sus otras sesiones
+await B.login('b@divingslot.test', 'Nueva12345') // cambiar la contraseña cerró sus otras sesiones
 r = await centro.rest({ table: 'trips', op: 'insert', values: { center_id: CID, boat_id: BOAT, departs_at: dep(120), price_php: 2000, divers_per_guide: 4, status: 'published' }, returning: true, select: 'id' })
 const T4 = r.data[0].id
 const bk = (await B.rpc('book_trip', { p_trip: T4, p_seats: 1, p_with_gear: false, p_medical_signed: true })).data
@@ -362,8 +362,8 @@ ok(r.status === 'paid', 'comprobación al volver', r)
 ok((await A.call('POST', '/api/functions/crear-pago', { action: 'check', payment_id: pay.id })).error, 'otro usuario no consulta pagos ajenos')
 
 section('fotos de la bitácora')
-const uid = (await db.prepare("SELECT id FROM users WHERE email = 'b@diveslot.test'").first()).id
-const bLogin = new Client('b2'); await bLogin.login('b@diveslot.test', 'Nueva12345')
+const uid = (await db.prepare("SELECT id FROM users WHERE email = 'b@divingslot.test'").first()).id
+const bLogin = new Client('b2'); await bLogin.login('b@divingslot.test', 'Nueva12345')
 const dB = (await bLogin.rest({ table: 'divers', select: 'id', single: 'single' })).data
 r = await bLogin.rest({ table: 'dive_logs', op: 'insert', values: { diver_id: dB.id, dive_date: '2026-10-18', site_name: 'Napaling', max_depth_m: 24, rating: 5, share_with_center: true, center_id: CID }, returning: true, select: 'id' })
 const LOG = r.data?.[0]?.id

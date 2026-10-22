@@ -323,7 +323,7 @@ const RPC = {
     if (['verified', 'rejected', 'suspended'].includes(p_decision)) {
       const owner = await first(ctx.db, "SELECT u.email FROM center_staff s JOIN users u ON u.id = s.user_id WHERE s.center_id = ? ORDER BY s.role = 'owner' DESC LIMIT 1", c.id)
       if (owner?.email) {
-        const p = sendEmail(ctx.env, owner.email, TEMPLATES.centerReviewed(c.name, p_decision, note, ctx.origin + '/#/centro')).catch((e) => console.error('email review', e.message))
+        const p = sendEmail(ctx.env, owner.email, TEMPLATES.centerReviewed(c.name, p_decision, note, ctx.origin + '/app/#/centro')).catch((e) => console.error('email review', e.message))
         ctx.waitUntil ? ctx.waitUntil(p) : await p
       }
     }

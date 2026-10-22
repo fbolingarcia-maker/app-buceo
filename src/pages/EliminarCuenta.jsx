@@ -45,7 +45,7 @@ export default function EliminarCuenta({ diver, isCenter, signOut }) {
       const { data, error } = await supabase.rpc('delete_my_account', { p_dry_run: false })
       if (error) throw error
       if (!data?.deleted) { setInfo(data); setStep(1); return }
-      try { sessionStorage.setItem('flash', t('Tu cuenta se ha eliminado. Gracias por bucear con DiveSlot.')) } catch (e) { /* sin almacenamiento */ }
+      try { sessionStorage.setItem('flash', t('Tu cuenta se ha eliminado. Gracias por bucear con DivingSlot.')) } catch (e) { /* sin almacenamiento */ }
       await signOut()
       go('/')
     } catch (e) {

@@ -1,4 +1,4 @@
-// Esquema de DiveSlot en D1 (SQLite): una sola fuente para el SQL (`node worker/gen-schema.mjs`)
+// Esquema de DivingSlot en D1 (SQLite): una sola fuente para el SQL (`node worker/gen-schema.mjs`)
 // y para la API (tipos de columna, columnas privadas y relaciones para los `select('*, tabla(...)')`).
 //
 // Tipos: uuid · text · int · real · bool (0/1) · json (arrays y jsonb, texto JSON) · ts (ISO UTC «…Z») · date · time

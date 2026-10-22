@@ -40,7 +40,7 @@ export default function CentroInfo({ id }) {
         {dest && <Link to={'/d/' + encodeURIComponent(dest)} className="small"><Icon icon={MapPin} size={14} /> {[c.locality !== dest ? c.locality : null, dest, c.province].filter(Boolean).join(', ')}</Link>}
         {rating && <span className="pill ok">★ {rating.rating} · {rating.reviews === 1 ? t('1 valoración') : t('{n} valoraciones', { n: rating.reviews })}</span>}
         {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
-        {c.verification_status === 'verified' && c.listing_status === 'socio' && <span className="pill ok" title={t('DiveSlot ha comprobado los permisos y la identidad de este centro')}><Icon icon={ShieldCheck} size={14} /> {t('Centro verificado')}</span>}
+        {c.verification_status === 'verified' && c.listing_status === 'socio' && <span className="pill ok" title={t('DivingSlot ha comprobado los permisos y la identidad de este centro')}><Icon icon={ShieldCheck} size={14} /> {t('Centro verificado')}</span>}
       </div>
       {c.agencies?.length > 0 && (
         <div className="row wrap small" style={{ gap: 8, marginBottom: 12 }}>
@@ -65,7 +65,7 @@ export default function CentroInfo({ id }) {
       <h2>{t('Próximas salidas')}</h2>
       {trips.length === 0 && (
         <div className="card muted">
-          {c.listing_status === 'socio' ? t('Este centro no tiene salidas publicadas ahora mismo.') : t('Este centro todavía no publica sus salidas en DiveSlot. Puedes contactarle directamente.')}
+          {c.listing_status === 'socio' ? t('Este centro no tiene salidas publicadas ahora mismo.') : t('Este centro todavía no publica sus salidas en DivingSlot. Puedes contactarle directamente.')}
         </div>
       )}
       {trips.map((tr) => (

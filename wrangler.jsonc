@@ -1,4 +1,4 @@
-// DiveSlot en Cloudflare: un Worker sirve la app (Static Assets) y la API propia (/api/*, worker/index.js) sobre D1.
+// DivingSlot en Cloudflare: un Worker sirve la app (Static Assets) y la API propia (/api/*, worker/index.js) sobre D1.
 // Cloudflare compila con `npm run build` y publica con `npx wrangler deploy` en cada push a main.
 // Mientras la app se compile sin VITE_BACKEND=cloudflare sigue usando Supabase y la API no recibe tráfico.
 // Pasos para el cambio completo: docs/CLOUDFLARE-BACKEND.md
@@ -20,10 +20,10 @@
     { "binding": "DB", "database_name": "diveslot", "database_id": "73f322b7-43c2-4234-a313-5f7e2e78c928" }
   ],
   // Ficheros privados (fotos de la bitácora y documentos de verificación). Activa R2 en el panel de Cloudflare,
-  // crea los buckets «diveslot-dive-photos» y «diveslot-center-docs» y quita los comentarios:
+  // crea los buckets «divingslot-dive-photos» y «divingslot-center-docs» y quita los comentarios:
   // "r2_buckets": [
-  //   { "binding": "DIVE_PHOTOS", "bucket_name": "diveslot-dive-photos" },
-  //   { "binding": "CENTER_DOCS", "bucket_name": "diveslot-center-docs" }
+  //   { "binding": "DIVE_PHOTOS", "bucket_name": "divingslot-dive-photos" },
+  //   { "binding": "CENTER_DOCS", "bucket_name": "divingslot-center-docs" }
   // ],
   // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados)
   "triggers": { "crons": ["17 * * * *"] },

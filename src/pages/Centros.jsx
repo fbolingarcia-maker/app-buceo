@@ -33,7 +33,7 @@ export default function Centros() {
     loadRatings().then(setRatings)
     supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, source_url, languages, agencies')
       .neq('listing_status', 'cerrado').not('name', 'like', 'Demo%')
-      // Los centros dados de alta solo se ven cuando DiveSlot los ha verificado
+      // Los centros dados de alta solo se ven cuando DivingSlot los ha verificado
       .or('listing_status.neq.socio,verification_status.eq.verified').order('name')
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setList(data || []) })
   }, [])
@@ -74,7 +74,7 @@ export default function Centros() {
       {error && <div className="msg err" role="alert">{error}</div>}
       {list === null && <p className="muted">{t('Cargando…')}</p>}
       {list && <p className="small muted">{shown.length === 1 ? t('1 centro') : t('{n} centros', { n: shown.length })}</p>}
-      {list && <p className="small muted" style={{ marginTop: -6 }}>{t('Los centros con «Reserva en la app» aceptan reservas en DiveSlot. Con el resto, de momento, contacta directamente.')}</p>}
+      {list && <p className="small muted" style={{ marginTop: -6 }}>{t('Los centros con «Reserva en la app» aceptan reservas en DivingSlot. Con el resto, de momento, contacta directamente.')}</p>}
       {list && shown.length === 0 && <div className="card center muted">{t('No hay centros que coincidan con tu búsqueda.')}</div>}
       {order.map((z) => (
         <div key={z}>

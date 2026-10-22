@@ -15,8 +15,11 @@ export const supabase = BACKEND === 'cloudflare' ? createCfClient() : createClie
   auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true },
 })
 
-// URL a la que vuelven los emails de confirmación / recuperación
-export const appUrl = () => window.location.origin + import.meta.env.BASE_URL
+// Raíz del sitio (la landing): a ella vuelven los emails de confirmación / recuperación y los pagos; la landing
+// reenvía a la app todo lo que llega con #… Así no hay que cambiar las URLs permitidas en Supabase ni en PayMongo.
+export const siteUrl = () => window.location.origin + import.meta.env.BASE_URL
+// La app vive en /app/ (enlaces para compartir)
+export const appUrl = () => siteUrl() + 'app/'
 
 // Contraseñas nuevas: lo mismo que exige Supabase (mínimo 8, letras y números). Devuelve el problema o ''
 export function pwProblem(pw) {

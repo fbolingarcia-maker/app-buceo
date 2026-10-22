@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, appUrl, errMsg, pwProblem } from '../lib/supabase'
+import { supabase, siteUrl, errMsg, pwProblem } from '../lib/supabase'
 import { t, useLang } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { Languages, Ship, Waves } from 'lucide-react'
@@ -32,7 +32,7 @@ export default function Login({ embedded }) {
   async function resendEmail() {
     setBusy(true); setError('')
     const back = afterLogin()
-    const { error: re } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: appUrl() + (back ? '#' + back : '') } })
+    const { error: re } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: siteUrl() + (back ? '#' + back : '') } })
     setBusy(false)
     if (re) return setError(errMsg(re))
     setResent(true); setInfo(t('Te hemos vuelto a enviar el email de confirmación a {email}. Revisa también la carpeta de spam o promociones.', { email }))
@@ -49,11 +49,11 @@ export default function Login({ embedded }) {
       const back = afterLogin()
       res = await supabase.auth.signUp({ email, password, options: {
         data: { full_name: name, account_type: type, ...(type === 'center' ? { center_name: centerName, center_phone: centerPhone } : {}) },
-        emailRedirectTo: appUrl() + (back && type === 'diver' ? '#' + back : ''),
+        emailRedirectTo: siteUrl() + (back && type === 'diver' ? '#' + back : ''),
       } })
       if (!res.error && !res.data.session) { setInfo(t('Te hemos enviado un email a {email} para confirmar tu cuenta. Ábrelo y pulsa el enlace (mira también en spam o promociones).', { email })); setResend(true) }
     } else {
-      res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: appUrl() })
+      res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: siteUrl() })
       if (!res.error) setInfo(t('Si el email existe, recibirás un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.'))
     }
     setBusy(false)

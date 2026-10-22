@@ -1,4 +1,4 @@
-# DiveSlot · Filipinas
+# DivingSlot · Filipinas
 
 Reserva de salidas de buceo, al estilo Playtomic. Los buceadores ven las salidas del día y reservan plaza. Los centros publican salidas, controlan las plazas (app + WhatsApp/mostrador) y cancelan por meteo con reembolso automático.
 

@@ -1,4 +1,4 @@
-# Análisis de ciberseguridad de DiveSlot (19 oct 2026)
+# Análisis de ciberseguridad de DivingSlot (19 oct 2026)
 
 Revisión de la base de datos (Supabase), el almacenamiento de ficheros, las Edge Functions de pago y el frontend, siguiendo las recomendaciones de Supabase y OWASP.
 

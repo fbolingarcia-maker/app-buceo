@@ -33,7 +33,7 @@ export function LangProvider({ children }) {
   const [lang, setState] = useState(current)
   useEffect(() => {
     document.documentElement.lang = lang
-    document.title = t('DiveSlot · Salidas de buceo en Filipinas')
+    document.title = t('DivingSlot · Salidas de buceo en Filipinas')
   }, [lang])
   const setLang = (l) => {
     current = l

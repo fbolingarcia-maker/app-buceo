@@ -21,7 +21,7 @@ export default function Destino({ name }) {
     const areas = [name, ...(EXTRA_AREAS[name] || [])]
     supabase.from('dive_sites').select('*').in('area', areas).order('name').then(({ data }) => setSites((data || []).sort((a, b) => (a.area !== name) - (b.area !== name) || a.area.localeCompare(b.area) || a.name.localeCompare(b.name))))
     supabase.from('centers').select('id, name, locality, listing_status, verification_status').eq('destination', name).neq('listing_status', 'cerrado').not('name', 'like', 'Demo%')
-      // Los centros dados de alta solo se ven cuando DiveSlot los ha verificado
+      // Los centros dados de alta solo se ven cuando DivingSlot los ha verificado
       .or('listing_status.neq.socio,verification_status.eq.verified').order('name')
       .then(({ data }) => setCenters(data || []))
     supabase.from('published_trips').select('id', { count: 'exact', head: true }).eq('center_destination', name).gte('departs_at', new Date().toISOString())

@@ -117,14 +117,14 @@ export default function CentroVerificacion() {
 
       <div className="card stack">
         <p className="small" style={{ margin: 0 }}>
-          {t('Para proteger a los buceadores, revisamos cada centro antes de que pueda publicar salidas y aparecer en la app. Solo el equipo de DiveSlot ve estos datos y documentos.')}
+          {t('Para proteger a los buceadores, revisamos cada centro antes de que pueda publicar salidas y aparecer en la app. Solo el equipo de DivingSlot ve estos datos y documentos.')}
         </p>
         <ul className="steps">
           {step(true, false, t('Cuenta y centro creados'))}
           {step(dataOk, !dataOk, t('Datos del negocio y del responsable'))}
           {step(docsOk, dataOk && !docsOk, t('Documentos: identidad + permiso de negocio o DTI/SEC'))}
           {step(st === 'pending' || st === 'verified', dataOk && docsOk && st !== 'pending' && st !== 'verified', t('Enviar a revisión'))}
-          {step(st === 'verified', st === 'pending', t('Validación por DiveSlot → ya puedes publicar salidas'))}
+          {step(st === 'verified', st === 'pending', t('Validación por DivingSlot → ya puedes publicar salidas'))}
         </ul>
       </div>
 

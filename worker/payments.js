@@ -33,7 +33,7 @@ export async function crearPago(req, env, ctx) {
     if (!['deposit', 'full', 'balance'].includes(kind) || !['card', 'gcash'].includes(method)) return json({ error: 'Datos de pago no válidos' }, 400)
     if (!key) return json({ error: 'Los pagos con tarjeta y GCash aún no están activados' }, 503)
     const origin = new URL(req.url).origin
-    const allowed = [origin + '/', ...String(env.APP_URLS || '').split(',').map((s) => s.trim()).filter(Boolean)]
+    const allowed = [origin + '/', origin + '/app/', ...String(env.APP_URLS || '').split(',').map((s) => s.trim()).filter(Boolean)]
     const appUrl = allowed.includes(body.return_url) ? body.return_url : allowed[0]
 
     let p

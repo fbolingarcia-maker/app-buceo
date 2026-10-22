@@ -23,7 +23,7 @@ Sustituye a Supabase sin cambiar las pantallas. La app habla con el backend a tr
 - **Plazas sin carreras.** D1 no tiene `SELECT … FOR UPDATE`. Cada reserva se hace con una sola sentencia que comprueba las plazas libres y crea la reserva a la vez (`INSERT … SELECT … WHERE plazas_libres >= pedidas`). Cada cobro va en un batch transaccional con condiciones, así que aunque llegue dos veces se aplica una sola. Hay una prueba con 20 reservas a la vez en 6 plazas.
 - **Dos pasos.** Funciona igual que `mfa_ok()`. Si la cuenta tiene el segundo paso activado y la sesión aún no ha metido el código, no se puede leer ni cambiar nada, ni siquiera los datos públicos.
 - **Contraseñas.** Las nuevas se guardan con PBKDF2-SHA256 (100 000 iteraciones, el máximo de Workers). Los hash bcrypt que vienen de Supabase se comprueban tal cual y se convierten a PBKDF2 la primera vez que el usuario entra, así que nadie tiene que cambiar la contraseña.
-- **CSRF.** Toda petición que cambia datos lleva la cabecera `X-DiveSlot: 1` y un `Origin` propio. La cookie es `SameSite=Lax` y no hay CORS.
+- **CSRF.** Toda petición que cambia datos lleva la cabecera `X-DivingSlot: 1` y un `Origin` propio. La cookie es `SameSite=Lax` y no hay CORS.
 - **Sin dependencias.** El Worker solo usa WebCrypto y D1, sin Hono ni Drizzle. Se puede probar entero en Node sin red.
 
 ## Pruebas (sin red)
@@ -53,8 +53,9 @@ Cada paso dice quién lo hace. Hasta el paso 5, la web sigue funcionando con Sup
    - Para los emails, una de estas dos opciones:
      - `RESEND_API_KEY`, con el dominio divingslot.com verificado en Resend.
      - `SMTP_HOST=smtp.gmail.com`, `SMTP_USER=fbolingarcia@gmail.com` y `SMTP_PASS`, que es la contraseña de aplicación de 16 letras.
+   - Avisos de uso al administrador (ya funcionan con Supabase, ver `worker/stats.js`): `NOTIFY_KEY` (la misma clave que hay en Supabase Vault como `divingslot_notify_key`) y, opcional, `NOTIFY_TO` (a quién llegan; si no, a `SMTP_USER`). Necesitan también los secretos de email de arriba. `NOTIFY_DIGEST=off` quita el resumen diario y `NOTIFY_EMAILS=off` los emails sueltos.
    - Para cobrar de verdad: `PAYMONGO_SECRET_KEY` y `PAYMONGO_WEBHOOK_SECRET`. En PayMongo, el webhook apunta a `https://divingslot.com/api/webhooks/paymongo` con el evento `checkout_session.payment.paid`.
-4. **R2 (Fernando).** Activa R2 en el panel (pide un método de pago) y crea los buckets `diveslot-dive-photos` y `diveslot-center-docs`. Después, Claude descomenta `r2_buckets` en `wrangler.jsonc`.
+4. **R2 (Fernando).** Activa R2 en el panel (pide un método de pago) y crea los buckets `divingslot-dive-photos` y `divingslot-center-docs`. Después, Claude descomenta `r2_buckets` en `wrangler.jsonc`.
 5. **Pasar los datos (Claude, justo antes del cambio).** Copia de Supabase a D1: usuarios con sus hash, perfiles, centros, salidas, reservas, pagos, bitácora y documentos. Los ficheros de Storage se copian a R2.
 6. **El cambio (Fernando o Claude).** En Workers → diveslot → Settings → Build → Variables, añade `VITE_BACKEND = cloudflare` y vuelve a desplegar. GitHub Pages sigue con Supabase.
 7. **Comprobar.** Entra, reserva una salida demo, abre la bitácora y el panel del centro. Si algo falla, quita la variable y vuelve a desplegar: la app vuelve a Supabase al momento.

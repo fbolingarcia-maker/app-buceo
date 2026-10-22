@@ -183,7 +183,7 @@ export async function handleAuth(req, env, ctx, path) {
     if (kind === 'confirm') await run(env.DB, 'UPDATE users SET email_confirmed_at = coalesce(email_confirmed_at, ?), last_sign_in_at = ? WHERE id = ?', nowIso(), nowIso(), tok.user_id)
     else await run(env.DB, 'UPDATE users SET email_confirmed_at = coalesce(email_confirmed_at, ?) WHERE id = ?', nowIso(), tok.user_id)
     const cookie = await newSession(env, req, tok.user_id, { recovery: kind === 'recovery' })
-    const to = kind === 'recovery' ? new URL(req.url).origin + '/#/perfil' : (tok.redirect || new URL(req.url).origin + '/#/')
+    const to = kind === 'recovery' ? new URL(req.url).origin + '/app/#/perfil' : (tok.redirect || new URL(req.url).origin + '/app/#/')
     return new Response(null, { status: 302, headers: { Location: to, 'Set-Cookie': cookie, 'Cache-Control': 'no-store' } })
   }
 
@@ -209,8 +209,8 @@ export async function handleAuth(req, env, ctx, path) {
     await run(env.DB, "DELETE FROM mfa_factors WHERE user_id = ? AND status = 'unverified'", ctx.uid)
     const secret = base32(randomBytes(20))
     const id = uuid()
-    await run(env.DB, 'INSERT INTO mfa_factors (id, user_id, secret_enc, friendly_name) VALUES (?, ?, ?, ?)', id, ctx.uid, await encryptSecret(env.AUTH_SECRET, secret), String(body.friendlyName || 'DiveSlot').slice(0, 60))
-    const uri = `otpauth://totp/${encodeURIComponent('DiveSlot:' + ctx.email)}?secret=${secret}&issuer=DiveSlot&algorithm=SHA1&digits=6&period=30`
+    await run(env.DB, 'INSERT INTO mfa_factors (id, user_id, secret_enc, friendly_name) VALUES (?, ?, ?, ?)', id, ctx.uid, await encryptSecret(env.AUTH_SECRET, secret), String(body.friendlyName || 'DivingSlot').slice(0, 60))
+    const uri = `otpauth://totp/${encodeURIComponent('DivingSlot:' + ctx.email)}?secret=${secret}&issuer=DivingSlot&algorithm=SHA1&digits=6&period=30`
     return json({ id, type: 'totp', totp: { qr_code: qrSvgDataUrl(uri), secret, uri } })
   }
   if (path === 'mfa/verify') {

@@ -8,7 +8,7 @@ export default {
   'Seguridad': 'Security',
   // Dos pasos
   'Verificación en dos pasos': 'Two-step verification',
-  'Abre tu app de autenticación y escribe el código de 6 cifras de DiveSlot.': 'Open your authenticator app and enter the 6-digit DiveSlot code.',
+  'Abre tu app de autenticación y escribe el código de 6 cifras de DivingSlot.': 'Open your authenticator app and enter the 6-digit DivingSlot code.',
   'Código': 'Code',
   'Verificar': 'Verify',
   'No encontramos tu app de verificación. Sal y vuelve a entrar.': "We couldn't find your authenticator. Sign out and sign in again.",

@@ -117,7 +117,7 @@ function Resumen({ onPick }) {
   }, [trips, pays])
 
   function exportBookings() {
-    downloadCsv('diveslot-reservas-' + from + '.csv',
+    downloadCsv('divingslot-reservas-' + from + '.csv',
       [t('Fecha'), t('Hora'), t('Cliente'), t('Plazas'), t('Estado'), t('Origen'), t('Importe'), t('Pagado'), t('Pendiente'), t('A bordo')],
       trips.flatMap((tr) => (tr.bookings || []).map((b) => [
         dayOf(tr.departs_at), time(tr.departs_at), clientName(b), b.seats, b.status, b.source, b.amount_php, b.paid_php || 0,
@@ -145,7 +145,7 @@ function Resumen({ onPick }) {
           <div className="card stack small">
             <div className="row between"><span className="muted">{t('Cobrado de estas salidas')}</span><b>{php(r.paid)}</b></div>
             <div className="row between"><span className="muted">{t('Pendiente de cobrar')}</span><b style={{ color: r.pending ? 'var(--warn)' : undefined }}>{php(r.pending)}</b></div>
-            {r.commission > 0 && <div className="row between"><span className="muted">{t('Comisión DiveSlot')}</span><span>{php(r.commission)}</span></div>}
+            {r.commission > 0 && <div className="row between"><span className="muted">{t('Comisión DivingSlot')}</span><span>{php(r.commission)}</span></div>}
             <div className="row between"><span className="muted">{t('Cancelaciones')}</span><span>{r.cancelled === 1 ? t('1 reserva') : t('{n} reservas', { n: r.cancelled })} · {t('{n} plazas', { n: r.cancelledSeats })}</span></div>
             {r.refunds > 0 && <div className="row between"><span className="muted">{t('Reembolsos')}</span><span>{php(r.refunds)}</span></div>}
             {r.weather > 0 && <div className="row between"><span className="muted">{t('Salidas canceladas por meteo')}</span><span>{r.weather}</span></div>}
@@ -297,7 +297,7 @@ function Clientes() {
   shown = [...shown].sort((a, b) => sort === 'spent' ? b.spent - a.spent : sort === 'trips' ? b.trips.size - a.trips.size : sort === 'name' ? a.name.localeCompare(b.name) : (b.next || b.last || '').localeCompare(a.next || a.last || ''))
   const repeat = list.filter((c) => c.trips.size > 1).length
   function exportClients() {
-    downloadCsv('diveslot-clientes.csv', [t('Nombre'), 'Email', t('País'), t('Nivel'), t('Salidas'), t('Plazas'), t('Pagado'), t('Última salida'), t('Próxima salida'), t('Origen')],
+    downloadCsv('divingslot-clientes.csv', [t('Nombre'), 'Email', t('País'), t('Nivel'), t('Salidas'), t('Plazas'), t('Pagado'), t('Última salida'), t('Próxima salida'), t('Origen')],
       shown.map((c) => [c.name, c.diver?.email || '', c.diver?.country || '', level(c)?.name || '', c.trips.size, c.seats, c.spent, c.last || '', c.next || '', [...c.sources].join(' ')]))
   }
   return (
@@ -382,7 +382,7 @@ function Movimientos() {
       <div className="row between wrap" style={{ gap: 8 }}>
         <PeriodPicker value={period} onChange={setPeriod} options={PERIODS.filter(([k]) => k !== 'next')} />
         {rows?.length > 0 && (
-          <button className="btn small ghost" style={{ marginBottom: 12 }} onClick={() => downloadCsv('diveslot-cobros-' + from + '.csv',
+          <button className="btn small ghost" style={{ marginBottom: 12 }} onClick={() => downloadCsv('divingslot-cobros-' + from + '.csv',
             [t('Fecha del cobro'), t('Cliente'), t('Concepto'), t('Método'), t('Importe'), t('Salida')],
             rows.map((p) => [dateTime(p.paid_at), name(p), t(KINDS[p.kind] || p.kind), t(METHODS[p.method] || p.method), p.amount_php, p.bookings?.trips ? dateTime(p.bookings.trips.departs_at) : '']))}>
             {t('Exportar CSV')}

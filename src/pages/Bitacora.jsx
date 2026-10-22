@@ -15,7 +15,7 @@ function exportCsv(logs) {
   const rows = [cols.join(','), ...[...logs].reverse().map((l) => cols.map((c) => esc(l[c])).join(','))]
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8' }))
-  a.download = 'diveslot-bitacora.csv'
+  a.download = 'divingslot-bitacora.csv'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }

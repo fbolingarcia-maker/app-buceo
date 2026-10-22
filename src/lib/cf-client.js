@@ -1,9 +1,9 @@
-// Cliente de la API de DiveSlot en Cloudflare con la misma forma que @supabase/supabase-js
+// Cliente de la API de DivingSlot en Cloudflare con la misma forma que @supabase/supabase-js
 // (from/select/filtros, rpc, auth, auth.mfa, storage y functions.invoke), para que las pantallas no cambien.
 // Se usa cuando la app se compila con VITE_BACKEND=cloudflare (ver src/lib/supabase.js).
 // La sesión va en una cookie httpOnly (__Host-ds_session): el JavaScript nunca ve el token.
 
-const HEADERS = { 'Content-Type': 'application/json', 'X-DiveSlot': '1' }
+const HEADERS = { 'Content-Type': 'application/json', 'X-DivingSlot': '1' }
 
 async function call(path, body, method = 'POST') {
   let res
@@ -144,7 +144,7 @@ export function createCfClient() {
           let res
           try {
             res = await fetch(`/api/storage/upload/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, {
-              method: 'PUT', credentials: 'same-origin', headers: { 'X-DiveSlot': '1', 'Content-Type': opts.contentType || file?.type || 'application/octet-stream' }, body: file,
+              method: 'PUT', credentials: 'same-origin', headers: { 'X-DivingSlot': '1', 'Content-Type': opts.contentType || file?.type || 'application/octet-stream' }, body: file,
             })
           } catch (e) { return { data: null, error: { message: 'Failed to fetch' } } }
           const j = await res.json().catch(() => ({}))

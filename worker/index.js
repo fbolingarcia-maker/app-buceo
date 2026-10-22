@@ -1,10 +1,11 @@
-// DiveSlot en Cloudflare: un solo Worker sirve la app (Static Assets) y la API (/api/*) sobre D1 y R2.
+// DivingSlot en Cloudflare: un solo Worker sirve la app (Static Assets) y la API (/api/*) sobre D1 y R2.
 // Rutas:
 //   /api/auth/*             cuentas, sesión (cookie __Host-ds_session), dos pasos       → auth.js
 //   POST /api/rest          lecturas y escrituras de tablas con autorización            → rest.js + policies.js
 //   POST /api/rpc/<nombre>  funciones de negocio (reservas, cobros, centros, admin)     → rpc.js
 //   /api/storage/*          ficheros privados en R2 con enlaces firmados                → storage.js
 //   POST /api/functions/crear-pago, POST /api/webhooks/paymongo                         → payments.js
+//   POST /api/hit, GET /api/stats, POST /api/notify (visitas y avisos de uso)            → stats.js
 import { json, errorResponse, fail, sessionCookie } from './lib/util.js'
 import { loadCtx, handleAuth, rateLimit } from './auth.js'
 import { handleRest } from './rest.js'
@@ -12,14 +13,15 @@ import { handleRpc } from './rpc.js'
 import { handleStorage } from './storage.js'
 import { crearPago, paymongoWebhook } from './payments.js'
 import { cleanup } from './cron.js'
+import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits } from './stats.js'
 
-// Protección CSRF: toda petición que cambia datos lleva la cabecera X-DiveSlot (un formulario de otra web no puede
+// Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
 function csrfOk(req, url) {
   if (req.method === 'GET' || req.method === 'HEAD') return true
   const origin = req.headers.get('Origin')
   if (origin && origin !== url.origin) return false
-  return req.headers.get('X-DiveSlot') === '1'
+  return req.headers.get('X-DivingSlot') === '1'
 }
 
 export async function handleApi(req, env, ectx) {
@@ -29,6 +31,9 @@ export async function handleApi(req, env, ectx) {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204 }) // sin CORS: solo la propia app
     if (path === 'webhooks/paymongo' && req.method === 'POST') return await paymongoWebhook(req, env)
     if (path === 'health') return json({ ok: true })
+    // Visitas (sendBeacon no puede poner cabeceras: se comprueba el Origin dentro) y avisos desde Supabase (clave propia)
+    if (path === 'hit' && req.method === 'POST') return await handleHit(req, env, url)
+    if (path === 'notify' && req.method === 'POST') return await handleNotify(req, env)
     if (!csrfOk(req, url)) return json({ error: { message: 'FORBIDDEN: origen no permitido', code: 'CSRF' } }, 403)
     if (!env.DB) fail('NOT_CONFIGURED', 'falta la base de datos D1', 503)
     const ctx = await loadCtx(req, env)
@@ -46,6 +51,7 @@ export async function handleApi(req, env, ectx) {
       res = json({ data: await handleRpc(ctx, name, await req.json().catch(() => ({}))) })
     } else if (path.startsWith('storage/')) res = await handleStorage(req, env, ctx, path.slice(8))
     else if (path === 'functions/crear-pago' && req.method === 'POST') res = await crearPago(req, env, ctx)
+    else if (path === 'stats' && req.method === 'GET') res = await handleStats(req, env, ctx, url)
     else fail('NOT_FOUND', 'ruta desconocida', 404)
     // Sesión deslizante: renueva también la cookie
     if (ctx.renew && ctx.token && !res.headers.get('Set-Cookie')) { res = new Response(res.body, res); res.headers.append('Set-Cookie', sessionCookie(ctx.token, 30 * 86400)) }
@@ -63,5 +69,7 @@ export default {
   },
   async scheduled(event, env, ectx) {
     ectx.waitUntil(cleanup(env))
+    ectx.waitUntil(pruneVisits(env).catch((e) => console.error('visits', e.message)))
+    ectx.waitUntil(dailyDigest(env).catch((e) => console.error('digest', e.message)))
   },
 }

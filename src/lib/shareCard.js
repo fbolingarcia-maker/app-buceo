@@ -70,10 +70,10 @@ async function draw({ log, photoUrl, centerName, isRecord }) {
     } catch { /* si la foto falla, se queda el fondo liso */ }
   }
 
-  // Marca: bandera de buceo y «DiveSlot»
+  // Marca: bandera de buceo y «DivingSlot»
   ctx.fillStyle = '#d62828'; ctx.fillRect(X, 96, 54, 36)
   ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(X, 96); ctx.lineTo(X + 11, 96); ctx.lineTo(X + 54, 125); ctx.lineTo(X + 54, 132); ctx.lineTo(X + 43, 132); ctx.lineTo(X, 103); ctx.closePath(); ctx.fill()
-  ctx.font = '800 40px ' + UI; ctx.fillText('DiveSlot', X + 72, 128)
+  ctx.font = '800 40px ' + UI; ctx.fillText('DivingSlot', X + 72, 128)
 
   const max = +log.max_depth_m || 0, avg = +log.avg_depth_m || 0
 

@@ -1,4 +1,4 @@
-// Emails de DiveSlot desde el Worker (bilingües, mismas plantillas que tenía Supabase).
+// Emails de DivingSlot desde el Worker (bilingües, mismas plantillas que tenía Supabase).
 // Envío por Resend (RESEND_API_KEY) o, si no, por SMTP con TLS (SMTP_HOST, SMTP_PORT=465, SMTP_USER, SMTP_PASS),
 // p. ej. la contraseña de aplicación de Gmail que ya usaba Supabase.
 
@@ -9,23 +9,23 @@ const wrap = (body) => `<div style="font-family:-apple-system,Segoe UI,Roboto,sa
 
 export const TEMPLATES = {
   confirm: (url) => ({
-    subject: 'Confirma tu cuenta de DiveSlot · Confirm your DiveSlot account',
-    html: wrap(`<h2>DiveSlot 🤿</h2><p>¡Hola! Pulsa el botón para confirmar tu cuenta.<br>Hi! Tap the button to confirm your account.</p>${button(url, 'Confirmar cuenta · Confirm account')}${foot('Si no has creado una cuenta en DiveSlot, ignora este email.', "If you didn't sign up for DiveSlot, you can ignore this email.")}`),
+    subject: 'Confirma tu cuenta de DivingSlot · Confirm your DivingSlot account',
+    html: wrap(`<h2>DivingSlot 🤿</h2><p>¡Hola! Pulsa el botón para confirmar tu cuenta.<br>Hi! Tap the button to confirm your account.</p>${button(url, 'Confirmar cuenta · Confirm account')}${foot('Si no has creado una cuenta en DivingSlot, ignora este email.', "If you didn't sign up for DivingSlot, you can ignore this email.")}`),
   }),
   recovery: (url) => ({
-    subject: 'Nueva contraseña de DiveSlot · Reset your DiveSlot password',
-    html: wrap(`<h2>DiveSlot 🤿</h2><p>Pulsa el botón para crear una contraseña nueva.<br>Tap the button to create a new password.</p>${button(url, 'Crear contraseña · Reset password')}${foot('Si no lo has pedido tú, ignora este email.', "If you didn't ask for this, you can ignore this email.")}`),
+    subject: 'Nueva contraseña de DivingSlot · Reset your DivingSlot password',
+    html: wrap(`<h2>DivingSlot 🤿</h2><p>Pulsa el botón para crear una contraseña nueva.<br>Tap the button to create a new password.</p>${button(url, 'Crear contraseña · Reset password')}${foot('Si no lo has pedido tú, ignora este email.', "If you didn't ask for this, you can ignore this email.")}`),
   }),
   centerReviewed: (name, decision, note, url) => ({
     subject: decision === 'verified' ? 'Tu centro ya está verificado · Your centre is verified' : 'Revisión de tu centro · Your centre review',
-    html: wrap(`<h2>DiveSlot 🤿</h2><p>${decision === 'verified'
+    html: wrap(`<h2>DivingSlot 🤿</h2><p>${decision === 'verified'
       ? `<b>${esc(name)}</b> ya está verificado: puedes publicar salidas y recibir reservas.<br><b>${esc(name)}</b> is verified: you can publish trips and take bookings.`
-      : `Hemos revisado <b>${esc(name)}</b> y necesitamos algún cambio.<br>We reviewed <b>${esc(name)}</b> and need some changes.`}</p>${note ? `<p style="background:#f3f6f8;padding:10px 12px;border-radius:8px">${esc(note)}</p>` : ''}${button(url, 'Abrir DiveSlot · Open DiveSlot')}`),
+      : `Hemos revisado <b>${esc(name)}</b> y necesitamos algún cambio.<br>We reviewed <b>${esc(name)}</b> and need some changes.`}</p>${note ? `<p style="background:#f3f6f8;padding:10px 12px;border-radius:8px">${esc(note)}</p>` : ''}${button(url, 'Abrir DivingSlot · Open DivingSlot')}`),
   }),
 }
 
 export async function sendEmail(env, to, { subject, html }) {
-  const from = env.EMAIL_FROM || 'DiveSlot <no-reply@divingslot.com>'
+  const from = env.EMAIL_FROM || 'DivingSlot <no-reply@divingslot.com>'
   if (env.RESEND_API_KEY) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -65,7 +65,7 @@ async function smtpSend(env, to, subject, html) {
   await cmd(`RCPT TO:<${to}>`, 250)
   await cmd('DATA', 354)
   const body = b64(html).replace(/.{1,76}/g, '$&\r\n')
-  const msg = [`From: ${env.EMAIL_FROM || 'DiveSlot <' + fromAddr + '>'}`, `To: <${to}>`, `Subject: =?UTF-8?B?${b64(subject)}?=`, 'MIME-Version: 1.0',
+  const msg = [`From: ${env.EMAIL_FROM || 'DivingSlot <' + fromAddr + '>'}`, `To: <${to}>`, `Subject: =?UTF-8?B?${b64(subject)}?=`, 'MIME-Version: 1.0',
     'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', `Date: ${new Date().toUTCString()}`, `Message-ID: <${crypto.randomUUID()}@divingslot.com>`, '', body, '.'].join('\r\n')
   await cmd(msg, 250)
   await w.write(te.encode('QUIT\r\n')).catch(() => {})

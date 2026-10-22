@@ -12,7 +12,7 @@ export async function seed(db) {
   const q = (sql, ...p) => s.push(db.prepare(sql).bind(...p))
   for (const [k, id] of Object.entries(U)) {
     q('INSERT INTO users (id, email, password_hash, email_confirmed_at, last_sign_in_at, created_at, user_metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      id, `${k}@diveslot.test`, pw, conf, iso(now - D), conf, JSON.stringify(k === 'nuevo' ? { account_type: 'center', center_name: 'Nuevo Centro' } : {}))
+      id, `${k}@divingslot.test`, pw, conf, iso(now - D), conf, JSON.stringify(k === 'nuevo' ? { account_type: 'center', center_name: 'Nuevo Centro' } : {}))
   }
   q("INSERT INTO destinations VALUES ('Panglao', 'Bohol', 'Visayas', 9.55, 123.77), ('Moalboal', 'Cebu', 'Visayas', 9.95, 123.4)")
   q(`INSERT INTO dive_sites (id, name, area, province, min_depth_m, max_depth_m, recommended_min, highlight, highlight_es) VALUES
@@ -29,11 +29,11 @@ export async function seed(db) {
   q('INSERT INTO platform_admins (user_id) VALUES (?)', U.admin)
   q("INSERT INTO admin_audit (actor, action, target, detail) VALUES (?, 'center_status', 'c1', ?)", U.admin, JSON.stringify({ name: 'Casa Azul Divers', from: 'pending', to: 'verified', note: null }))
   q(`INSERT INTO divers (id, user_id, full_name, email, account_type, languages, country, bio, logged_dives, show_on_trips) VALUES
-    ('d-admin', ?, 'Admin DiveSlot', 'admin@diveslot.test', 'diver', '[]', NULL, NULL, NULL, 0),
-    ('d-centro', ?, 'Ana Centro', 'centro@diveslot.test', 'center', '["es"]', 'España', NULL, NULL, 1),
-    ('d-nuevo', ?, 'Nico Nuevo', 'nuevo@diveslot.test', 'center', '[]', NULL, NULL, NULL, 1),
-    ('d-buzo', ?, 'Bea Buceadora López', 'buzo@diveslot.test', 'diver', '["es","en"]', 'España', 'Fotografía macro', 40, 1),
-    ('d-otro', ?, 'Omar Otro', 'otro@diveslot.test', 'diver', '["en"]', 'Philippines', NULL, 12, 1)`, U.admin, U.centro, U.nuevo, U.buzo, U.otro)
+    ('d-admin', ?, 'Admin DivingSlot', 'admin@divingslot.test', 'diver', '[]', NULL, NULL, NULL, 0),
+    ('d-centro', ?, 'Ana Centro', 'centro@divingslot.test', 'center', '["es"]', 'España', NULL, NULL, 1),
+    ('d-nuevo', ?, 'Nico Nuevo', 'nuevo@divingslot.test', 'center', '[]', NULL, NULL, NULL, 1),
+    ('d-buzo', ?, 'Bea Buceadora López', 'buzo@divingslot.test', 'diver', '["es","en"]', 'España', 'Fotografía macro', 40, 1),
+    ('d-otro', ?, 'Omar Otro', 'otro@divingslot.test', 'diver', '["en"]', 'Philippines', NULL, 12, 1)`, U.admin, U.centro, U.nuevo, U.buzo, U.otro)
   q("INSERT INTO certifications (id, diver_id, agency, level, card_number) VALUES ('ce1', 'd-buzo', 'PADI', 'advanced', 'P-123'), ('ce2', 'd-otro', 'SSI', 'open_water', NULL)")
   q("INSERT INTO boats (id, center_id, name, capacity, show_to_divers) VALUES ('b1', 'c1', 'Banca Azul', 12, 1), ('b4', 'c4', 'Banca Nueva', 8, 0)")
   for (let d = 0; d < 8; d++) {
@@ -59,7 +59,7 @@ export async function seed(db) {
     ('lg2', 'd-buzo', NULL, 'c1', 's2', 'Balicasag – Black Forest', ?, '10:30', 31, 19, 45, 28, 4, NULL, 1),
     ('lg3', 'd-buzo', NULL, NULL, NULL, 'Doljo Point', ?, '09:00', 22, NULL, 50, NULL, NULL, NULL, 0)`,
   iso(day0 - 3 * D).slice(0, 10), iso(day0 - 10 * D).slice(0, 10), iso(day0 - 40 * D).slice(0, 10))
-  q(`INSERT INTO center_verifications (center_id, legal_name, owner_name, contact_email, contact_phone, address, mayors_permit_number) VALUES ('c4', 'Nuevo Centro Inc', 'Nico', 'nuevo@diveslot.test', '+63', 'Alona Beach', 'MP-9')`)
+  q(`INSERT INTO center_verifications (center_id, legal_name, owner_name, contact_email, contact_phone, address, mayors_permit_number) VALUES ('c4', 'Nuevo Centro Inc', 'Nico', 'nuevo@divingslot.test', '+63', 'Alona Beach', 'MP-9')`)
   await db.batch(s)
   return U
 }

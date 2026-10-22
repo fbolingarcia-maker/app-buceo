@@ -25,4 +25,11 @@ await esbuild.build({
   plugins: [sinRed],
   nodePaths: ['/opt/npm-tools/node_modules'], logLevel: 'error',
 })
+// La landing (web comercial de la raíz): out/landing.html + out/landing/main.js
+await esbuild.build({
+  entryPoints: [APP + '/landing/main.js'], bundle: true, outdir: S + '/out/landing', format: 'esm', loader: { '.woff2': 'file', '.woff': 'file' },
+  define: { 'import.meta.env.BASE_URL': '"/"' }, plugins: [sinRed], nodePaths: ['/opt/npm-tools/node_modules'], logLevel: 'error',
+})
+fs.writeFileSync(S + '/out/landing.html', fs.readFileSync(APP + '/index.html', 'utf8')
+  .replace('<script type="module" src="/landing/main.js"></script>', '<link rel="stylesheet" href="/out/landing/main.css" /><script type="module" src="/out/landing/main.js"></script>'))
 console.log('built')

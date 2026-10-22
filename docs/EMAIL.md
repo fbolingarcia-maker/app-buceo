@@ -1,4 +1,4 @@
-# Emails de DiveSlot (confirmación de cuenta y nueva contraseña)
+# Emails de DivingSlot (confirmación de cuenta y nueva contraseña)
 
 ## Por qué no llegaban
 
@@ -9,13 +9,13 @@ Supabase trae un servidor de correo de pruebas. Ese servidor solo envía a los e
 1. **Activa la verificación en 2 pasos en Google.** Entra en la cuenta de Google de fbolingarcia@gmail.com y ve a https://myaccount.google.com/security.
 2. **Crea una contraseña de aplicación.**
    - Entra en https://myaccount.google.com/apppasswords.
-   - Ponle de nombre «DiveSlot».
+   - Ponle de nombre «DivingSlot».
    - Copia la clave de 16 letras.
 3. **Rellena el SMTP en Supabase.**
    - Entra en Authentication → Emails → SMTP Settings y activa «Enable custom SMTP».
    - Rellena estos campos:
      - Sender email: fbolingarcia@gmail.com
-     - Sender name: DiveSlot
+     - Sender name: DivingSlot
      - Host: smtp.gmail.com
      - Port: 465
      - Username: fbolingarcia@gmail.com
@@ -26,29 +26,29 @@ Supabase trae un servidor de correo de pruebas. Ese servidor solo envía a los e
 
 ## Opción para más adelante: dominio propio
 
-Si DiveSlot tiene dominio propio (p. ej. diveslot.ph), conviene usar Resend o Brevo con ese dominio. Hay que añadir sus registros DNS y enviar desde no-reply@diveslot.ph. Así llega mejor a la bandeja de entrada y no a spam.
+Si DivingSlot tiene dominio propio (p. ej. diveslot.ph), conviene usar Resend o Brevo con ese dominio. Hay que añadir sus registros DNS y enviar desde no-reply@diveslot.ph. Así llega mejor a la bandeja de entrada y no a spam.
 
 ## Plantillas (Authentication → Emails → Templates)
 
 ### Confirm signup
 
-- **Asunto:** Confirma tu cuenta de DiveSlot · Confirm your DiveSlot account
+- **Asunto:** Confirma tu cuenta de DivingSlot · Confirm your DivingSlot account
 - **Cuerpo:**
 
 ```html
-<h2>DiveSlot 🤿</h2>
+<h2>DivingSlot 🤿</h2>
 <p>¡Hola! Pulsa el botón para confirmar tu cuenta.<br>Hi! Tap the button to confirm your account.</p>
 <p><a href="{{ .ConfirmationURL }}" style="background:#0b5e8a;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:600">Confirmar cuenta · Confirm account</a></p>
-<p style="color:#5d7282;font-size:13px">Si no has creado una cuenta en DiveSlot, ignora este email.<br>If you didn't sign up for DiveSlot, you can ignore this email.</p>
+<p style="color:#5d7282;font-size:13px">Si no has creado una cuenta en DivingSlot, ignora este email.<br>If you didn't sign up for DivingSlot, you can ignore this email.</p>
 ```
 
 ### Reset password
 
-- **Asunto:** Nueva contraseña de DiveSlot · Reset your DiveSlot password
+- **Asunto:** Nueva contraseña de DivingSlot · Reset your DivingSlot password
 - **Cuerpo:**
 
 ```html
-<h2>DiveSlot 🤿</h2>
+<h2>DivingSlot 🤿</h2>
 <p>Pulsa el botón para crear una contraseña nueva.<br>Tap the button to create a new password.</p>
 <p><a href="{{ .ConfirmationURL }}" style="background:#0b5e8a;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:600">Crear contraseña · Reset password</a></p>
 <p style="color:#5d7282;font-size:13px">Si no lo has pedido tú, ignora este email.<br>If you didn't ask for this, you can ignore this email.</p>

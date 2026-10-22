@@ -58,7 +58,7 @@ export default {
   'Pago no encontrado': 'Payment not found',
 
   // App.jsx
-  'DiveSlot · Salidas de buceo en Filipinas': 'DiveSlot · Dive trips in the Philippines',
+  'DivingSlot · Salidas de buceo en Filipinas': 'DivingSlot · Dive trips in the Philippines',
   'Cargando…': 'Loading…',
   'Centro': 'Centre',
   'Entrar': 'Log in',
@@ -129,7 +129,7 @@ export default {
   '{n} valoraciones': '{n} reviews',
   'Próximas salidas': 'Upcoming trips',
   'Este centro no tiene salidas publicadas ahora mismo.': 'This centre has no published trips right now.',
-  'Este centro todavía no publica sus salidas en DiveSlot. Puedes contactarle directamente.': "This centre doesn't publish its trips on DiveSlot yet. You can contact it directly.",
+  'Este centro todavía no publica sus salidas en DivingSlot. Puedes contactarle directamente.': "This centre doesn't publish its trips on DivingSlot yet. You can contact it directly.",
   'Destino no encontrado.': 'Destination not found.',
   '1 salida próxima': '1 upcoming trip',
   '{n} salidas próximas': '{n} upcoming trips',

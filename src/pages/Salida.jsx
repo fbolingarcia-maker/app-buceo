@@ -108,7 +108,7 @@ export default function Salida({ id }) {
     const url = window.location.href
     const text = t('Salida de buceo con {centro} el {fecha}', { centro: trip.center_name, fecha: dateTime(trip.departs_at) })
     try {
-      if (navigator.share) await navigator.share({ title: 'DiveSlot', text, url })
+      if (navigator.share) await navigator.share({ title: 'DivingSlot', text, url })
       else { await navigator.clipboard.writeText(text + ' ' + url); setShared(t('Enlace copiado')) }
     } catch {}
   }

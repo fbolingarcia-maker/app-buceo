@@ -1,8 +1,8 @@
 {
-  "name": "DiveSlot · Salidas de buceo en Filipinas",
-  "short_name": "DiveSlot",
+  "name": "DivingSlot · Salidas de buceo en Filipinas",
+  "short_name": "DivingSlot",
   "description": "Reserva salidas de buceo en Filipinas / Book dive trips in the Philippines",
-  "start_url": "./",
+  "start_url": "./app/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f8fb",
