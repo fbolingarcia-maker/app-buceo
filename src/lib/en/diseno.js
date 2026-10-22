@@ -11,8 +11,20 @@ export default {
   '{hora}, {plazas}, nivel mínimo {nivel}': '{hora}, {plazas}, minimum level {nivel}',
   // Salidas: semana sin salidas
   'No hay salidas publicadas esta semana': 'No trips published this week',
-  'Los centros de Panglao están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de la zona.': 'Panglao dive centres are just starting to publish their trips. In the meantime, have a look at the dive sites and centres in the area.',
-  'Puntos de buceo de Panglao': 'Panglao dive sites',
+  'Los centros de buceo están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de cada zona.': 'Dive centres are just starting to publish their trips. In the meantime, have a look at the dive sites and centres in each area.',
+  'Toda Filipinas por zonas: profundidad, nivel y qué se ve': 'All of the Philippines by area: depth, level and what you’ll see',
+  // Puntos de buceo de toda Filipinas (#/puntos)
+  'Ver por zonas': 'Browse by area',
+  'Buscar punto, zona o isla…': 'Search a site, area or island…',
+  'Para Open Water': 'For Open Water',
+  'Para Advanced': 'For Advanced',
+  '1 punto': '1 site',
+  '{n} puntos': '{n} sites',
+  '1 zona': '1 area',
+  '{n} zonas': '{n} areas',
+  'No hay puntos de buceo que coincidan con tu búsqueda.': 'No dive sites match your search.',
+  'Centros y salidas en {zona}': 'Centres and trips in {zona}',
+  'La profundidad y el nivel son orientativos. El centro decide cada día el punto según el mar y el grupo.': 'Depth and level are a guide. The centre picks the site each day based on the sea and the group.',
   'Profundidad, nivel y qué se ve': 'Depth, level and what you’ll see',
   'Contacto, agencias e idiomas': 'Contact, agencies and languages',
   // Ficha: perfil de los puntos

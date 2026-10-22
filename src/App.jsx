@@ -20,6 +20,7 @@ import CentroAjustes from './pages/CentroAjustes'
 import RegistrarCentro from './pages/RegistrarCentro'
 import CentroInfo from './pages/CentroInfo'
 import Destino from './pages/Destino'
+import Puntos from './pages/Puntos'
 import CentroVerificacion from './pages/CentroVerificacion'
 import Admin from './pages/Admin'
 import { DosPasosReto } from './pages/DosPasos'
@@ -137,6 +138,7 @@ export default function App() {
   else if (seg[0] === 'centro' && seg[1] === 'ajustes') page = <NeedCenter><CentroAjustes /></NeedCenter>
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
+  else if (seg[0] === 'puntos') page = <Puntos />
   else if (seg[0] === 'c' && seg[1]) page = <CentroInfo id={seg[1]} />
   else if (seg[0] === 'd' && seg[1]) page = <Destino name={decodeURIComponent(seg[1])} />
   else if (session && adminView === 'admin') page = <Admin />
@@ -192,7 +194,7 @@ export default function App() {
         ) : (
           <>
             {tab('/', Compass, 'Salidas', home || seg[0] === 'salida')}
-            {tab('/centros', MapPin, 'Centros', seg[0] === 'centros' || seg[0] === 'c' || seg[0] === 'd')}
+            {tab('/centros', MapPin, 'Centros', seg[0] === 'centros' || seg[0] === 'puntos' || seg[0] === 'c' || seg[0] === 'd')}
             {tab('/reservas', Ticket, 'Reservas', seg[0] === 'reservas')}
             {tab('/bitacora', BookOpen, 'Bitácora', seg[0] === 'bitacora')}
             {tab('/perfil', User, 'Perfil', seg[0] === 'perfil' || seg[0] === 'login')}

@@ -1,11 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import { createCfClient } from './cf-client'
 import { t } from './i18n'
+
+// Backend: Supabase (por defecto) o la API propia en Cloudflare (Worker + D1 + R2) si se compila con
+// VITE_BACKEND=cloudflare. Las dos tienen la misma forma, así que las pantallas no cambian.
+export const BACKEND = import.meta.env.VITE_BACKEND === 'cloudflare' ? 'cloudflare' : 'supabase'
 
 // Claves PÚBLICAS (publishable). La seguridad está en RLS y en las funciones de la base de datos.
 const url = import.meta.env.VITE_SUPABASE_URL || 'https://tosgzcpnkpsrrkfqctgy.supabase.co'
 const key = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_QVcivbJNNX5TmEet6jv19A_uDR45c7R'
 
-export const supabase = createClient(url, key, {
+export const supabase = BACKEND === 'cloudflare' ? createCfClient() : createClient(url, key, {
   // flujo implícito: el enlace del email funciona aunque se abra en otro navegador/dispositivo
   auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true },
 })

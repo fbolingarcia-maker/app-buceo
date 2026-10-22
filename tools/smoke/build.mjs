@@ -20,7 +20,7 @@ const sinRed = {
 
 await esbuild.build({
   entryPoints: [APP + '/src/main.jsx'], bundle: true, outdir: S + '/out', format: 'esm', jsx: 'automatic', loader: { '.js': 'jsx', '.woff2': 'file', '.woff': 'file' },
-  define: { 'import.meta.env.VITE_SUPABASE_URL': 'undefined', 'import.meta.env.VITE_SUPABASE_KEY': 'undefined', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.DEV': 'false', 'import.meta.env.PROD': 'true', 'import.meta.env.MODE': '"production"' },
+  define: { 'import.meta.env.VITE_BACKEND': 'undefined', 'import.meta.env.VITE_SUPABASE_URL': 'undefined', 'import.meta.env.VITE_SUPABASE_KEY': 'undefined', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.DEV': 'false', 'import.meta.env.PROD': 'true', 'import.meta.env.MODE': '"production"' },
   alias: { '@supabase/supabase-js': S + '/mock-supabase.js', react: '/opt/npm-tools/node_modules/react', 'react-dom': '/opt/npm-tools/node_modules/react-dom' },
   plugins: [sinRed],
   nodePaths: ['/opt/npm-tools/node_modules'], logLevel: 'error',

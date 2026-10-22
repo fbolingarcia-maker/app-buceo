@@ -139,9 +139,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .suggest button:hover { background: color-mix(in srgb, var(--brand) 8%, transparent); }
 .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin: 0 -16px 10px; padding-left: 16px; padding-right: 16px; }
 /* Filtros en pastilla y segmentos */
-.chips button, .seg button { flex: 0 0 auto; min-height: 36px; padding: 0 14px; border-radius: 99px; border: 0; box-shadow: inset 0 0 0 1px var(--line);
+.chips button, .seg button, .seg a { flex: 0 0 auto; min-height: 36px; padding: 0 14px; border-radius: 99px; border: 0; box-shadow: inset 0 0 0 1px var(--line);
   background: var(--surface); color: var(--ink); font: 600 14px var(--font-ui); white-space: nowrap; cursor: pointer; }
-.chips button.on, .seg button.on { background: var(--ink); color: var(--bg); box-shadow: none; }
+.chips button.on, .seg button.on, .seg a.on { background: var(--ink); color: var(--bg); box-shadow: none; }
+.seg a { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* Tarjetas de salida: respuesta al pasar/pulsar y salidas completas atenuadas */
 a.card.trip { display: block; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }

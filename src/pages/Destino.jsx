@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Link } from '../lib/router'
-import { t, getLang } from '../lib/i18n'
-import { levelName } from '../lib/format'
+import { t } from '../lib/i18n'
+import SiteCard from '../lib/SiteCard'
 import { loadDestinations, openTripsIn, loadRatings, EXTRA_AREAS } from '../lib/places'
 import Icon from '../lib/Icon'
 import { ArrowLeft } from 'lucide-react'
@@ -19,7 +19,7 @@ export default function Destino({ name }) {
     loadDestinations().then((ds) => setDest(ds.find((d) => d.name === name) || false))
     loadRatings().then(setRatings)
     const areas = [name, ...(EXTRA_AREAS[name] || [])]
-    supabase.from('dive_sites').select('*').in('area', areas).order('name').then(({ data }) => setSites(data || []))
+    supabase.from('dive_sites').select('*').in('area', areas).order('name').then(({ data }) => setSites((data || []).sort((a, b) => (a.area !== name) - (b.area !== name) || a.area.localeCompare(b.area) || a.name.localeCompare(b.name))))
     supabase.from('centers').select('id, name, locality, listing_status, verification_status').eq('destination', name).neq('listing_status', 'cerrado').not('name', 'like', 'Demo%')
       // Los centros dados de alta solo se ven cuando DiveSlot los ha verificado
       .or('listing_status.neq.socio,verification_status.eq.verified').order('name')
@@ -42,21 +42,10 @@ export default function Destino({ name }) {
         <button className="btn small" onClick={() => openTripsIn({ kind: 'dest', name: dest.name })}>{t('Ver salidas aquí')}</button>
       </div>
 
-      <h2>{t('Puntos de buceo')}</h2>
+      <h2>{t('Puntos de buceo')}{sites?.length ? <span className="muted small" style={{ fontWeight: 400 }}> · {sites.length}</span> : null}</h2>
       {sites === null && <p className="muted">{t('Cargando…')}</p>}
       {sites && sites.length === 0 && <div className="card muted">{t('Aún no hay puntos de buceo registrados en este destino.')}</div>}
-      {sites?.map((s) => (
-        <div key={s.id} className="card">
-          <div className="row between wrap" style={{ gap: 6 }}>
-            <b>{s.name}</b>
-            <span className={s.recommended_min === 'advanced' ? 'pill warn' : 'pill'}>{levelName(s.recommended_min)}</span>
-          </div>
-          <div className="small muted">
-            {s.min_depth_m != null && s.max_depth_m ? t('{a}–{b} m', { a: s.min_depth_m, b: s.max_depth_m }) : s.max_depth_m ? t('hasta {b} m', { b: s.max_depth_m }) : ''}
-            {s.highlight ? (s.max_depth_m ? ' · ' : '') + (getLang() === 'es' ? (s.highlight_es || s.highlight) : s.highlight) : ''}
-          </div>
-        </div>
-      ))}
+      {sites?.map((s) => <SiteCard key={s.id} site={s} sub={s.area !== dest.name ? s.area : null} />)}
 
       <h2>{t('Centros de buceo')} <span className="muted small" style={{ fontWeight: 400 }}>· {centers.length}</span></h2>
       {centers.map((c) => (

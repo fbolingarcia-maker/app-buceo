@@ -7,6 +7,7 @@ import { Link } from '../lib/router'
 import { Flags } from '../lib/langs'
 import { Agencies } from '../lib/agencies'
 import Icon from '../lib/Icon'
+import ZonaSwitch from '../lib/ZonaSwitch'
 import { LocateFixed, MapPin, X } from 'lucide-react'
 
 export default function Centros() {
@@ -55,6 +56,7 @@ export default function Centros() {
   return (
     <>
       <h1>{t('Centros de buceo')}</h1>
+      <ZonaSwitch on="centros" />
       <div className="row" style={{ gap: 8, marginBottom: 10 }}>
         <input type="search" className="grow" placeholder={t('Buscar centro, zona o isla…')} value={q} onChange={(e) => setQ(e.target.value)} />
         <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>

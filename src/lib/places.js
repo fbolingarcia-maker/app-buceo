@@ -40,6 +40,9 @@ export function inPlace(obj, place, dests = []) {
 export const EXTRA_AREAS = {
   Panglao: ['Balicasag', 'Pamilacan'],
   Dauin: ['Apo Island'],
+  // Desde Dumaguete se bucea en Dauin y Apo Island; desde Dalaguete, en Oslob y Sumilon
+  Dumaguete: ['Dauin', 'Apo Island'],
+  Dalaguete: ['Oslob'],
   'Puerto Galera': ['Verde Island'],
   'Sogod Bay': ['Southern Leyte'],
   'Puerto Princesa': ['Tubbataha'],

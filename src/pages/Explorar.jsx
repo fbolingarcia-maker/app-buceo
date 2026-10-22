@@ -213,9 +213,9 @@ export default function Explorar() {
         <div className="empty">
           <span className="empty-glyph" aria-hidden="true"><CalendarDays size={26} strokeWidth={1.75} /></span>
           <h2>{t('No hay salidas publicadas esta semana')}</h2>
-          <p className="muted">{t('Los centros de Panglao están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de la zona.')}</p>
+          <p className="muted">{t('Los centros de buceo están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de cada zona.')}</p>
           <div className="list">
-            <Link to="/d/Panglao" className="li"><span className="tile"><Waves size={20} /></span><span className="grow"><b>{t('Puntos de buceo de Panglao')}</b><small>{t('Profundidad, nivel y qué se ve')}</small></span><ChevronRight size={18} /></Link>
+            <Link to="/puntos" className="li"><span className="tile"><Waves size={20} /></span><span className="grow"><b>{t('Puntos de buceo')}</b><small>{t('Toda Filipinas por zonas: profundidad, nivel y qué se ve')}</small></span><ChevronRight size={18} /></Link>
             <Link to="/centros" className="li"><span className="tile"><MapPin size={20} /></span><span className="grow"><b>{t('Centros de buceo')}</b><small>{t('Contacto, agencias e idiomas')}</small></span><ChevronRight size={18} /></Link>
           </div>
         </div>
