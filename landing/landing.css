@@ -111,7 +111,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 
 /* Cifras */
 .stats { background: var(--depth-5); color: #e6eef3; }
-.stats-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); padding-top: 28px; padding-bottom: 28px; }
+.stats-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); text-align: center; padding-top: 28px; padding-bottom: 28px; }
 .stats b { display: block; font-size: 42px; line-height: 1; color: var(--depth-1); }
 .stats span { display: block; margin-top: 4px; font-size: 15px; color: #b9cad6; }
 
