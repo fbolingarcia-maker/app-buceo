@@ -51,4 +51,11 @@ export default {
   'Términos de uso': 'Terms of use',
   'Política de cancelación': 'Cancellation policy',
   'Contacto': 'Contact',
+  // Acceso con Google (migración 033)
+  'Continuar con Google': 'Continue with Google',
+  'Crear cuenta con Google': 'Sign up with Google',
+  'Tu nombre, email y foto se rellenan solos desde Google.': 'Your name, email and photo are filled in from Google.',
+  'Si aún no tienes cuenta, se crea al continuar con Google y aceptas los': "If you don't have an account yet, one is created when you continue with Google, and you accept the",
+  'o con tu email': 'or with your email',
+  'Cuenta conectada con Google': 'Account connected with Google',
 }

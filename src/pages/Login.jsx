@@ -3,6 +3,7 @@ import { supabase, siteUrl, errMsg, pwProblem } from '../lib/supabase'
 import { t, useLang } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { Languages, Ship, Waves } from 'lucide-react'
+import GoogleButton, { GOOGLE_LOGIN } from '../lib/GoogleButton'
 
 // Página a la que volver tras entrar (la guarda la ficha de la salida)
 function afterLogin() {
@@ -63,6 +64,16 @@ export default function Login({ embedded }) {
     }
   }
 
+  const google = GOOGLE_LOGIN && (mode === 'login' || (mode === 'signup' && type === 'diver')) && (
+    <div className="field">
+      <GoogleButton label={mode === 'signup' ? 'Crear cuenta con Google' : 'Continuar con Google'} />
+      <p className="small muted" style={{ margin: '8px 0 0' }}>
+        {mode === 'signup' ? t('Tu nombre, email y foto se rellenan solos desde Google.') : <>{t('Si aún no tienes cuenta, se crea al continuar con Google y aceptas los')} <a href={siteUrl() + 'legal/terms.html'} target="_blank" rel="noreferrer">{t('términos de uso')}</a> {t('y la')} <a href={siteUrl() + 'legal/privacy.html'} target="_blank" rel="noreferrer">{t('política de privacidad')}</a>.</>}
+      </p>
+      <div className="or-sep" role="separator"><span>{t('o con tu email')}</span></div>
+    </div>
+  )
+
   return (
     <div style={{ maxWidth: 420, margin: '0 auto' }}>
       {(() => { const H = embedded ? 'h2' : 'h1'; return <H>{mode === 'login' ? t('Entrar') : mode === 'signup' ? t('Crear cuenta') : t('Recuperar acceso')}</H> })()}
@@ -79,6 +90,7 @@ export default function Login({ embedded }) {
                 ? t('Reserva salidas y lleva tu bitácora de inmersiones.')
                 : t('Publica salidas, gestiona reservas, cobros y check-in de tus buceadores.') + ' ' + t('Antes de aparecer en la app verificaremos tu centro (permiso de negocio e identidad).')}
             </p>
+            {google}
             <div className="field"><label htmlFor="su-name">{type === 'center' ? t('Tu nombre (responsable)') : t('Nombre')}</label><input id="su-name" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" /></div>
             {type === 'center' && (
               <div className="grid2">
@@ -88,6 +100,7 @@ export default function Login({ embedded }) {
             )}
           </>
         )}
+        {mode === 'login' && google}
         <div className="field"><label htmlFor="li-email">Email</label><input id="li-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></div>
         {mode !== 'reset' && (
           <div className="field"><label htmlFor="li-pw">{t('Contraseña')}</label>

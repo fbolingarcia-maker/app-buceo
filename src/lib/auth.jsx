@@ -53,6 +53,13 @@ export function AuthProvider({ children }) {
         history.replaceState(null, '', window.location.pathname + (h.includes('type=recovery') ? '#/perfil' : '#/'))
         window.dispatchEvent(new HashChangeEvent('hashchange'))
       }
+      // Error al volver de Google (?error=…&error_description=…): se enseña en la pantalla de entrar
+      const q = new URLSearchParams(window.location.search)
+      if (q.get('error_description') || q.get('error')) {
+        sessionStorage.setItem('authError', q.get('error_description') || q.get('error'))
+        history.replaceState(null, '', window.location.pathname + '#/login')
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
+      }
     })
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === 'PASSWORD_RECOVERY') setRecovering(true)

@@ -155,7 +155,12 @@ export default function Perfil() {
     <>
       <h1>{t('Tu perfil')}</h1>
       <p className="pill" style={{ marginTop: -4 }}>{isAdmin ? (isCenter ? t('Administrador · vista de centro') : t('Administrador · vista de buceador')) : isCenter ? t('Cuenta de centro de buceo') : t('Cuenta de buceador')}</p>
-      <p className="muted small">{user.email}</p>
+      <div className="profile-head">
+        {diver.avatar_url && /^https:\/\/lh3\.googleusercontent\.com\//.test(diver.avatar_url) && (
+          <img className="profile-photo" src={diver.avatar_url} alt="" width="56" height="56" referrerPolicy="no-referrer" loading="lazy" />
+        )}
+        <p className="muted small" style={{ margin: 0 }}>{user.email}{diver.auth_provider === 'google' && <><br />{t('Cuenta conectada con Google')}</>}</p>
+      </div>
 
       <form className="card" onSubmit={saveProfile}>
         <div className="field"><label htmlFor="perfil-1">{t('Nombre')}</label><input id="perfil-1" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>

@@ -10,7 +10,7 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://flagcdn.com " + SUPABASE,
+  "img-src 'self' data: blob: https://flagcdn.com https://lh3.googleusercontent.com " + SUPABASE,
   "connect-src 'self' " + SUPABASE + ' ' + SUPABASE.replace('https://', 'wss://'),
   "font-src 'self'",
   "manifest-src 'self'",
