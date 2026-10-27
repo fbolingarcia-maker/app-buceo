@@ -74,6 +74,7 @@ export const POLICIES = {
   dive_logs: { ops: ['insert', 'update', 'delete'],
     select: (c, a) => or(and(P(`${a}.share_with_center = 1 AND ${a}.center_id IS NOT NULL`), staffIn(c, `${a}.center_id`)), myDiver(c, `${a}.diver_id`)),
     write: (c, a) => myDiver(c, `${a}.diver_id`), check: (c, a) => myDiver(c, `${a}.diver_id`) },
+  buddy_ratings: { select: (c, a) => myDiver(c, `${a}.rater_id`) },
   dive_log_photos: { ops: ['insert', 'update', 'delete'],
     select: (c, a) => (c.diverId ? P(`${a}.log_id IN (SELECT id FROM dive_logs WHERE diver_id = ?)`, c.diverId) : NO),
     write: (c, a) => (c.diverId ? P(`${a}.log_id IN (SELECT id FROM dive_logs WHERE diver_id = ?)`, c.diverId) : NO),

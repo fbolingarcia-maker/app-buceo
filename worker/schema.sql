@@ -165,7 +165,8 @@ CREATE TABLE IF NOT EXISTS divers (
   last_dive_date TEXT,
   nitrox INTEGER NOT NULL DEFAULT 0,
   medical_done_at TEXT,
-  medical_result TEXT CHECK (medical_result IN ('all_no', 'physician_ok'))
+  medical_result TEXT CHECK (medical_result IN ('all_no', 'physician_ok')),
+  buddy_ratings_enabled INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS certifications (
@@ -255,6 +256,23 @@ CREATE TABLE IF NOT EXISTS dive_log_photos (
   path TEXT NOT NULL,
   caption TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS buddy_ratings (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',1+(abs(random())%4),1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))),
+  trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  rater_id TEXT NOT NULL REFERENCES divers(id) ON DELETE CASCADE,
+  rated_id TEXT NOT NULL REFERENCES divers(id) ON DELETE CASCADE,
+  buoyancy INTEGER CHECK (buoyancy BETWEEN 1 AND 5),
+  air INTEGER CHECK (air BETWEEN 1 AND 5),
+  awareness INTEGER CHECK (awareness BETWEEN 1 AND 5),
+  safety INTEGER CHECK (safety BETWEEN 1 AND 5),
+  reef INTEGER CHECK (reef BETWEEN 1 AND 5),
+  dive_again INTEGER,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  UNIQUE (trip_id, rater_id, rated_id),
+  CHECK (rater_id <> rated_id),
+  CHECK (coalesce(buoyancy, air, awareness, safety, reef) IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS platform_admins (
@@ -348,6 +366,10 @@ CREATE INDEX IF NOT EXISTS payments_booking ON payments(booking_id);
 CREATE INDEX IF NOT EXISTS certs_diver ON certifications(diver_id);
 
 CREATE INDEX IF NOT EXISTS logs_diver ON dive_logs(diver_id, dive_date);
+
+CREATE INDEX IF NOT EXISTS buddy_rated ON buddy_ratings(rated_id);
+
+CREATE INDEX IF NOT EXISTS buddy_rater ON buddy_ratings(rater_id);
 
 CREATE INDEX IF NOT EXISTS logs_center ON dive_logs(center_id);
 

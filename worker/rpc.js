@@ -74,6 +74,39 @@ export async function startOnlinePayment(ctx, bookingId, kind, method) {
   return { id: pid, booking_id: b.id, amount_php: amt, kind, method }
 }
 
+// Valoraciones entre buddies: plazo de 14 días, media visible desde 3, cuentan si son mutuas o al cerrar el plazo
+const BUDDY_DAYS = 14, BUDDY_MIN = 3
+const BUDDY_KEYS = ['buoyancy', 'air', 'awareness', 'safety', 'reef']
+const addDays = (iso, n) => new Date(new Date(iso).getTime() + n * 864e5).toISOString()
+const shortName = (n) => {
+  const s = String(n || '').trim() || 'Buceador'
+  const w = s.split(/\s+/)
+  return w.length > 1 ? `${w[0]} ${w[w.length - 1][0]}.` : w[0]
+}
+const onBoard = async (db, trip, diver) => !!(await first(db,
+  "SELECT 1 AS x FROM bookings WHERE trip_id = ? AND diver_id = ? AND checked_in_at IS NOT NULL AND status = 'confirmed'", trip, diver))
+const r2 = (x) => (x == null ? null : Math.round(x * 100) / 100)
+async function buddyStats(db, diver) {
+  const rows = await all(db, `SELECT r.*, (t.departs_at < ? OR EXISTS (SELECT 1 FROM buddy_ratings x WHERE x.trip_id = r.trip_id AND x.rater_id = r.rated_id AND x.rated_id = r.rater_id)) AS shown
+    FROM buddy_ratings r JOIN trips t ON t.id = r.trip_id WHERE r.rated_id = ?`, addDays(nowIso(), -BUDDY_DAYS), diver)
+  const shown = rows.filter((r) => r.shown)
+  const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
+  const scores = {}
+  for (const k of BUDDY_KEYS) { const a = avg(shown.map((r) => r[k]).filter((v) => v != null)); if (a != null) scores[k] = r2(a) }
+  const again = shown.filter((r) => r.dive_again != null)
+  return {
+    count: shown.length, raters: new Set(shown.map((r) => r.rater_id)).size,
+    overall: r2(avg(shown.flatMap((r) => BUDDY_KEYS.map((k) => r[k]).filter((v) => v != null)))),
+    scores, dive_again: again.length ? r2(avg(again.map((r) => (r.dive_again ? 1 : 0)))) : null,
+    pending_reveal: rows.length - shown.length,
+  }
+}
+async function buddyPublic(db, diver) {
+  const s = await buddyStats(db, diver)
+  if (s.count < BUDDY_MIN) return null
+  return { count: s.count, score: s.overall, raters: s.raters, scores: s.scores, dive_again: s.dive_again }
+}
+
 const RPC = {
   async is_platform_admin(ctx) { return ctx.isAdmin },
 
@@ -112,7 +145,9 @@ const RPC = {
     const divers = rows.map((d) => ({
       is_me: d.id === ctx.diverId, name: short(d.full_name), level: d.best_level, verified: !!d.verified, dives: d.dives,
       languages: JSON.parse(d.languages || '[]'), country: d.country, bio: d.bio, seeks_buddy: !!d.seeks_buddy, fav_site: d.fav_site, seats: seatsBy[d.id],
+      _id: d.id, _buddy: !!d.buddy_ratings_enabled,
     })).sort((a, b) => (b.is_me - a.is_me) || (b.dives - a.dives))
+    for (const d of divers) { d.buddy = d._buddy ? await buddyPublic(ctx.db, d._id) : null; delete d._id; delete d._buddy }
     return { divers, others: total - divers.reduce((s, d) => s + d.seats, 0) }
   },
 
@@ -383,6 +418,73 @@ const RPC = {
     return adminDashboard(ctx.db, p_days, p_demo)
   },
 
+  // Valoraciones entre buddies (migración 032)
+  async buddy_rating_targets(ctx, { p_trip }) {
+    mfa(ctx)
+    if (!ctx.diverId) fail('FORBIDDEN', 'inicia sesión para valorar', 401)
+    const t = await first(ctx.db, 'SELECT t.departs_at, c.name AS center_name FROM trips t JOIN centers c ON c.id = t.center_id WHERE t.id = ?', p_trip)
+    if (!t) fail('NOT_FOUND', 'no encontramos esta salida', 404)
+    if (!(await onBoard(ctx.db, p_trip, ctx.diverId))) fail('FORBIDDEN', 'solo puedes valorar a compañeros de salidas en las que hiciste check-in', 403)
+    const closes = addDays(t.departs_at, BUDDY_DAYS), now = nowIso()
+    const open = new Date(t.departs_at) <= new Date(now) && new Date(now) <= new Date(closes)
+    const rows = open ? await all(ctx.db, `SELECT d.id, d.full_name,
+        (SELECT c.level FROM certifications c WHERE c.diver_id = d.id ORDER BY CASE c.level ${CERT_LEVELS.map((l, i) => `WHEN '${l}' THEN ${i}`).join(' ')} END DESC LIMIT 1) AS level,
+        coalesce(d.logged_dives, 0) + (SELECT count(*) FROM dive_logs g WHERE g.diver_id = d.id) AS dives,
+        EXISTS (SELECT 1 FROM buddy_ratings r WHERE r.trip_id = ? AND r.rater_id = ? AND r.rated_id = d.id) AS rated
+      FROM divers d WHERE d.id <> ? AND d.user_id IS NOT NULL AND d.buddy_ratings_enabled = 1
+        AND d.id IN (SELECT b.diver_id FROM bookings b WHERE b.trip_id = ? AND b.checked_in_at IS NOT NULL AND b.status = 'confirmed')`,
+      p_trip, ctx.diverId, ctx.diverId, p_trip) : []
+    const divers = rows.map((d) => ({ diver_id: d.id, name: shortName(d.full_name), level: d.level, dives: d.dives, rated: !!d.rated }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    return { trip_id: p_trip, departs_at: t.departs_at, center_name: t.center_name, closes_at: closes, divers }
+  },
+
+  async rate_buddy(ctx, { p_trip, p_diver, p_scores, p_dive_again = null }) {
+    mfa(ctx)
+    if (!ctx.diverId) fail('FORBIDDEN', 'inicia sesión para valorar', 401)
+    if (p_diver === ctx.diverId) fail('FORBIDDEN', 'no puedes valorarte a ti mismo', 403)
+    const t = await first(ctx.db, 'SELECT departs_at FROM trips WHERE id = ?', p_trip)
+    if (!t) fail('NOT_FOUND', 'no encontramos esta salida', 404)
+    const now = new Date()
+    if (now < new Date(t.departs_at)) fail('TOO_EARLY', 'podrás valorar cuando haya salido el barco')
+    if (now > new Date(addDays(t.departs_at, BUDDY_DAYS))) fail('CLOSED', 'el plazo para valorar esta salida terminó')
+    if (!(await onBoard(ctx.db, p_trip, ctx.diverId)) || !(await onBoard(ctx.db, p_trip, p_diver))) fail('FORBIDDEN', 'solo puedes valorar a quien estuvo a bordo contigo', 403)
+    if (!(await first(ctx.db, 'SELECT 1 AS x FROM divers WHERE id = ? AND buddy_ratings_enabled = 1 AND user_id IS NOT NULL', p_diver))) fail('FORBIDDEN', 'este buceador no tiene activadas las valoraciones', 403)
+    const s = p_scores && typeof p_scores === 'object' ? p_scores : {}
+    for (const [k, v] of Object.entries(s)) {
+      if (!BUDDY_KEYS.includes(k)) fail('INVALID', 'criterio desconocido')
+      if (!Number.isInteger(Number(v)) || v === null || v === '' || Number(v) < 1 || Number(v) > 5) fail('INVALID', 'las notas van del 1 al 5')
+    }
+    if (!Object.keys(s).length) fail('INVALID', 'puntúa al menos un criterio')
+    const r = await run(ctx.db, `INSERT INTO buddy_ratings (id, trip_id, rater_id, rated_id, buoyancy, air, awareness, safety, reef, dive_again)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (trip_id, rater_id, rated_id) DO NOTHING`,
+      uuid(), p_trip, ctx.diverId, p_diver, ...BUDDY_KEYS.map((k) => (s[k] == null ? null : Number(s[k]))),
+      p_dive_again == null ? null : (p_dive_again ? 1 : 0))
+    if (!changes(r)) fail('ALREADY_RATED', 'ya valoraste a este buddy en esta salida')
+    return null
+  },
+
+  async my_buddy_summary(ctx) {
+    mfa(ctx)
+    if (!ctx.diverId) return { count: 0 }
+    const s = await buddyStats(ctx.db, ctx.diverId)
+    return s.count < BUDDY_MIN ? { count: s.count, pending_reveal: s.pending_reveal } : s
+  },
+
+  async my_pending_buddy_ratings(ctx) {
+    if (!ctx.diverId || !ctx.mfaOk) return []
+    const now = nowIso(), from = addDays(now, -BUDDY_DAYS)
+    const rows = await all(ctx.db, `SELECT t.id AS trip_id, t.departs_at, c.name AS center_name,
+        (SELECT count(DISTINCT d.id) FROM bookings b2 JOIN divers d ON d.id = b2.diver_id
+          WHERE b2.trip_id = t.id AND b2.checked_in_at IS NOT NULL AND b2.status = 'confirmed' AND d.id <> ? AND d.user_id IS NOT NULL
+            AND d.buddy_ratings_enabled = 1
+            AND NOT EXISTS (SELECT 1 FROM buddy_ratings r WHERE r.trip_id = t.id AND r.rater_id = ? AND r.rated_id = d.id)) AS pending
+      FROM bookings b JOIN trips t ON t.id = b.trip_id JOIN centers c ON c.id = t.center_id
+      WHERE b.diver_id = ? AND b.checked_in_at IS NOT NULL AND b.status = 'confirmed' AND t.departs_at <= ? AND t.departs_at >= ?
+      ORDER BY t.departs_at DESC`, ctx.diverId, ctx.diverId, ctx.diverId, now, from)
+    return rows.filter((r) => r.pending > 0).map((r) => ({ ...r, closes_at: addDays(r.departs_at, BUDDY_DAYS) }))
+  },
+
   async delete_my_account(ctx, { p_dry_run = true }) {
     mfa(ctx)
     if (!ctx.uid) fail('FORBIDDEN', 'inicia sesión para eliminar tu cuenta', 401)
@@ -423,7 +525,9 @@ const RPC = {
       s.push(db.prepare('DELETE FROM certifications WHERE diver_id = ?').bind(d.id))
       if (await first(db, 'SELECT 1 AS x FROM bookings WHERE diver_id = ?', d.id)) {
         s.push(db.prepare(`UPDATE divers SET user_id = NULL, full_name = 'Cuenta eliminada', email = NULL, avatar_url = NULL, bio = NULL, country = NULL,
-          languages = '[]', logged_dives = NULL, seeks_buddy = 0, show_on_trips = 0 WHERE id = ?`).bind(d.id))
+          languages = '[]', logged_dives = NULL, seeks_buddy = 0, show_on_trips = 0, buddy_ratings_enabled = 0, wetsuit_size = NULL, bcd_size = NULL,
+          fin_size = NULL, last_dive_date = NULL, nitrox = 0, medical_done_at = NULL, medical_result = NULL WHERE id = ?`).bind(d.id))
+        s.push(db.prepare('DELETE FROM buddy_ratings WHERE rated_id = ?').bind(d.id))
       } else s.push(db.prepare('DELETE FROM divers WHERE id = ?').bind(d.id))
     }
     const wasAdmin = await first(db, 'SELECT 1 AS x FROM platform_admins WHERE user_id = ?', ctx.uid)

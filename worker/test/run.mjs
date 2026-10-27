@@ -6,6 +6,7 @@ import { handleApi } from '../index.js'
 import { totpAt } from '../lib/crypto.js'
 import { hmacHex } from '../lib/crypto.js'
 import { sniff } from '../storage.js'
+import { run } from '../lib/util.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
@@ -378,6 +379,51 @@ ok(r.data?.centers?.name === 'Casa Azul Divers' && r.data.dive_log_photos?.lengt
 r = await anon.rpc('center_ratings')
 ok(r.data?.[0]?.rating === 5, 'valoración agregada', r)
 ok(sniff(Uint8Array.from([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63])) === 'image/heic', 'reconoce HEIC')
+
+section('valoraciones entre buddies')
+{
+  const P = many.slice(0, 5)
+  const ids = []
+  for (const c of P) ids.push((await c.rest({ table: 'divers', select: 'id', single: 'single' })).data.id)
+  const ago = (d) => new Date(Date.now() - d * 864e5).toISOString()
+  const TB = 'trip-buddy', TOLD = 'trip-old'
+  await db.batch([
+    db.prepare("INSERT INTO trips (id, center_id, boat_id, departs_at, price_php, divers_per_guide, status) VALUES (?, ?, ?, ?, 2000, 6, 'completed'), (?, ?, ?, ?, 2000, 6, 'completed')")
+      .bind(TB, CID, BOAT, ago(2), TOLD, CID, BOAT, ago(20)),
+    ...ids.map((d, i) => db.prepare("INSERT INTO bookings (id, trip_id, diver_id, seats, source, status, amount_php, checked_in_at) VALUES (?, ?, ?, 1, 'app', 'confirmed', 2000, ?)")
+      .bind('bb' + i, TB, d, i === 4 ? null : ago(2))),
+    ...ids.slice(0, 2).map((d, i) => db.prepare("INSERT INTO bookings (id, trip_id, diver_id, seats, source, status, amount_php, checked_in_at) VALUES (?, ?, ?, 1, 'app', 'confirmed', 2000, ?)")
+      .bind('bo' + i, TOLD, d, ago(20))),
+  ])
+  const [a, b, c, d] = P
+  for (const x of [a, b, c, P[4]]) await x.rest({ table: 'divers', op: 'update', values: { buddy_ratings_enabled: true }, filters: [['user_id', 'not.is', null]] })
+  r = await a.rpc('my_pending_buddy_ratings')
+  ok(r.data?.length === 1 && r.data[0].pending === 2, 'aviso: 2 compañeros por valorar', r)
+  r = await a.rpc('buddy_rating_targets', { p_trip: TB })
+  ok(r.data?.divers?.length === 2 && r.data.closes_at, 'solo los que lo tienen activado y con check-in', r)
+  const rate = (x, who, scores, again = true, trip = TB) => x.rpc('rate_buddy', { p_trip: trip, p_diver: ids[who], p_scores: scores, p_dive_again: again })
+  ok(!(await rate(a, 1, { buoyancy: 5, air: 4 })).error, 'A valora a B')
+  ok(errCode(await rate(a, 1, { buoyancy: 5 })) === 'ALREADY_RATED', 'no repite')
+  ok(errCode(await rate(a, 3, { buoyancy: 5 })) === 'FORBIDDEN', 'no valora a quien no lo tiene activado')
+  ok(errCode(await rate(a, 4, { buoyancy: 5 })) === 'FORBIDDEN', 'no valora a quien no hizo check-in')
+  ok(errCode(await rate(a, 2, { buoyancy: 9 })) === 'INVALID', 'notas del 1 al 5')
+  ok(errCode(await rate(a, 2, {})) === 'INVALID', 'al menos un criterio')
+  ok(errCode(await rate(a, 1, { air: 3 }, true, TOLD)) === 'CLOSED', 'plazo cerrado')
+  r = await b.rpc('my_buddy_summary')
+  ok(r.data?.count === 0 && r.data.pending_reveal === 1, 'no cuenta hasta que sea mutua', r)
+  ok(!(await rate(b, 0, { reef: 5 })).error && !(await rate(c, 1, { buoyancy: 3, safety: 5 })).error && !(await rate(d, 1, { air: 4 }, null)).error, 'más valoraciones')
+  r = await b.rpc('my_buddy_summary')
+  ok(r.data?.count === 1 && r.data.pending_reveal === 2 && r.data.overall === undefined, 'menos de 3: sin media', r)
+  r = await b.rest({ table: 'buddy_ratings', select: '*' })
+  ok(r.data?.length === 1, 'solo lee las que ha dado', r)
+  await run(db, 'UPDATE trips SET departs_at = ? WHERE id = ?', ago(15), TB)
+  r = await b.rpc('my_buddy_summary')
+  ok(r.data?.count === 3 && r.data.raters === 3 && r.data.overall === 4.2 && r.data.scores?.buoyancy === 4 && r.data.dive_again === 1, 'al cerrar el plazo cuentan todas', r)
+  await run(db, "UPDATE trips SET status = 'completed' WHERE id = ?", TB)
+  await run(db, 'UPDATE divers SET show_on_trips = 1 WHERE id = ?', ids[1])
+  r = await a.rpc('trip_divers', { p_trip: TB })
+  ok(r.data?.divers?.find((x) => x.buddy)?.buddy?.score === 4.2, '«¿Quién va?» muestra la media', r)
+}
 
 section('eliminar cuenta')
 const del = many[19]

@@ -9,9 +9,8 @@ import { Star, ChevronRight, Users } from 'lucide-react'
 // Valoraciones entre buddies (opcional, cada buceador lo activa en su perfil).
 // Solo puede valorar quien buceó contigo: los dos con check-in en la misma salida, hasta 14 días después.
 // Nadie ve quién le ha valorado ni las notas sueltas: solo la media cuando hay al menos MIN valoraciones.
-// Interruptor de la función: se enciende cuando estén la migración de Supabase y el Worker (ver claude/valoraciones-buddies-y-ux.md).
-// Mientras esté apagado, la app no muestra nada de esto y se puede subir sin la parte de servidor.
-export const BUDDY_RATINGS = import.meta.env.VITE_BUDDY_RATINGS === 'on'
+// Interruptor de la función (migración 032 y worker/rpc.js): encendida; para apagarla, compilar con VITE_BUDDY_RATINGS=off.
+export const BUDDY_RATINGS = import.meta.env.VITE_BUDDY_RATINGS !== 'off'
 export const MIN_RATINGS = 3
 export const WINDOW_DAYS = 14
 

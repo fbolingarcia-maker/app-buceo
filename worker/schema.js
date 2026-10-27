@@ -165,6 +165,8 @@ export const TABLES = {
     ['nitrox', 'bool', { nn: true, def: '0' }],
     ['medical_done_at', 'date'],
     ['medical_result', 'text', { check: ENUM('medical_result', ['all_no', 'physician_ok']) }],
+    // Valoraciones entre buddies (migración 032): el buceador decide si le pueden valorar
+    ['buddy_ratings_enabled', 'bool', { nn: true, def: '0' }],
   ] },
   certifications: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -251,6 +253,20 @@ export const TABLES = {
     ['caption', 'text'],
     ['created_at', 'ts', { nn: true, def: NOW }],
   ] },
+  // Valoraciones entre buddies (migración 032): solo por RPC; cada uno lee solo las que ha dado
+  buddy_ratings: { unique: [['trip_id', 'rater_id', 'rated_id']], checks: ['rater_id <> rated_id', 'coalesce(buoyancy, air, awareness, safety, reef) IS NOT NULL'], cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
+    ['rater_id', 'uuid', { nn: true, ref: 'divers(id)', onDelete: 'CASCADE' }],
+    ['rated_id', 'uuid', { nn: true, ref: 'divers(id)', onDelete: 'CASCADE' }],
+    ['buoyancy', 'int', { check: 'buoyancy BETWEEN 1 AND 5' }],
+    ['air', 'int', { check: 'air BETWEEN 1 AND 5' }],
+    ['awareness', 'int', { check: 'awareness BETWEEN 1 AND 5' }],
+    ['safety', 'int', { check: 'safety BETWEEN 1 AND 5' }],
+    ['reef', 'int', { check: 'reef BETWEEN 1 AND 5' }],
+    ['dive_again', 'bool'],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
   platform_admins: { cols: [
     ['user_id', 'uuid', { pk: true, ref: 'users(id)', onDelete: 'CASCADE' }],
     ['created_at', 'ts', { nn: true, def: NOW }],
@@ -328,6 +344,8 @@ export const INDEXES = [
   'CREATE INDEX IF NOT EXISTS payments_booking ON payments(booking_id)',
   'CREATE INDEX IF NOT EXISTS certs_diver ON certifications(diver_id)',
   'CREATE INDEX IF NOT EXISTS logs_diver ON dive_logs(diver_id, dive_date)',
+  'CREATE INDEX IF NOT EXISTS buddy_rated ON buddy_ratings(rated_id)',
+  'CREATE INDEX IF NOT EXISTS buddy_rater ON buddy_ratings(rater_id)',
   'CREATE INDEX IF NOT EXISTS logs_center ON dive_logs(center_id)',
   'CREATE INDEX IF NOT EXISTS photos_log ON dive_log_photos(log_id)',
   'CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id)',
