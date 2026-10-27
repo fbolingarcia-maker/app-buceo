@@ -4,6 +4,7 @@
 import { HOLDS, OPERATIVE, APP_AVAILABLE, CERT_LEVELS } from './schema.js'
 import { fail, nowIso, uuid, all, first, run, changes, outRow } from './lib/util.js'
 import { sendEmail, TEMPLATES } from './email.js'
+import { centreEmail } from './stats.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -147,6 +148,9 @@ const RPC = {
       const free = (await first(ctx.db, `SELECT ${APP_AVAILABLE('t')} AS n FROM trips t WHERE t.id = ?`, t.id))?.n ?? 0
       fail('NO_SEATS', `solo quedan ${free} plazas`)
     }
+    // Aviso al equipo del centro (como el trigger notify_booking de Supabase, migración 031)
+    const p = notifyCentreBooking(ctx, t, seats, id).catch((e) => console.error('aviso reserva', e.message))
+    if (ctx.waitUntil) ctx.waitUntil(p)
     return booking(ctx.db, id)
   },
 
@@ -429,6 +433,20 @@ const RPC = {
     await db.batch(s)
     return { ok: true, deleted: true }
   },
+}
+
+async function notifyCentreBooking(ctx, t, seats, id) {
+  const c = await first(ctx.db, 'SELECT name FROM centers WHERE id = ?', t.center_id)
+  if (!c || c.name.startsWith('Demo')) return
+  const b = await first(ctx.db, 'SELECT amount_php FROM bookings WHERE id = ?', id)
+  const who = await first(ctx.db, 'SELECT full_name FROM divers WHERE id = ?', ctx.diverId)
+  const staff = await all(ctx.db, 'SELECT u.email FROM center_staff s JOIN users u ON u.id = s.user_id WHERE s.center_id = ? AND u.email IS NOT NULL ORDER BY s.role DESC LIMIT 3', t.center_id)
+  const local = new Date(Date.parse(t.departs_at) + 8 * 36e5).toISOString()
+  const title = `Nueva reserva: ${seats} ${seats === 1 ? 'plaza' : 'plazas'} en ${c.name}`
+  const lines = [`Salida: ${local.slice(8, 10)}/${local.slice(5, 7)}/${local.slice(0, 4)} ${local.slice(11, 16)}`, `Buceador: ${who?.full_name || '—'}`,
+    `Importe: ₱${(b?.amount_php || 0).toLocaleString('en-US')}`, 'Origen: app']
+  const link = `${ctx.origin || 'https://divingslot.com'}/app/#/centro/agenda?dia=${local.slice(0, 10)}`
+  for (const s of staff) await sendEmail(ctx.env, s.email, centreEmail(title, lines, link)).catch((e) => console.error('aviso centro', e.message))
 }
 
 const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_at, locality, website, source_url, lat, lng, location_precision, listing_status, destination, province, languages, course_languages, verification_status, claims_center_id, verified_at, agencies, agency_detail, directory_check, checked_at'

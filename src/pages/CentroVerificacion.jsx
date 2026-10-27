@@ -4,6 +4,8 @@ import { useAuth } from '../lib/auth'
 import { Link } from '../lib/router'
 import { t } from '../lib/i18n'
 import { AGENCIES } from '../lib/agencies'
+import Icon from '../lib/Icon'
+import { CircleCheck, TriangleAlert } from 'lucide-react'
 
 export const VSTATUS = {
   unverified: ['pill warn', 'Sin verificar'],
@@ -192,7 +194,7 @@ export default function CentroVerificacion() {
                 return (
                   <div key={kind} className="doc-row">
                     <div>
-                      <div>{mine.length ? '✅ ' : needed ? '⚠️ ' : ''}{t(label)}{req ? ' *' : ''}</div>
+                      <div>{mine.length ? <Icon icon={CircleCheck} size={16} className="ok-ic" /> : needed ? <Icon icon={TriangleAlert} size={16} className="warn-ic" /> : null} {t(label)}{req ? ' *' : ''}</div>
                       {mine.map((d) => (
                         <div key={d.id} className="small muted">{d.file_name} {!locked && <button type="button" className="linkish" onClick={() => removeDoc(d)}>{t('Quitar')}</button>}</div>
                       ))}

@@ -19,7 +19,7 @@ fs.mkdirSync(OUT, { recursive: true })
 const FONTS = process.env.FONTSOURCE_DIR
 await esbuild.build({
   entryPoints: [APP + '/src/main.jsx'], bundle: true, outdir: OUT + '/out', format: 'esm', jsx: 'automatic', loader: { '.js': 'jsx', '.woff2': 'file', '.woff': 'file' },
-  define: { 'import.meta.env.VITE_BACKEND': '"cloudflare"', 'import.meta.env.VITE_SUPABASE_URL': 'undefined', 'import.meta.env.VITE_SUPABASE_KEY': 'undefined', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.DEV': 'false', 'import.meta.env.PROD': 'true', 'import.meta.env.MODE': '"production"' },
+  define: { 'import.meta.env.VITE_BACKEND': '"cloudflare"', 'import.meta.env.VITE_BUDDY_RATINGS': 'undefined', 'import.meta.env.VITE_SUPABASE_URL': 'undefined', 'import.meta.env.VITE_SUPABASE_KEY': 'undefined', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.DEV': 'false', 'import.meta.env.PROD': 'true', 'import.meta.env.MODE': '"production"' },
   alias: { '@supabase/supabase-js': SMOKE + '/mock-supabase.js', react: '/opt/npm-tools/node_modules/react', 'react-dom': '/opt/npm-tools/node_modules/react-dom' },
   plugins: [{ name: 'sin-red', setup(b) {
     b.onResolve({ filter: /^lucide-react$/ }, () => ({ path: SMOKE + '/lucide-shim.js' }))
@@ -113,7 +113,7 @@ for (const [role, [who, routes]] of Object.entries(plan)) {
     const txt = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 140)
     const bad = errs.filter((e) => !/favicon|flagcdn|ERR_|Failed to load resource/.test(e))
     bad.push(...apiErrors.filter((e) => !/^403 POST \/api\/rpc\/center_private/.test(e)).map((e) => 'API ' + e))
-    const wide = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1 && !e.closest('.days, .chips, .slots, table, .scroll-x') }).slice(0, 3).map((e) => e.tagName + ' «' + (e.textContent || '').trim().slice(0, 30) + '»'))
+    const wide = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1 && !e.closest('.days, .chips, .slots, table, .scroll-x, .filters') }).slice(0, 3).map((e) => e.tagName + ' «' + (e.textContent || '').trim().slice(0, 30) + '»'))
     if (wide.length) bad.push('DESBORDA ' + wide.join(', '))
     report(role, r, bad, txt)
     if (shots) { fs.mkdirSync(OUT + '/shots', { recursive: true }); await page.screenshot({ path: `${OUT}/shots/${role}-${r.replace(/\W+/g, '_')}.png`, fullPage: true }) }

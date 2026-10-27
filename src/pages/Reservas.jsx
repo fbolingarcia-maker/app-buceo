@@ -6,6 +6,7 @@ import { BOOKING_STATUS, dateTime, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { CalendarPlus, Check, Lock, Share2, X } from 'lucide-react'
+import { PendingBuddyRatings } from '../lib/buddy'
 
 const HOLD_MIN = 15
 
@@ -254,6 +255,7 @@ export default function Reservas() {
       {error && <div className="msg err" role="alert">{error}</div>}
       {info && <div className="msg ok" role="status">{info}</div>}
       {paid && <Confirmada b={paid} onClose={() => setJustPaid(null)} />}
+      <PendingBuddyRatings />
       {upcoming.length === 0 && <div className="card center muted">{t('No tienes reservas próximas.')} <Link to="/">{t('Ver salidas')}</Link></div>}
       {upcoming.map(card)}
       {past.length > 0 && <><h2>{t('Anteriores')}</h2>{past.map(card)}</>}

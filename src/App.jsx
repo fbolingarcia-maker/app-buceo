@@ -22,6 +22,8 @@ import RegistrarCentro from './pages/RegistrarCentro'
 import CentroInfo from './pages/CentroInfo'
 import Destino from './pages/Destino'
 import Puntos from './pages/Puntos'
+import Valorar from './pages/Valorar'
+import { BUDDY_RATINGS } from './lib/buddy'
 import CentroVerificacion from './pages/CentroVerificacion'
 import Admin from './pages/Admin'
 import { DosPasosReto } from './pages/DosPasos'
@@ -127,6 +129,7 @@ export default function App() {
   else if (seg[0] === 'reservas') page = <NeedLogin title={t('Reservas')} intro={t('Aquí verás tus salidas reservadas y los pagos pendientes. Entra o crea una cuenta para verlas.')} back="/reservas"><Reservas /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1]) page = <NeedLogin><Inmersion id={seg[1]} /></NeedLogin>
   else if (seg[0] === 'bitacora') page = <NeedLogin title={t('Bitácora')} intro={t('Guarda cada inmersión con profundidad, tiempo, fauna y fotos. Entra o crea una cuenta para empezar.')} back="/bitacora"><Bitacora /></NeedLogin>
+  else if (seg[0] === 'valorar' && seg[1] && BUDDY_RATINGS) page = <NeedLogin><Valorar tripId={seg[1]} /></NeedLogin>
   else if (seg[0] === 'perfil') page = <NeedLogin><Perfil /></NeedLogin>
   else if (seg[0] === 'login') page = session ? <AfterLogin /> : <Login />
   else if (seg[0] === 'centro' && seg[1] === 'nueva') page = <NeedCenter><NuevaSalida /></NeedCenter>
@@ -197,7 +200,7 @@ export default function App() {
           <>
             {tab('/', Compass, 'Salidas', home || seg[0] === 'salida')}
             {tab('/centros', MapPin, 'Centros', seg[0] === 'centros' || seg[0] === 'puntos' || seg[0] === 'c' || seg[0] === 'd')}
-            {tab('/reservas', Ticket, 'Reservas', seg[0] === 'reservas')}
+            {tab('/reservas', Ticket, 'Reservas', seg[0] === 'reservas' || seg[0] === 'valorar')}
             {tab('/bitacora', BookOpen, 'Bitácora', seg[0] === 'bitacora')}
             {tab('/perfil', User, 'Perfil', seg[0] === 'perfil' || seg[0] === 'login')}
           </>

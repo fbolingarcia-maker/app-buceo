@@ -5,13 +5,16 @@ import { Link, go } from '../lib/router'
 import { levelName, levelRank, levelColor, dateTime, php } from '../lib/format'
 import DepthBar from '../lib/DepthBar'
 import { t, getLang } from '../lib/i18n'
-import { Flags } from '../lib/langs'
+import { Flags, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
 import { ArrowLeft, Check, MapPin, MessageCircle, Waves } from 'lucide-react'
+import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
+import { MedicalCheck, medicalValid, daysSinceDive } from '../lib/medical'
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
   const [data, setData] = useState(null)
+  const [open, setOpen] = useState(null)
   useEffect(() => {
     supabase.rpc('trip_divers', { p_trip: tripId }).then(({ data }) => setData(data || { divers: [], others: 0 }))
   }, [tripId, loggedIn])
@@ -34,8 +37,10 @@ function QuienVa({ tripId, loggedIn }) {
             <div className="small muted row wrap" style={{ marginTop: 2, gap: '2px 10px' }}>
               <span><Icon icon={Waves} size={14} /> {d.dives ? t('{n} inmersiones', { n: d.dives }) : t('Primeras inmersiones')}</span>
               {d.country && <span><Icon icon={MapPin} size={14} /> {d.country}</span>}
-              {d.languages?.length > 0 && <span><Icon icon={MessageCircle} size={14} /> {d.languages.join(', ')}</span>}
+              {d.languages?.length > 0 && <span><Icon icon={MessageCircle} size={14} /> {d.languages.map(langName).join(', ')}</span>}
+              <BuddyChip buddy={d.buddy} open={open === i} onClick={() => setOpen(open === i ? null : i)} />
             </div>
+            {open === i && d.buddy && <div style={{ marginTop: 10 }}><BuddyBreakdown s={{ ...d.buddy, overall: d.buddy.score }} /></div>}
             {(d.fav_site || d.seeks_buddy) && (
               <div className="row wrap small" style={{ marginTop: 4, gap: 6 }}>
                 {d.seeks_buddy && <span className="pill ok">{t('Busca buddy')}</span>}
@@ -60,7 +65,7 @@ function QuienVa({ tripId, loggedIn }) {
 }
 
 export default function Salida({ id }) {
-  const { session, diver, isCenter } = useAuth()
+  const { session, diver, isCenter, refresh } = useAuth()
   const [trip, setTrip] = useState(null)
   const [center, setCenter] = useState(null)
   const [siteInfo, setSiteInfo] = useState([])
@@ -68,7 +73,6 @@ export default function Salida({ id }) {
   const [certs, setCerts] = useState([])
   const [seats, setSeats] = useState(1)
   const [gear, setGear] = useState(false)
-  const [medical, setMedical] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -102,6 +106,9 @@ export default function Salida({ id }) {
 
   const best = certs.reduce((m, c) => Math.max(m, levelRank(c.level)), -1)
   const levelOk = best >= levelRank(trip.min_level)
+  const medical = medicalValid(diver)
+  const sinceDive = daysSinceDive(diver)
+  const hasSizes = !!(diver?.wetsuit_size || diver?.bcd_size || diver?.fin_size)
   const total = seats * trip.price_php + (gear ? seats * trip.gear_rental_php : 0)
 
   async function share() {
@@ -219,10 +226,14 @@ export default function Salida({ id }) {
           {trip.gear_rental_php > 0 && (
             <label className="check field"><input type="checkbox" checked={gear} onChange={(e) => setGear(e.target.checked)} /> {t('Alquilar equipo completo (+{precio} por persona)', { precio: php(trip.gear_rental_php) })}</label>
           )}
-          <label className="check field">
-            <input type="checkbox" checked={medical} onChange={(e) => setMedical(e.target.checked)} />
-            <span>{t('Declaro que estoy en condiciones médicas para bucear y que he respondido "no" a todas las preguntas del cuestionario médico RSTC (o tengo autorización médica).')}</span>
-          </label>
+          {gear && !hasSizes && (
+            <p className="small muted" style={{ marginTop: -4 }}>{t('Añade tus tallas en el perfil para que el centro te prepare el equipo.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>
+          )}
+          {sinceDive != null && sinceDive > 365 && (
+            <div className="msg warn" role="status">{t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.')}</div>
+          )}
+          {sinceDive == null && <p className="small muted">{t('Añade en tu perfil la fecha de tu última inmersión: el centro la tiene en cuenta.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>}
+          {diver && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
           <div className="row between" style={{ margin: '12px 0 4px' }}><span>{t('Total')}</span><span className="big">{php(total)}</span></div>
           <div className="row between small" style={{ marginBottom: 8 }}>
             <span className="muted">{t('Para reservar pagas como mínimo el 50 %')}</span><b>{php(Math.ceil(total / 2))}</b>
@@ -239,7 +250,7 @@ export default function Salida({ id }) {
           <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book} aria-describedby="book-hint">
             {busy ? t('Reservando…') : t('Reservar plaza')}
           </button>
-          {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Marca la declaración médica para continuar.')}</p>}
+          {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Guarda el cuestionario médico para continuar.')}</p>}
         </div>
       )}
     </>

@@ -20,7 +20,7 @@ const sinRed = {
 
 await esbuild.build({
   entryPoints: [APP + '/src/main.jsx'], bundle: true, outdir: S + '/out', format: 'esm', jsx: 'automatic', loader: { '.js': 'jsx', '.woff2': 'file', '.woff': 'file' },
-  define: { 'import.meta.env.VITE_BACKEND': 'undefined', 'import.meta.env.VITE_SUPABASE_URL': 'undefined', 'import.meta.env.VITE_SUPABASE_KEY': 'undefined', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.DEV': 'false', 'import.meta.env.PROD': 'true', 'import.meta.env.MODE': '"production"' },
+  define: { 'import.meta.env.VITE_BACKEND': 'undefined', 'import.meta.env.VITE_BUDDY_RATINGS': JSON.stringify(process.env.BUDDY || 'on'), 'import.meta.env.VITE_SUPABASE_URL': 'undefined', 'import.meta.env.VITE_SUPABASE_KEY': 'undefined', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.DEV': 'false', 'import.meta.env.PROD': 'true', 'import.meta.env.MODE': '"production"' },
   alias: { '@supabase/supabase-js': S + '/mock-supabase.js', react: '/opt/npm-tools/node_modules/react', 'react-dom': '/opt/npm-tools/node_modules/react-dom' },
   plugins: [sinRed],
   nodePaths: ['/opt/npm-tools/node_modules'], logLevel: 'error',
@@ -32,4 +32,11 @@ await esbuild.build({
 })
 fs.writeFileSync(S + '/out/landing.html', fs.readFileSync(APP + '/index.html', 'utf8')
   .replace('<script type="module" src="/landing/main.js"></script>', '<link rel="stylesheet" href="/out/landing/main.css" /><script type="module" src="/out/landing/main.js"></script>'))
+// Páginas legales: out/legal/<página>.html + out/legal/main.js
+await esbuild.build({
+  entryPoints: [APP + '/legal/main.js'], bundle: true, outdir: S + '/out/legal', format: 'esm', loader: { '.woff2': 'file', '.woff': 'file' },
+  plugins: [sinRed], nodePaths: ['/opt/npm-tools/node_modules'], logLevel: 'error',
+})
+for (const f of ['privacy', 'terms', 'cancellation']) fs.writeFileSync(S + '/out/legal/' + f + '.html', fs.readFileSync(APP + '/legal/' + f + '.html', 'utf8')
+  .replace('<script type="module" src="/legal/main.js"></script>', '<link rel="stylesheet" href="/out/legal/main.css" /><script type="module" src="/out/legal/main.js"></script>'))
 console.log('built')

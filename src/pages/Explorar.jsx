@@ -183,24 +183,25 @@ export default function Explorar() {
         ))}
       </div>
 
-      <div className="row between wrap" style={{ gap: 6, marginBottom: 6 }}>
-        <select value={level} onChange={(e) => { setLevel(e.target.value); ssSet('levelSet', '1') }} style={{ width: 'auto' }} aria-label={t('Tu nivel')}>
+      {/* Filtros en una sola fila que se desliza: en el móvil no ocupan media pantalla */}
+      <div className="filters">
+        <select className={level !== 'all' ? 'on' : ''} value={level} onChange={(e) => { setLevel(e.target.value); ssSet('levelSet', '1') }} aria-label={t('Tu nivel')}>
           <option value="all">{t('Cualquier nivel')}</option>
           {LEVELS.slice(0, 4).map(([k, n]) => <option key={k} value={k}>{t('Soy {nivel}', { nivel: n })}</option>)}
         </select>
         {agencyOpts.length > 0 && (
-          <select value={agency} onChange={(e) => setAgency(e.target.value)} style={{ width: 'auto' }} aria-label={t('Agencia')}>
+          <select className={agency ? 'on' : ''} value={agency} onChange={(e) => setAgency(e.target.value)} aria-label={t('Agencia')}>
             <option value="">{t('Cualquier agencia')}</option>
             {agencyOpts.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
         )}
         {langOpts.length > 1 && (
-          <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ width: 'auto' }} aria-label={t('Idioma del centro')}>
+          <select className={lang ? 'on' : ''} value={lang} onChange={(e) => setLang(e.target.value)} aria-label={t('Idioma del centro')}>
             <option value="">{t('Cualquier idioma')}</option>
             {langOpts.map((l) => <option key={l} value={l}>{langName(l)}</option>)}
           </select>
         )}
-        <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ width: 'auto' }} aria-label={t('Ordenar')}>
+        <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label={t('Ordenar')}>
           <option value="time">{t('Ordenar: hora')}</option>
           <option value="price">{t('Ordenar: precio')}</option>
           {here && <option value="near">{t('Ordenar: distancia')}</option>}

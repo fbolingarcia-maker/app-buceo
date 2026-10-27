@@ -90,11 +90,11 @@ export default function Centros() {
               {(c.agencies?.length > 0 || (c.locality && c.locality !== z)) && (
                 <div className="small muted row wrap" style={{ gap: 6, marginTop: 2 }}><Agencies list={c.agencies} small />{c.locality && c.locality !== z && <span>{c.locality}</span>}</div>
               )}
-              <div className="row wrap small" style={{ marginTop: 6, gap: 14 }}>
-                {c.website ? <a href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a> : c.source_url && <a href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
-                {c.lat && c.lng && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + ' ' + z)}`} target="_blank" rel="noreferrer">{t('Mapa')}</a>}
-                {c.phone && <a href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
-                {c.listing_status !== 'socio' && <Link to="/login?alta=centro" className="muted" onClick={() => { try { sessionStorage.setItem('claimCenter', c.name) } catch (e) { /* sin almacenamiento */ } }}>{t('¿Es tu centro?')}</Link>}
+              <div className="row wrap small" style={{ marginTop: 10, gap: 6 }}>
+                {c.phone && <a className="btn xs ghost" href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
+                {c.website ? <a className="btn xs ghost" href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a> : c.source_url && <a className="btn xs ghost" href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
+                {c.lat && c.lng && <a className="btn xs ghost" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + ' ' + z)}`} target="_blank" rel="noreferrer">{t('Mapa')}</a>}
+                {c.listing_status !== 'socio' && <Link to="/login?alta=centro" className="muted" style={{ alignSelf: 'center', marginLeft: 4 }} onClick={() => { try { sessionStorage.setItem('claimCenter', c.name) } catch (e) { /* sin almacenamiento */ } }}>{t('¿Es tu centro?')}</Link>}
               </div>
             </div>
           ))}

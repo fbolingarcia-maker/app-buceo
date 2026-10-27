@@ -1,7 +1,7 @@
 import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs'
 const plan = {
   anon: ['/', '/centros', '/c/4ec918c7-1b17-477e-acb7-2c33276224ac', '/d/Panglao', '/puntos', '/salida/t1-1', '/login', '/reservas', '/admin'],
-  diver: ['/', '/salida/t1-1', '/salida/t2-1', '/reservas', '/perfil', '/bitacora', '/login', '/admin'],
+  diver: ['/', '/salida/t1-1', '/salida/t2-1', '/reservas', '/valorar/t1-1', '/perfil', '/bitacora', '/login', '/admin'],
   center: ['/', '/perfil', '/centro', '/centro/agenda', '/centro/salidas', '/centro/nueva', '/centro/ajustes', '/centro/informes', '/centro/verificacion'],
   centerv: ['/centro', '/perfil', '/centro/agenda', '/centro/salidas', '/centro/verificacion'],
   centerr: ['/centro/verificacion', '/centro'],
@@ -33,7 +33,7 @@ for (const [role, routes] of Object.entries(plan)) {
       const txt = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 140)
       const bad = errs.filter((e) => !/favicon|flagcdn|ERR_|Failed to load resource/.test(e))
       // Nada debe salirse de la pantalla de 375 px (botones que no caben, filas sin wrap…)
-      const wide = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1 && !e.closest('.days, .chips, .slots, table, .scroll-x') }).slice(0, 3).map((e) => e.tagName + '.' + (e.className?.baseVal ?? e.className) + ' «' + (e.textContent || '').trim().slice(0, 30) + '»'))
+      const wide = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1 && !e.closest('.days, .chips, .slots, table, .scroll-x, .filters') }).slice(0, 3).map((e) => e.tagName + '.' + (e.className?.baseVal ?? e.className) + ' «' + (e.textContent || '').trim().slice(0, 30) + '»'))
       if (wide.length) bad.push('DESBORDA ' + wide.join(', '))
       if (bad.length) fails++
       console.log(`[${role}/${lang}] ${r} :: ${bad.length ? 'ERR ' + bad.join(' | ') : 'ok'} :: ${txt}`)

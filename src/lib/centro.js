@@ -29,4 +29,4 @@ export function money(bookings) {
 export const hashParam = (k) => new URLSearchParams(window.location.hash.split('?')[1] || '').get(k)
 
 export const TRIP_SELECT =
-  '*, boats(name, capacity), trip_sites(position, dive_sites(name)), bookings(*, divers(full_name, logged_dives, languages, certifications(id, agency, level, verified_at)))'
+  '*, boats(name, capacity), trip_sites(position, dive_sites(name)), bookings(*, divers(full_name, logged_dives, languages, wetsuit_size, bcd_size, fin_size, last_dive_date, nitrox, medical_done_at, medical_result, certifications(id, agency, level, verified_at)))'

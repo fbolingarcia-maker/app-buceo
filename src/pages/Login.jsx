@@ -104,13 +104,19 @@ export default function Login({ embedded }) {
         {resend && !resent && (
           <p className="small" style={{ marginTop: 0 }}>{t('¿No te ha llegado?')} <button type="button" className="linkish" disabled={busy || !email} onClick={resendEmail}>{t('Reenviar email de confirmación')}</button></p>
         )}
+        {mode === 'signup' && (
+          <p className="small muted" style={{ marginTop: 0 }}>
+            {t('Al crear tu cuenta aceptas los')} <a href={siteUrl() + 'legal/terms.html'} target="_blank" rel="noreferrer">{t('términos de uso')}</a> {t('y la')} <a href={siteUrl() + 'legal/privacy.html'} target="_blank" rel="noreferrer">{t('política de privacidad')}</a>.
+          </p>
+        )}
         <button className="btn block" disabled={busy}>
           {busy ? t('Un momento…') : mode === 'login' ? t('Entrar') : mode === 'signup' ? t('Crear cuenta') : t('Enviar enlace')}
         </button>
       </form>
-      <div className="center small stack">
+      {mode === 'login' && <button type="button" className="btn ghost block" style={{ marginTop: 10 }} onClick={() => setMode('signup')}>{t('Crear cuenta nueva')}</button>}
+      <div className="center small stack" style={{ marginTop: 14 }}>
         {mode !== 'login' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('login') }}>{t('Ya tengo cuenta')}</a></div>}
-        {mode !== 'signup' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('signup') }}>{t('Crear cuenta nueva')}</a></div>}
+        {mode === 'reset' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('signup') }}>{t('Crear cuenta nueva')}</a></div>}
         {mode !== 'reset' && <div><a href="#/login" onClick={(e) => { e.preventDefault(); setMode('reset') }}>{t('He olvidado mi contraseña')}</a></div>}
         {/* Cambio de idioma para quien aún no tiene cuenta: el otro idioma, nombrado en su propio idioma (sin t()) */}
         <div><button type="button" className="linkish small" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}><Icon icon={Languages} size={16} /> {lang === 'es' ? 'English' : 'Español'}</button></div>

@@ -158,7 +158,14 @@ CREATE TABLE IF NOT EXISTS divers (
   account_type TEXT NOT NULL DEFAULT 'diver' CHECK (account_type IN ('diver', 'center')),
   country TEXT CHECK (length(country) <= 60),
   bio TEXT CHECK (length(bio) <= 160),
-  show_on_trips INTEGER NOT NULL DEFAULT 1
+  show_on_trips INTEGER NOT NULL DEFAULT 1,
+  wetsuit_size TEXT CHECK (wetsuit_size IN ('XS', 'S', 'M', 'L', 'XL', 'XXL')),
+  bcd_size TEXT CHECK (bcd_size IN ('XS', 'S', 'M', 'L', 'XL', 'XXL')),
+  fin_size TEXT CHECK (length(fin_size) <= 12),
+  last_dive_date TEXT,
+  nitrox INTEGER NOT NULL DEFAULT 0,
+  medical_done_at TEXT,
+  medical_result TEXT CHECK (medical_result IN ('all_no', 'physician_ok'))
 );
 
 CREATE TABLE IF NOT EXISTS certifications (

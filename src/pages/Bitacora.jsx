@@ -7,6 +7,7 @@ import { t, locale } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import DepthBar from '../lib/DepthBar'
 import { ChevronRight, PencilLine, Star, Waves } from 'lucide-react'
+import { PendingBuddyRatings } from '../lib/buddy'
 
 // Descarga la bitácora como CSV (se abre en Excel / Google Sheets)
 function exportCsv(logs) {
@@ -108,8 +109,8 @@ export default function Bitacora() {
 
   return (
     <>
-      <div className="row between">
-        <h1>{t('Mi bitácora')}</h1>
+      <div className="row between wrap" style={{ gap: 8, marginBottom: 12 }}>
+        <h1 style={{ margin: 0 }}>{t('Mi bitácora')}</h1>
         <div className="row" style={{ gap: 6 }}>
           {logs.length > 0 && <button className="btn small ghost" onClick={() => exportCsv(logs)}>{t('Exportar CSV')}</button>}
           <Link to="/bitacora/nueva" className="btn small">{t('+ Inmersión')}</Link>
@@ -174,6 +175,7 @@ export default function Bitacora() {
         </Link>
       )}
       {feat && pending}
+      <PendingBuddyRatings />
 
       {months.map((m) => (
         <section key={m.key}>

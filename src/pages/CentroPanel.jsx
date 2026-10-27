@@ -5,6 +5,8 @@ import { Link, go } from '../lib/router'
 import { manilaDate, addDays, dayLabel, time, php, sourceName } from '../lib/format'
 import { seatsSummary, money, holds, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
+import Icon from '../lib/Icon'
+import { TriangleAlert } from 'lucide-react'
 
 const dayOf = (iso) => manilaDate(new Date(iso))
 
@@ -109,7 +111,7 @@ export default function CentroPanel() {
           <h2>{t('Pendiente de tu atención')}</h2>
           <div className="card">
             {alerts.map(([text, to]) => (
-              <Link key={text} to={to} className="row between alert-row"><span>⚠️ {text}</span><span>›</span></Link>
+              <Link key={text} to={to} className="row between alert-row"><span><Icon icon={TriangleAlert} size={16} className="warn-ic" /> {text}</span><span>›</span></Link>
             ))}
           </div>
         </>

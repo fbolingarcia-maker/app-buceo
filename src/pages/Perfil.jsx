@@ -1,15 +1,19 @@
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, errMsg, pwProblem } from '../lib/supabase'
+import { supabase, errMsg, pwProblem, siteUrl } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
-import { LEVELS, levelName } from '../lib/format'
+import { LEVELS, levelName, manilaDate } from '../lib/format'
+import { MedicalCheck } from '../lib/medical'
 import { t, LangSwitch } from '../lib/i18n'
 import EliminarCuenta from './EliminarCuenta'
 import DosPasos from './DosPasos'
 import { VIEWS } from '../lib/AdminBar'
+import { CENTER_LANGS, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Star } from 'lucide-react'
+import { BuddyBreakdown, BUDDY_RATINGS, MIN_RATINGS, WINDOW_DAYS } from '../lib/buddy'
 
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const AGENCIES = ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'RAID', 'BSAC', 'Otra']
 
 export default function Perfil() {
@@ -19,13 +23,16 @@ export default function Perfil() {
   const [cert, setCert] = useState({ agency: 'PADI', level: 'open_water', card_number: '' })
   const [pw, setPw] = useState('')
   const [centerForm, setCenterForm] = useState({ name: '', phone: '' })
+  const [openCenter, setOpenCenter] = useState(false)
   const [msg, setMsg] = useState({})
 
   useEffect(() => {
     if (diver) setForm({
-      full_name: diver.full_name || '', languages: (diver.languages || []).join(', '),
+      full_name: diver.full_name || '', languages: diver.languages || [],
       logged_dives: diver.logged_dives ?? '', seeks_buddy: diver.seeks_buddy,
       country: diver.country || '', bio: diver.bio || '', show_on_trips: diver.show_on_trips ?? true,
+      wetsuit_size: diver.wetsuit_size || '', bcd_size: diver.bcd_size || '', fin_size: diver.fin_size || '',
+      last_dive_date: diver.last_dive_date || '', nitrox: !!diver.nitrox,
     })
   }, [diver])
 
@@ -43,12 +50,16 @@ export default function Perfil() {
     e.preventDefault()
     const { error } = await supabase.from('divers').update({
       full_name: form.full_name.trim(),
-      languages: form.languages.split(',').map((s) => s.trim()).filter(Boolean),
+      languages: form.languages,
       logged_dives: form.logged_dives === '' ? null : +form.logged_dives,
       seeks_buddy: form.seeks_buddy,
       country: form.country.trim() || null,
       bio: form.bio.trim() || null,
       show_on_trips: form.show_on_trips,
+      ...(isCenter ? {} : {
+        wetsuit_size: form.wetsuit_size || null, bcd_size: form.bcd_size || null, fin_size: form.fin_size.trim() || null,
+        last_dive_date: form.last_dive_date || null, nitrox: form.nitrox,
+      }),
     }).eq('id', diver.id)
     error ? note('p', false, errMsg(error)) : (note('p', true, t('Perfil guardado')), refresh())
   }
@@ -121,7 +132,7 @@ export default function Perfil() {
         {VIEWS.map(([k, icon, label]) => (
           <button key={k} type="button" className={adminView === k ? 'card view-opt on' : 'card view-opt'} aria-pressed={adminView === k}
             onClick={() => { setViewAs(k); go(k === 'admin' ? '/admin' : k === 'center' ? '/centro' : '/') }}>
-            <span style={{ fontSize: 26 }} aria-hidden>{icon}</span>
+            <Icon icon={icon} size={26} />
             <b>{t(label)}</b>
             <span className="small muted">{t(k === 'admin' ? 'Panel de la plataforma' : k === 'diver' ? 'Salidas, reservas y bitácora con tu cuenta' : 'Panel de cualquier centro, solo lectura')}</span>
           </button>
@@ -148,14 +159,33 @@ export default function Perfil() {
 
       <form className="card" onSubmit={saveProfile}>
         <div className="field"><label htmlFor="perfil-1">{t('Nombre')}</label><input id="perfil-1" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
-        <div className="grid2">
-          <div className="field"><label htmlFor="perfil-2">{t('Idiomas')}</label><input id="perfil-2" placeholder={t('Español, English')} value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} /></div>
-          <div className="field"><label htmlFor="perfil-3">{t('Inmersiones registradas')}</label><input id="perfil-3" type="number" inputMode="numeric" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} /></div>
+        <div className="field"><label htmlFor="perfil-3">{t('Inmersiones registradas')}</label><input id="perfil-3" type="number" inputMode="numeric" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} style={{ maxWidth: 160 }} /></div>
+        <div className="field" role="group" aria-labelledby="perfil-2">
+          <label id="perfil-2">{t('Idiomas que hablas')}</label>
+          <div className="chips wrapc">
+            {[...CENTER_LANGS.map((l) => l.code), ...form.languages.filter((x) => !CENTER_LANGS.some((l) => l.code === x))].map((code) => {
+              const on = form.languages.includes(code)
+              return <button key={code} type="button" className={on ? 'on' : ''} aria-pressed={on}
+                onClick={() => setForm({ ...form, languages: on ? form.languages.filter((x) => x !== code) : [...form.languages, code] })}>{langName(code)}</button>
+            })}
+          </div>
         </div>
         {!isCenter && <>
           <div className="field"><label htmlFor="perfil-4">{t('País')}</label><input id="perfil-4" maxLength={60} autoComplete="country-name" placeholder={t('p. ej. España')} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
           <div className="field"><label htmlFor="perfil-5">{t('Sobre ti')} <span className="muted small" style={{ fontWeight: 400 }}>({form.bio.length}/160)</span></label><textarea id="perfil-5" rows="2" maxLength={160} placeholder={t('p. ej. Me encantan los tiburones ballena y la fotografía submarina')} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
           </div>
+          <fieldset className="subform">
+            <legend><b>{t('Para el centro')}</b><span className="small muted">{t('Se lo enviamos al centro de cada salida que reserves, para que te prepare el equipo.')}</span></legend>
+            <div className="grid3">
+              <div className="field"><label htmlFor="perfil-ws">{t('Talla de traje')}</label><select id="perfil-ws" value={form.wetsuit_size} onChange={(e) => setForm({ ...form, wetsuit_size: e.target.value })}><option value="">—</option>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></div>
+              <div className="field"><label htmlFor="perfil-bcd">{t('Chaleco (BCD)')}</label><select id="perfil-bcd" value={form.bcd_size} onChange={(e) => setForm({ ...form, bcd_size: e.target.value })}><option value="">—</option>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></div>
+              <div className="field"><label htmlFor="perfil-fin">{t('Aletas')}</label><input id="perfil-fin" maxLength={12} placeholder={t('p. ej. 42')} value={form.fin_size} onChange={(e) => setForm({ ...form, fin_size: e.target.value })} /></div>
+            </div>
+            <div className="grid2">
+              <div className="field"><label htmlFor="perfil-ld">{t('Última inmersión')}</label><input id="perfil-ld" type="date" max={manilaDate()} value={form.last_dive_date} onChange={(e) => setForm({ ...form, last_dive_date: e.target.value })} /></div>
+              <label className="check field" style={{ alignSelf: 'end' }}><input type="checkbox" checked={form.nitrox} onChange={(e) => setForm({ ...form, nitrox: e.target.checked })} /> {t('Tengo certificación nitrox')}</label>
+            </div>
+          </fieldset>
           <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
           <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />
             <span>{t('Mostrar mi perfil a los demás buceadores de mis salidas')}<br /><span className="small muted">{t('Verán tu nombre y la inicial del apellido, tu nivel, nº de inmersiones, idiomas, país y esta descripción. Nunca tu email ni tu teléfono.')}</span></span>
@@ -188,12 +218,23 @@ export default function Perfil() {
           <button className="btn ghost">{t('+ Añadir certificación')}</button>
         </form>
       </div>
+
+      <h2>{t('Salud para bucear')}</h2>
+      <div className="card"><MedicalCheck diver={diver} onSaved={refresh} /></div>
+
+      {BUDDY_RATINGS && <BuddyRatings diver={diver} refresh={refresh} />}
       </>}
 
       <h2>{t('Centro de buceo')}</h2>
       {center ? (
         <div className="card row between"><span>{t('Gestionas')} <b>{center.name}</b></span><Link to="/centro" className="btn small">{t('Ir al panel')}</Link></div>
       ) : (
+        !openCenter ? (
+          <div className="card row between wrap" style={{ gap: 10 }}>
+            <span className="small muted grow" style={{ minWidth: 180 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</span>
+            <button type="button" className="btn small ghost" onClick={() => setOpenCenter(true)}>{t('Registrar mi centro')}</button>
+          </div>
+        ) :
         <form className="card" onSubmit={registerCenter}>
           <p className="small muted" style={{ marginTop: 0 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</p>
           <div className="grid2">
@@ -213,9 +254,58 @@ export default function Perfil() {
           <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
           <LangSwitch />
         </div>
+        <a className="li" href={siteUrl() + 'legal/privacy.html'}><span className="grow"><b>{t('Privacidad')}</b></span></a>
+        <a className="li" href={siteUrl() + 'legal/terms.html'}><span className="grow"><b>{t('Términos de uso')}</b></span></a>
+        <a className="li" href={siteUrl() + 'legal/cancellation.html'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
+        <a className="li" href="mailto:divingslot@gmail.com"><span className="grow"><b>{t('Contacto')}</b><small>divingslot@gmail.com</small></span></a>
       </div>
 
       <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
+    </>
+  )
+}
+
+// Valoraciones como buddy: el buceador decide si sus compañeros de inmersión pueden valorarle
+function BuddyRatings({ diver, refresh }) {
+  const [on, setOn] = useState(!!diver?.buddy_ratings_enabled)
+  const [sum, setSum] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  useEffect(() => { setOn(!!diver?.buddy_ratings_enabled) }, [diver?.buddy_ratings_enabled])
+  useEffect(() => {
+    if (on) supabase.rpc('my_buddy_summary').then(({ data }) => setSum(data || { count: 0 }))
+  }, [on])
+  async function toggle() {
+    setBusy(true); setError('')
+    const { error } = await supabase.from('divers').update({ buddy_ratings_enabled: !on }).eq('id', diver.id)
+    setBusy(false)
+    if (error) return setError(errMsg(error))
+    setOn(!on); refresh()
+  }
+  return (
+    <>
+      <h2>{t('Valoraciones como buddy')}</h2>
+      <div className="card">
+        <div className="row between" style={{ gap: 12, alignItems: 'flex-start' }}>
+          <div>
+            <b>{t('Dejar que mis buddies me valoren')}</b>
+            <div className="small muted">{t('Tus compañeros de salida puntúan de 1 a 5 tu flotabilidad, gestión del aire, atención al buddy, seguridad en el agua y respeto al arrecife.')}</div>
+          </div>
+          <button type="button" role="switch" aria-checked={on} className={'switch' + (on ? ' on' : '')} disabled={busy} onClick={toggle} aria-label={t('Dejar que mis buddies me valoren')}><span /></button>
+        </div>
+        {error && <div className="msg err" role="alert">{error}</div>}
+        {on ? (
+          <div style={{ marginTop: 14 }}><BuddyBreakdown s={sum} own /></div>
+        ) : (
+          <ul className="small muted ticks">
+            <li>{t('Solo te valora quien buceó contigo: los dos con check-in en la misma salida, hasta {n} días después.', { n: WINDOW_DAYS })}</li>
+            <li>{t('Es anónimo: nadie ve quién te valoró ni las notas sueltas.')}</li>
+            <li>{t('Tu media se muestra en «¿Quién va?» cuando tengas al menos {m} valoraciones.', { m: MIN_RATINGS })}</li>
+            <li>{t('Puedes desactivarlo cuando quieras: tu media deja de verse al momento.')}</li>
+          </ul>
+        )}
+        {on && <p className="small muted" style={{ margin: '12px 0 0' }}><Icon icon={Star} size={14} /> {t('Se ve en «¿Quién va?» de tus salidas. Desactívalo cuando quieras y deja de verse al momento.')}</p>}
+      </div>
     </>
   )
 }

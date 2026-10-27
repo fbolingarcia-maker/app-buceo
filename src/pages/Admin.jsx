@@ -6,6 +6,8 @@ import { t } from '../lib/i18n'
 import { dateTime, levelName } from '../lib/format'
 import { VSTATUS } from './CentroVerificacion'
 import AdminResumen from './AdminResumen'
+import Icon from '../lib/Icon'
+import { Check, LayoutDashboard, ScrollText, ShieldCheck, UserCog, Users as UsersIcon } from 'lucide-react'
 
 const DOC_LABEL = {
   owner_id: 'Documento de identidad del responsable', business_permit: "Permiso de negocio (Mayor's permit)", dti_sec: 'Registro DTI / SEC',
@@ -20,7 +22,7 @@ const FIELDS = [
 ]
 
 // Panel de la plataforma (solo administradores): centros, usuarios, administradores y registro de cambios
-const SECTIONS = [['summary', '📊', 'Resumen'], ['centers', '🛡️', 'Centros'], ['users', '👥', 'Usuarios'], ['admins', '👤', 'Administradores'], ['log', '📝', 'Registro']]
+const SECTIONS = [['summary', LayoutDashboard, 'Resumen'], ['centers', ShieldCheck, 'Centros'], ['users', UsersIcon, 'Usuarios'], ['admins', UserCog, 'Administradores'], ['log', ScrollText, 'Registro']]
 
 export default function Admin({ section }) {
   const { isAdmin } = useAuth()
@@ -29,7 +31,7 @@ export default function Admin({ section }) {
   const open = (k) => go(k === 'summary' ? '/admin' : '/admin/' + k)
   return (
     <>
-      {sec[0] !== 'summary' && <h1 style={{ marginBottom: 12 }}><span aria-hidden>{sec[1]}</span> {t(sec[2])}</h1>}
+      {sec[0] !== 'summary' && <h1 style={{ marginBottom: 12 }}><Icon icon={sec[1]} size={26} /> {t(sec[2])}</h1>}
       {sec[0] === 'summary' && <AdminResumen go={open} />}
       {sec[0] === 'centers' && <Centers />}
       {sec[0] === 'users' && <Users />}
@@ -92,7 +94,7 @@ function Users() {
   const term = q.trim().toLowerCase()
   const shown = (list || []).filter((u) => (kind === 'all' || u.account_type === kind)
     && (!term || [u.full_name, u.email, u.country].some((v) => (v || '').toLowerCase().includes(term))))
-  const levelOf = (u) => u.certifications?.length ? u.certifications.map((c) => c.agency + ' ' + levelName(c.level) + (c.verified ? ' ✅' : '')).join(' · ') : '—'
+  const levelOf = (u) => u.certifications?.length ? u.certifications.map((c) => c.agency + ' ' + levelName(c.level) + (c.verified ? ' ✓' : '')).join(' · ') : '—'
 
   return (
     <>
@@ -282,7 +284,7 @@ function Review({ c, onDone }) {
       <div className="field"><label htmlFor="admin-1">{t('Nota para el centro (obligatoria si rechazas o suspendes)')}</label><textarea id="admin-1" rows="2" value={note} onChange={(e) => setNote(e.target.value)} /></div>
       {error && <div className="msg err" role="alert">{error}</div>}
       <div className="row wrap" style={{ gap: 8 }}>
-        {c.verification_status !== 'verified' && <button className="btn small" disabled={busy} onClick={() => decide('verified')}>✅ {t('Aprobar')}</button>}
+        {c.verification_status !== 'verified' && <button className="btn small" disabled={busy} onClick={() => decide('verified')}><Icon icon={Check} size={16} /> {t('Aprobar')}</button>}
         {c.verification_status !== 'rejected' && c.verification_status !== 'verified' && <button className="btn small ghost" disabled={busy} onClick={() => decide('rejected')}>{t('Rechazar')}</button>}
         {c.verification_status === 'verified' && <button className="btn small ghost" disabled={busy} onClick={() => decide('suspended')}>{t('Suspender')}</button>}
         {c.verification_status === 'suspended' && <button className="btn small ghost" disabled={busy} onClick={() => decide('pending')}>{t('Volver a revisión')}</button>}

@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { Link } from '../lib/router'
 import { t } from '../lib/i18n'
-import { dateTime, levelName, php } from '../lib/format'
+import { levelName, php, time, dayLabel, manilaDate } from '../lib/format'
 import { loadRatings } from '../lib/places'
 import { Flags, langName } from '../lib/langs'
 import { Agencies } from '../lib/agencies'
 import Icon from '../lib/Icon'
-import { ArrowLeft, MapPin, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
 export default function CentroInfo({ id }) {
@@ -15,11 +15,12 @@ export default function CentroInfo({ id }) {
   const [trips, setTrips] = useState([])
   const [rating, setRating] = useState(null)
   const [error, setError] = useState('')
+  const [allDays, setAllDays] = useState(false)
 
   useEffect(() => {
     supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages, agencies, agency_detail, verification_status').eq('id', id).maybeSingle()
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setC(data || false) })
-    supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(20)
+    supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(60)
       .then(({ data }) => setTrips(data || []))
     loadRatings().then((r) => setRating(r[id] || null))
   }, [id])
@@ -28,6 +29,7 @@ export default function CentroInfo({ id }) {
   if (c === false) return <div className="card">{t('Centro no encontrado.')} <Link to="/centros">{t('Ver el directorio de centros')}</Link></div>
 
   const dest = c.destination || c.area
+  const byDay = Object.entries(trips.reduce((m, tr) => { const d = manilaDate(new Date(tr.departs_at)); (m[d] = m[d] || []).push(tr); return m }, {}))
   const mapUrl = c.location_precision === 'exacta' && c.lat
     ? `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`
     : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(c.name + ' ' + (dest || ''))
@@ -68,16 +70,29 @@ export default function CentroInfo({ id }) {
           {c.listing_status === 'socio' ? t('Este centro no tiene salidas publicadas ahora mismo.') : t('Este centro todavía no publica sus salidas en DivingSlot. Puedes contactarle directamente.')}
         </div>
       )}
-      {trips.map((tr) => (
-        <Link key={tr.id} to={'/salida/' + tr.id} className="card">
-          <div className="row between"><b>{dateTime(tr.departs_at)}</b><b>{php(tr.price_php)}</b></div>
-          <div className="small muted">{t('{n} inmersiones', { n: tr.num_dives })} · {(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</div>
-          <div className="row wrap" style={{ marginTop: 6 }}>
-            <span className="pill">{t('Mín. {nivel}', { nivel: levelName(tr.min_level) })}</span>
-            <span className={tr.available_seats > 0 ? 'pill ok' : 'pill bad'}>{tr.available_seats > 0 ? t('{n} plazas', { n: tr.available_seats }) : t('Completa')}</span>
+      {/* Agrupadas por día y en filas compactas: un centro puede tener decenas de salidas */}
+      {byDay.slice(0, allDays ? undefined : 3).map(([day, list]) => (
+        <div key={day}>
+          <h3 className="day-h">{dayLabel(day, { weekday: 'long', day: 'numeric', month: 'short' })}</h3>
+          <div className="list" style={{ marginTop: 6 }}>
+            {list.map((tr) => (
+              <Link key={tr.id} to={'/salida/' + tr.id} className="li trip-li">
+                <b className="data trip-time">{time(tr.departs_at)}</b>
+                <span className="grow" style={{ minWidth: 0 }}>
+                  <b className="ellipsis">{(tr.sites || []).join(' · ') || t('Puntos por confirmar')}</b>
+                  <small className="ellipsis">{t('{n} inmersiones', { n: tr.num_dives })} · {t('Mín. {nivel}', { nivel: levelName(tr.min_level) })}</small>
+                </span>
+                <span style={{ textAlign: 'right' }}>
+                  <b>{php(tr.price_php)}</b>
+                  <small className={tr.available_seats > 0 ? (tr.available_seats === 1 ? 'last' : '') : 'full'}>{tr.available_seats > 0 ? (tr.available_seats === 1 ? t('Última plaza') : t('{n} plazas', { n: tr.available_seats })) : t('Completa')}</small>
+                </span>
+                <ChevronRight size={18} />
+              </Link>
+            ))}
           </div>
-        </Link>
+        </div>
       ))}
+      {!allDays && byDay.length > 3 && <button type="button" className="btn ghost block" onClick={() => setAllDays(true)}>{t('Ver más días ({n})', { n: byDay.length - 3 })}</button>}
     </>
   )
 }

@@ -157,6 +157,14 @@ export const TABLES = {
     ['country', 'text', { check: 'length(country) <= 60' }],
     ['bio', 'text', { check: 'length(bio) <= 160' }],
     ['show_on_trips', 'bool', { nn: true, def: '1' }],
+    // Perfil de buceo para el centro y resultado del cuestionario médico (migración 031)
+    ['wetsuit_size', 'text', { check: ENUM('wetsuit_size', ['XS', 'S', 'M', 'L', 'XL', 'XXL']) }],
+    ['bcd_size', 'text', { check: ENUM('bcd_size', ['XS', 'S', 'M', 'L', 'XL', 'XXL']) }],
+    ['fin_size', 'text', { check: 'length(fin_size) <= 12' }],
+    ['last_dive_date', 'date'],
+    ['nitrox', 'bool', { nn: true, def: '0' }],
+    ['medical_done_at', 'date'],
+    ['medical_result', 'text', { check: ENUM('medical_result', ['all_no', 'physician_ok']) }],
   ] },
   certifications: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],

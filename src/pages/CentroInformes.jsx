@@ -7,6 +7,9 @@ import { seatsSummary, holds, hashParam, TRIP_SELECT } from '../lib/centro'
 import { downloadCsv } from '../lib/csv'
 import { t } from '../lib/i18n'
 import { norm } from '../lib/geo'
+import Icon from '../lib/Icon'
+import { Mail, MessageCircle } from 'lucide-react'
+import { langName } from '../lib/langs'
 
 const dayOf = (iso) => manilaDate(new Date(iso))
 const iso = (ymd) => new Date(ymd + 'T00:00:00+08:00').toISOString()
@@ -328,7 +331,7 @@ function Clientes() {
                   <div className="avatar" aria-hidden="true">{c.name.charAt(0).toUpperCase()}</div>
                   <div style={{ minWidth: 0 }}>
                     <b>{c.name}</b>
-                    <div className="small muted">{[lv ? lv.name + (lv.verified ? ' ✅' : '') : (c.diver ? t('Sin certificación') : t('Reserva manual')), c.diver?.country, c.diver?.logged_dives ? t('{n} inmersiones', { n: c.diver.logged_dives }) : null].filter(Boolean).join(' · ')}</div>
+                    <div className="small muted">{[lv ? lv.name + (lv.verified ? ' ✓' : '') : (c.diver ? t('Sin certificación') : t('Reserva manual')), c.diver?.country, c.diver?.logged_dives ? t('{n} inmersiones', { n: c.diver.logged_dives }) : null].filter(Boolean).join(' · ')}</div>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -345,8 +348,8 @@ function Clientes() {
             </button>
             {open === c.key && (
               <div style={{ marginTop: 10, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
-                {c.diver?.email && <div className="small" style={{ marginBottom: 6 }}>✉️ <a href={'mailto:' + c.diver.email}>{c.diver.email}</a></div>}
-                {c.diver?.languages?.length > 0 && <div className="small muted" style={{ marginBottom: 6 }}>💬 {c.diver.languages.join(', ')}</div>}
+                {c.diver?.email && <div className="small" style={{ marginBottom: 6 }}><Icon icon={Mail} size={14} /> <a href={'mailto:' + c.diver.email}>{c.diver.email}</a></div>}
+                {c.diver?.languages?.length > 0 && <div className="small muted" style={{ marginBottom: 6 }}><Icon icon={MessageCircle} size={14} /> {[].concat(c.diver.languages).map(langName).join(', ')}</div>}
                 {c.bookings.map((b) => (
                   <Link key={b.id} to={'/centro/agenda?dia=' + dayOf(b.trips.departs_at)} className="row between small" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)', color: 'inherit', textDecoration: 'none', gap: 8 }}>
                     <span>{dateTime(b.trips.departs_at)}{b.seats > 1 ? ' · ×' + b.seats : ''}</span>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { t } from '../lib/i18n'
 import { php, dateTime, dayLabel, sourceName } from '../lib/format'
+import Icon from '../lib/Icon'
+import { LayoutDashboard, TriangleAlert } from 'lucide-react'
 
 // Cuadro de mando de la plataforma (solo administradores): usuarios, centros, salidas, reservas, cobros y alertas.
 // Todos los datos vienen de admin_dashboard() en una sola llamada.
@@ -34,7 +36,7 @@ export default function AdminResumen({ go }) {
   return (
     <>
       <div className="row between wrap" style={{ gap: 8 }}>
-        <h1 style={{ margin: 0 }}><span aria-hidden>📊</span> {t('Resumen')}</h1>
+        <h1 style={{ margin: 0 }}><Icon icon={LayoutDashboard} size={26} /> {t('Resumen')}</h1>
         <div className="row wrap" style={{ gap: 6 }}>
           <div className="seg" role="group" aria-label={t('Periodo')}>
             {PERIODS.map((n) => <button key={n} type="button" className={days === n ? 'on' : ''} aria-pressed={days === n} onClick={() => setDays(n)}>{t('{n} días', { n })}</button>)}
@@ -50,7 +52,7 @@ export default function AdminResumen({ go }) {
       {r && <>
         {alerts.length > 0 && (
           <div className="msg err" role="status" style={{ marginTop: 10 }}>
-            <b>⚠️ {t('Requiere atención')}</b>
+            <b><Icon icon={TriangleAlert} size={16} /> {t('Requiere atención')}</b>
             <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
               {alerts.map((x, i) => <li key={i}>{x.to ? <a href="#/admin" onClick={(e) => { e.preventDefault(); go(x.to) }}>{x.text}</a> : x.text}</li>)}
             </ul>

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { t } from '../lib/i18n'
+import Icon from '../lib/Icon'
+import { Lock } from 'lucide-react'
 
 // Verificación en dos pasos (TOTP: Google Authenticator, Microsoft Authenticator, 1Password…)
 // La base de datos la exige (mfa_ok(), migración 027): con el factor activado, sin el código no se ve nada privado.
@@ -37,7 +39,7 @@ export function DosPasosReto() {
 
   return (
     <form className="card" onSubmit={submit} style={{ maxWidth: 420, margin: '0 auto' }}>
-      <h1>🔐 {t('Verificación en dos pasos')}</h1>
+      <h1><Icon icon={Lock} size={26} /> {t('Verificación en dos pasos')}</h1>
       <p className="muted">{t('Abre tu app de autenticación y escribe el código de 6 cifras de DivingSlot.')}</p>
       <div className="field"><label htmlFor="mfa-code">{t('Código')}</label><CodeInput id="mfa-code" value={code} onChange={setCode} /></div>
       {error && <div className="msg err" role="alert">{error}</div>}
@@ -103,7 +105,7 @@ export default function DosPasos({ recommend }) {
   return (
     <div className="card" id="dos-pasos">
       <div className="row between wrap">
-        <b>🔐 {t('Verificación en dos pasos')}</b>
+        <b><Icon icon={Lock} size={18} /> {t('Verificación en dos pasos')}</b>
         {factor === undefined ? <span className="small muted">{t('Cargando…')}</span>
           : factor ? <span className="pill ok">{t('Activada')}</span> : <span className={recommend ? 'pill warn' : 'pill'}>{t('Desactivada')}</span>}
       </div>

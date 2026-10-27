@@ -23,8 +23,8 @@ for (let d = 0; d < 8; d++) {
 }
 const centerRow = (st) => ({ id: MY, name: 'PRUEBA', area: 'Panglao', destination: 'Panglao', province: 'Bohol', phone: '+63 900', lat: null, lng: null, languages: [], course_languages: [], agencies: [], verification_status: st, listing_status: 'socio', review_note: st === 'rejected' ? 'Documento ilegible' : null, default_divers_per_guide: 4, created_at: iso(now - 3 * D) })
 const myCenter = role === 'center' ? centerRow('unverified') : role === 'centerv' || role === 'admin' ? centerRow('verified') : role === 'centerr' ? centerRow('rejected') : null
-const diverRow = role === 'anon' ? null : { id: 'dv1', user_id: UID, full_name: 'Fernando B', account_type: myCenter ? 'center' : 'diver', languages: ['es'], logged_dives: 40, country: 'España', bio: '', seeks_buddy: false, show_on_trips: true }
-const booking = (id, st, paid, ci) => ({ id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
+const diverRow = role === 'anon' ? null : { id: 'dv1', user_id: UID, full_name: 'Fernando B', account_type: myCenter ? 'center' : 'diver', languages: ['es'], logged_dives: 40, country: 'España', bio: '', seeks_buddy: false, show_on_trips: true, buddy_ratings_enabled: rawRole !== 'vacio', wetsuit_size: 'M', bcd_size: 'L', fin_size: '42', last_dive_date: '2025-06-10', nitrox: true, medical_done_at: null, medical_result: null }
+const booking = (id, st, paid, ci) => ({ id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', wetsuit_size: 'S', bcd_size: 'S', fin_size: '38', last_dive_date: '2026-09-20', nitrox: false, medical_done_at: '2026-03-01', medical_result: 'all_no', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
 const myTrips = myCenter ? [0, 1, 2].map((d) => ({ id: 'mt' + d, center_id: MY, boat_id: 'b1', departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, guides: 2, divers_per_guide: 4, seat_override: null, blocked_seats: 0, status: d === 2 ? 'draft' : 'published', boats: { name: 'Banca Uno', capacity: 12 }, trip_sites: [{ position: 1, dive_sites: { name: 'Napaling' } }], bookings: d === 0 ? [booking('bk1', 'confirmed', 5800, null), booking('bk2', 'pending_payment', 0, null)] : [] })) : []
 const T = {
   published_trips: rawRole === 'vacio' ? [] : pubTrips,
@@ -88,7 +88,19 @@ const RPC = {
     }
   })(),
   admin_list: [{ user_id: 'u1', email: 'admin@example.com', created_at: '2026-10-01T00:00:00Z', is_me: true }],
-  trip_divers: { divers: [{ name: 'Ana L.', level: 'advanced', seats: 1, dives: 25, languages: ['es'], country: 'ES' }] },
+  trip_divers: { divers: [
+    { name: 'Ana L.', level: 'advanced', seats: 1, dives: 25, languages: ['es'], country: 'ES', seeks_buddy: true,
+      buddy: { score: 4.7, count: 9, raters: 7, scores: { buoyancy: 4.8, air: 4.6, awareness: 4.9, safety: 4.7, reef: 4.5 }, dive_again: 0.94 } },
+    { name: 'Marco R.', level: 'open_water', seats: 1, dives: 12, languages: ['en', 'it'], country: 'IT' },
+  ] },
+  // Valoraciones como buddy
+  my_buddy_summary: { count: 6, raters: 5, overall: 4.6, scores: { buoyancy: 4.3, air: 4.7, awareness: 4.8, safety: 4.6, reef: 4.9 }, dive_again: 0.92, pending_reveal: 1 },
+  my_pending_buddy_ratings: [{ trip_id: 't1-1', departs_at: iso(now - 2 * D + 7.5 * H), center_name: 'Demo · Centro Alona', pending: 2, closes_at: iso(now + 12 * D) }],
+  buddy_rating_targets: { departs_at: iso(now - 2 * D + 7.5 * H), center_name: 'Demo · Centro Alona', closes_at: iso(now + 12 * D), divers: [
+    { diver_id: 'd2', name: 'Ana L.', level: 'advanced', dives: 25, rated: false },
+    { diver_id: 'd3', name: 'Marco R.', level: 'open_water', dives: 12, rated: false },
+  ] },
+  rate_buddy: { ok: true },
 }
 function builder(table) {
   let rows = T[table] ? [...T[table]] : []

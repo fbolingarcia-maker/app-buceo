@@ -5,6 +5,7 @@ import { Link } from '../lib/router'
 import { SOURCES, sourceName, levelName, TRIP_STATUS, BOOKING_STATUS, manilaDate, addDays, dayRange, dateTime, dayLabel, time, php } from '../lib/format'
 import { seatsSummary, hashParam, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
+import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
 
 export default function CentroAgenda() {
   const { center, verified } = useAuth()
@@ -133,9 +134,10 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
                     {sourceName(b.source)} · {BOOKING_STATUS[b.status]}{b.with_gear ? ' · ' + t('equipo') : ''}
                     {b.divers?.logged_dives ? ' · ' + t('{n} inm.', { n: b.divers.logged_dives }) : ''}
                   </div>
+                  {b.divers && <DiverReady d={b.divers} gear={b.with_gear} />}
                   {b.divers?.certifications?.map((c) => (
                     <div key={c.id} className="small row wrap" style={{ gap: 6 }}>
-                      <span>{c.agency} {levelName(c.level)} {c.verified_at ? '✅' : ''}</span>
+                      <span>{c.agency} {levelName(c.level)} {c.verified_at ? '✓' : ''}</span>
                       {!c.verified_at && (
                         <button type="button" className="linkish" disabled={busy === 'vc' + c.id}
                           onClick={() => run(supabase.rpc('verify_certification', { p_cert: c.id, p_center: center.id }), t('Certificación verificada'), 'vc' + c.id)}>{t('Verificar')}</button>
@@ -212,6 +214,23 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
             : t('Salida: {date} · {guides} guías × {n} buceadores', { date: dateTime(trip.departs_at), guides: trip.guides, n: trip.divers_per_guide })}</p>
         </>
       )}
+    </div>
+  )
+}
+
+// Lo que el guía revisa antes de salir: cuestionario médico, última inmersión, nitrox y tallas si alquila equipo
+function DiverReady({ d, gear }) {
+  const days = daysSinceDive(d)
+  const sizes = [d.wetsuit_size && t('Traje {s}', { s: d.wetsuit_size }), d.bcd_size && t('Chaleco {s}', { s: d.bcd_size }), d.fin_size && t('Aletas {s}', { s: d.fin_size })].filter(Boolean)
+  return (
+    <div className="small diver-gear">
+      {medicalValid(d)
+        ? <span className={d.medical_result === 'physician_ok' ? 'pill warn' : 'pill ok'}>{d.medical_result === 'physician_ok' ? t('Médico: pedir autorización firmada') : t('Médico al día')}</span>
+        : <span className="pill bad">{t('Sin cuestionario médico')}</span>}
+      {days != null && days > 365 && <span className="pill warn">{t('Sin bucear desde hace más de 12 meses')}</span>}
+      {days != null && days <= 365 && <span className="muted">{t('Última inmersión hace {n} días', { n: days })}</span>}
+      {d.nitrox && <span className="muted">{t('Nitrox')}</span>}
+      {gear && (sizes.length ? <span className="muted">{sizes.join(' · ')}</span> : <span className="muted">{t('Sin tallas')}</span>)}
     </div>
   )
 }

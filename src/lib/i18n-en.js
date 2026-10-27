@@ -8,5 +8,7 @@ import ux from './en/ux'
 import seguridad from './en/seguridad'
 import mfa from './en/mfa'
 import diseno from './en/diseno'
+import buddy from './en/buddy'
+import perfil from './en/perfil'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil }

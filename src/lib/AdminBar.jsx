@@ -3,8 +3,10 @@ import { supabase } from './supabase'
 import { useAuth } from './auth'
 import { go } from './router'
 import { t } from './i18n'
+import Icon from './Icon'
+import { Anchor, ShieldCheck, Waves } from 'lucide-react'
 
-export const VIEWS = [['admin', '🛡️', 'Admin'], ['diver', '🤿', 'Buceador'], ['center', '⚓', 'Centro']]
+export const VIEWS = [['admin', ShieldCheck, 'Admin'], ['diver', Waves, 'Buceador'], ['center', Anchor, 'Centro']]
 const HOME = { admin: '/admin', diver: '/', center: '/centro' }
 
 // Centros que el administrador puede mirar (los dados de alta en la app, no las fichas del directorio)
@@ -30,7 +32,7 @@ export default function AdminBar() {
       <div className="seg">
         {VIEWS.map(([k, icon, label]) => (
           <button key={k} type="button" aria-pressed={adminView === k} className={adminView === k ? 'on' : ''} onClick={() => pick(k)}>
-            <span aria-hidden>{icon}</span> {t(label)}
+            <Icon icon={icon} size={16} /> {t(label)}
           </button>
         ))}
       </div>
@@ -53,7 +55,7 @@ export function AdminCenterPicker() {
   const list = (centers || []).filter((c) => !q || (c.name + ' ' + (c.destination || '')).toLowerCase().includes(q.toLowerCase()))
   return (
     <>
-      <h1>⚓ {t('Ver como centro')}</h1>
+      <h1><Icon icon={Anchor} size={26} /> {t('Ver como centro')}</h1>
       <p className="muted">{t('Elige un centro para ver su panel, agenda, salidas e informes tal como los ve el centro. Es solo lectura: no puedes cambiar nada en su nombre.')}</p>
       <input type="search" placeholder={t('Buscar centro')} aria-label={t('Buscar centro')} value={q} onChange={(e) => setQ(e.target.value)} style={{ marginBottom: 12 }} />
       {centers === null && <p className="muted">{t('Cargando…')}</p>}

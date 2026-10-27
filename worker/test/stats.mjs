@@ -60,13 +60,20 @@ r = await notify({ kind: 'reserva', title: 'Nueva reserva: 2 plazas en Casa Azul
 ok(r.status === 200 && (await r.json()).emailed === true && mails.at(-1).to === 'admin@divingslot.test', 'email al administrador', mails.at(-1))
 r = await get('/api/stats', 'admin')
 ok((await r.json()).data.events[0].title.startsWith('Nueva reserva'), 'el aviso sale en el panel')
+// Aviso al centro: a su equipo, en inglés y español; direcciones raras fuera
+mails.length = 0
+r = await notify({ kind: 'reserva', title: 'Nueva reserva: 1 plaza en Blue Reef', lines: ['Salida: 01/11/2026 07:30', 'Buceador: Ana', 'Importe: ₱3,800', 'Origen: app'], url: 'https://divingslot.com/app/#/centro/agenda', to: ['Owner@Blue.ph', 'no-es-email', 'mgr@blue.ph'] })
+const rj = await r.json()
+ok(rj.centre === 2 && mails.some((m) => m.to === 'owner@blue.ph' && m.subject === 'DivingSlot · New booking: 1 spot at Blue Reef') && mails.some((m) => m.to === 'admin@divingslot.test'), 'email al centro y al administrador', mails)
+const { centreEmail } = await import('../stats.js')
+ok(/Diver: Ana/.test(centreEmail('Nueva reserva: 2 plazas en X', ['Buceador: Ana'], null).html), 'traduce las líneas al inglés')
 
 // Resumen diario (forzado; normalmente a las 8:xx de Manila). Cuenta el día anterior: se simula moviendo las visitas.
 await db.prepare('UPDATE visits SET day = ?').bind(manilaDay(Date.now() - 864e5)).run()
 await db.prepare('UPDATE notify_log SET day = ?').bind(manilaDay(Date.now() - 864e5)).run()
 mails.length = 0
 await dailyDigest(env, true)
-ok(mails.length === 1 && /3 visitantes, 1 avisos/.test(mails[0].subject), 'resumen diario', mails[0])
+ok(mails.length === 1 && /3 visitantes, 2 avisos/.test(mails[0].subject), 'resumen diario', mails[0])
 
 // El cron no rompe sin email configurado
 await worker.scheduled({}, { DB: db }, { waitUntil: (p) => p.catch((e) => { fails++; log('cron', e) }) })

@@ -6,6 +6,8 @@ import { Link } from '../lib/router'
 import { t } from '../lib/i18n'
 import DestinoSelect from '../lib/DestinoSelect'
 import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
+import Icon from '../lib/Icon'
+import { LocateFixed } from 'lucide-react'
 
 export default function CentroAjustes() {
   const { center, refresh } = useAuth()
@@ -141,7 +143,7 @@ function Datos({ center, refresh }) {
       <div className="field">
         <label>{t('Ubicación en el mapa')}</label>
         <div className="row wrap" style={{ gap: 8 }}>
-          <button type="button" className="btn small ghost" disabled={locating} onClick={useMyLocation}>{locating ? t('Buscando…') : t('📍 Usar mi ubicación actual')}</button>
+          <button type="button" className="btn small ghost" disabled={locating} onClick={useMyLocation}>{locating ? t('Buscando…') : <><Icon icon={LocateFixed} />{t('Usar mi ubicación actual')}</>}</button>
           {f.lat != null && f.lng != null
             ? <a className="small" href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noreferrer">{t('Ver en el mapa')}</a>
             : <span className="small muted">{t('Sin ubicación: los buceadores no te verán en «Cerca de mí».')}</span>}

@@ -120,7 +120,28 @@ export async function handleNotify(req, env) {
     catch (e) { console.error('notify email', e.message) }
     if (emailed) await run(env.DB, 'UPDATE notify_log SET emailed = 1 WHERE id = ?', r.id)
   }
-  return json({ ok: true, emailed })
+  // Aviso al centro (p. ej. una reserva nueva): al equipo del centro, en inglés y español
+  const to = (Array.isArray(b.to) ? b.to : []).map((x) => String(x).trim().toLowerCase()).filter((x) => EMAIL.test(x)).slice(0, 3)
+  let centre = 0
+  for (const addr of to) {
+    try { await sendEmail(env, addr, centreEmail(title, lines, link)); centre++ } catch (e) { console.error('notify centre', e.message) }
+  }
+  return json({ ok: true, emailed, centre })
+}
+
+const EMAIL = /^[^@\s]{1,64}@[^@\s]{1,190}\.[a-z]{2,}$/
+const EN_LABELS = [['Salida: ', 'Trip: '], ['Buceador: ', 'Diver: '], ['Importe: ', 'Amount: '], ['Origen: ', 'Source: ']]
+// Email al centro: el título y las líneas vienen en español desde Supabase; se añade la versión en inglés arriba
+export function centreEmail(title, lines, link) {
+  const m = /^Nueva reserva: (\d+) plazas? en (.+)$/.exec(title)
+  const en = m ? `New booking: ${m[1]} ${m[1] === '1' ? 'spot' : 'spots'} at ${m[2]}` : title
+  const enLines = lines.map((l) => { const x = EN_LABELS.find(([es]) => l.startsWith(es)); return x ? x[1] + l.slice(x[0].length) : l })
+  const list = (ls) => `<ul style="padding-left:18px;margin:0 0 12px">${ls.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
+  const body = list(enLines)
+    + (link ? `<p><a href="${esc(link)}" style="display:inline-block;background:#0a5a85;color:#fff;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700">Open the manifest · Abrir la agenda</a></p>` : '')
+    + `<hr style="border:0;border-top:1px solid #e2e8ed;margin:16px 0"><p style="margin:0 0 6px;font-weight:700">${esc(title)}</p>` + list(lines)
+    + '<p style="color:#5b6b77;font-size:13px;margin:0">You get this email because you manage this dive centre on DivingSlot. · Recibes este email porque gestionas este centro en DivingSlot.</p>'
+  return { subject: 'DivingSlot · ' + en, html: box(esc(en), body) }
 }
 
 // Resumen diario: visitas y avisos del día anterior (hora de Manila)
