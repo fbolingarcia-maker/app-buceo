@@ -29,6 +29,7 @@ const ES = {
   cta_trips: 'Buscar salida',
   cta_sites: 'Ver puntos de buceo',
   fine: 'Paga con tarjeta o GCash. El resto, en la app o en efectivo en el centro.',
+  mock_example: 'Ejemplo',
   mock_today: 'Hoy',
   mock_tue: 'Mar',
   mock_wed: 'Mié',
