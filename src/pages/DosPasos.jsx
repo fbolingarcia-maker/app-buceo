@@ -10,7 +10,7 @@ import { Lock } from 'lucide-react'
 
 const clean = (v) => v.replace(/\D/g, '').slice(0, 6)
 
-function CodeInput({ value, onChange, id }) {
+export function CodeInput({ value, onChange, id }) {
   return (
     <input id={id} value={value} onChange={(e) => onChange(clean(e.target.value))} inputMode="numeric" pattern="[0-9]{6}"
       autoComplete="one-time-code" placeholder="123456" maxLength={6} required

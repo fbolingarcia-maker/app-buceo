@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, errMsg, pwProblem, siteUrl } from '../lib/supabase'
+import { supabase, errMsg, siteUrl } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, levelName, manilaDate } from '../lib/format'
@@ -7,6 +7,7 @@ import { MedicalCheck } from '../lib/medical'
 import { t, LangSwitch } from '../lib/i18n'
 import EliminarCuenta from './EliminarCuenta'
 import DosPasos from './DosPasos'
+import CambiarClave from './CambiarClave'
 import { VIEWS } from '../lib/AdminBar'
 import { CENTER_LANGS, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
@@ -21,7 +22,6 @@ export default function Perfil() {
   const [form, setForm] = useState(null)
   const [certs, setCerts] = useState([])
   const [cert, setCert] = useState({ agency: 'PADI', level: 'open_water', card_number: '' })
-  const [pw, setPw] = useState('')
   const [centerForm, setCenterForm] = useState({ name: '', phone: '' })
   const [openCenter, setOpenCenter] = useState(false)
   const [msg, setMsg] = useState({})
@@ -80,13 +80,6 @@ export default function Perfil() {
     error ? note('c', false, errMsg(error)) : loadCerts()
   }
 
-  async function changePw(e) {
-    e.preventDefault()
-    if (pwProblem(pw)) return note('pw', false, pwProblem(pw))
-    const { error } = await supabase.auth.updateUser({ password: pw })
-    error ? note('pw', false, errMsg(error)) : (note('pw', true, t('Contraseña cambiada')), setPw(''))
-  }
-
   async function registerCenter(e) {
     e.preventDefault()
     const { error } = await supabase.rpc('register_center', { p_name: centerForm.name, p_phone: centerForm.phone })
@@ -100,15 +93,7 @@ export default function Perfil() {
     <>
       <h2>{t('Seguridad')}</h2>
       <DosPasos recommend={isAdmin} />
-      <form className="card" onSubmit={changePw}>
-        <div className="field"><label htmlFor="perfil-11">{t('Nueva contraseña')}</label><input id="perfil-11" type="password" minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" aria-describedby="perfil-pw-hint" />
-          <span id="perfil-pw-hint" className="small muted hint">{t('Mínimo 8 caracteres, con letras y números')}</span></div>
-        {show('pw')}
-        <div className="row between wrap" style={{ gap: 8 }}>
-          <button className="btn ghost" disabled={pw.length < 8}>{t('Cambiar contraseña')}</button>
-          <button type="button" className="btn danger" onClick={() => { signOut(); go('/') }}>{t('Cerrar sesión')}</button>
-        </div>
-      </form>
+      <CambiarClave />
     </>
   )
 
