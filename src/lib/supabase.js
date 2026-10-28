@@ -34,8 +34,12 @@ export function errMsg(e) {
   // Errores de Auth en inglés: contraseña débil, repetida o código de dos pasos incorrecto
   if (e?.code === 'weak_password' || /^Password should/i.test(m)) return t('La contraseña es demasiado débil: usa al menos 8 caracteres, con letras y números')
   // Envío de emails (confirmación y recuperación)
+  const wait = /only request this after (\d+) seconds/i.exec(m)
+  if (wait) return t('Espera {n} segundos antes de pedir otro código.', { n: wait[1] })
+  if (e?.code === 'reauthentication_not_valid' || /reauthentication.*(invalid|not valid)|invalid.*nonce|nonce.*(invalid|expired)/i.test(m)) return t('El código del email no es correcto o ha caducado. Pide uno nuevo.')
+  if (e?.code === 'reauthentication_needed' || /requires reauthentication/i.test(m)) return t('Para cambiar la contraseña, primero pide el código por email.')
   if (e?.code === 'over_email_send_rate_limit' || /email rate limit exceeded/i.test(m)) return t('Hemos enviado demasiados emails en poco tiempo. Espera unos minutos y vuelve a intentarlo.')
-  if (/error sending (confirmation|recovery|magic link|email change) email/i.test(m)) return t('No hemos podido enviar el email ahora mismo. Inténtalo de nuevo más tarde.')
+  if (/error sending (confirmation|recovery|magic link|email change|reauthentication) email/i.test(m) || e?.code === 'email_address_not_authorized' || e?.code === 'email_send_failed') return t('No hemos podido enviar el email ahora mismo. Inténtalo de nuevo más tarde.')
   if (e?.code === 'over_request_rate_limit') return t('Demasiados intentos seguidos. Espera unos minutos y vuelve a intentarlo.')
   if (e?.code === 'same_password' || /should be different from the old password/i.test(m)) return t('La nueva contraseña debe ser distinta de la actual')
   if (/invalid totp code|mfa_verification_failed|code.*(expired|invalid)/i.test(m) || e?.code === 'mfa_verification_failed') return t('Código incorrecto o caducado. Prueba con el código actual de tu app.')

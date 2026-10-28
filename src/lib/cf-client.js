@@ -99,8 +99,12 @@ export function createCfClient() {
       const r = await call('auth/recover', { email, redirect: opts.redirectTo })
       return { data: {}, error: r.error }
     },
-    async updateUser({ password }) {
-      const r = await call('auth/update', { password })
+    async reauthenticate() {
+      const r = await call('auth/reauthenticate', {})
+      return { data: {}, error: r.error }
+    },
+    async updateUser({ password, nonce }) {
+      const r = await call('auth/update', { password, nonce })
       if (r.error) return { data: { user: null }, error: r.error }
       await refresh(); emit('USER_UPDATED')
       return { data: { user: state.session?.user }, error: null }
