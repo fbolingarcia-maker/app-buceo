@@ -118,6 +118,28 @@ for (const [role, [who, routes]] of Object.entries(plan)) {
     report(role, r, bad, txt)
     if (shots) { fs.mkdirSync(OUT + '/shots', { recursive: true }); await page.screenshot({ path: `${OUT}/shots/${role}-${r.replace(/\W+/g, '_')}.png`, fullPage: true }) }
   }
+  // Cambiar la contraseña desde el Perfil con el código del email (y el de la app si tiene dos pasos)
+  if (role === 'diver' || role === 'mfa') {
+    errs.length = 0; apiErrors.length = 0
+    await page.goto(ORIGIN + '/#/perfil', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('#cc-pw')
+    const before = (await db.prepare('SELECT password_hash FROM users WHERE email = ?').bind(`${who}@divingslot.test`).first()).password_hash
+    await page.fill('#cc-pw', 'Cambiada123')
+    await page.getByText('Enviarme el código').click()
+    await page.waitForSelector('#cc-code')
+    const code = mails.filter((m) => m[1] === `${who}@divingslot.test`).pop()?.[3]
+    await page.fill('#cc-code', code || '')
+    if (role === 'mfa') await page.fill('#cc-totp', await totpAt(mfaSecret, Math.floor(Date.now() / 30000) + 1))
+    await page.locator('form.stack button.btn').first().click()
+    await page.waitForTimeout(800)
+    const txt = (await page.locator('main').innerText()).replace(/\s+/g, ' ')
+    const after = (await db.prepare('SELECT password_hash FROM users WHERE email = ?').bind(`${who}@divingslot.test`).first()).password_hash
+    const bad = [...errs, ...apiErrors.map((e) => 'API ' + e)]
+    if (!/^\d{6}$/.test(code || '')) bad.push('sin código en el email')
+    if (!/Contraseña cambiada/.test(txt)) bad.push('no confirma el cambio')
+    if (before === after) bad.push('la contraseña no cambió en la base de datos')
+    report(role, 'cambiar contraseña con código', bad, (txt.match(/Contraseña cambiada/) || [''])[0])
+  }
   await ctx.close()
 }
 await browser.close()
