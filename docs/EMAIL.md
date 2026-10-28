@@ -54,7 +54,25 @@ Si DivingSlot tiene dominio propio (p. ej. diveslot.ph), conviene usar Resend o 
 <p style="color:#5d7282;font-size:13px">Si no lo has pedido tú, ignora este email.<br>If you didn't ask for this, you can ignore this email.</p>
 ```
 
+### Reauthentication (código para cambiar la contraseña)
+
+- **Asunto:** Tu código de DivingSlot · Your DivingSlot code
+- **Cuerpo:**
+
+```html
+<h2>DivingSlot</h2>
+<p>Escribe este código en la app para confirmar el cambio de contraseña.<br>Enter this code in the app to confirm your password change.</p>
+<p style="font-size:28px;letter-spacing:6px;font-weight:700">{{ .Token }}</p>
+<p style="color:#5d7282;font-size:13px">Si no lo has pedido tú, cambia tu contraseña.<br>If you didn't ask for it, change your password.</p>
+```
+
+Ya está hecho (28 oct 2026): en Authentication → Sign In / Providers → Email están activados **Secure password change**, «Email OTP length» = 6 cifras (la app espera 6) y «Email OTP expiration» = 600 s. Supabase solo comprueba el código cuando la sesión tiene más de 24 h; la app lo pide siempre.
+
+Supabase no deja editar las plantillas hasta que se configura el SMTP propio: mientras tanto usa las suyas en inglés (el código va en el asunto).
+
 ## En la app
+
+- Perfil → Seguridad: para cambiar (o crear, en cuentas de Google) la contraseña se pide un código de 6 cifras por email (`supabase.auth.reauthenticate()` y `updateUser({ password, nonce })`, `src/pages/CambiarClave.jsx`) y, si la cuenta tiene dos pasos, también el código de la app de autenticación.
 
 - Después de crear la cuenta, la app dice a qué email se ha enviado, recuerda mirar en spam y ofrece «Reenviar email de confirmación».
 - Si alguien intenta entrar sin haber confirmado, también puede reenviar el email desde la misma pantalla.
