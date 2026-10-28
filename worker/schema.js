@@ -53,6 +53,13 @@ export const TABLES = {
     ['last_step', 'int', { nn: true, def: '0' }], // último intervalo TOTP usado (evita reutilizar un código)
     ['created_at', 'ts', { nn: true, def: NOW }],
   ] },
+  reauth_codes: { internal: true, cols: [            // código de 6 cifras para cambiar la contraseña (como reauthenticate de Supabase)
+    ['user_id', 'uuid', { pk: true, ref: 'users(id)', onDelete: 'CASCADE' }],
+    ['code_hash', 'text', { nn: true }],         // SHA-256 de user_id + código
+    ['sent_at', 'ts', { nn: true, def: NOW }],
+    ['expires_at', 'ts', { nn: true }],
+    ['attempts', 'int', { nn: true, def: '0' }],
+  ] },
   rate_limits: { internal: true, cols: [
     ['key', 'text', { pk: true }],
     ['window_start', 'int', { nn: true }],

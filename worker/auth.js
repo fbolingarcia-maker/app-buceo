@@ -190,15 +190,44 @@ export async function handleAuth(req, env, ctx, path) {
   // A partir de aquí hace falta sesión
   if (!ctx.uid) return authErr('no_session', 'Auth session missing!', 401)
 
+  // Código de 6 cifras por email antes de cambiar la contraseña (como supabase.auth.reauthenticate)
+  if (path === 'reauthenticate') {
+    if (!ctx.mfaOk) return authErr('insufficient_aal', 'MFA_REQUIRED: introduce el código de verificación en dos pasos', 403)
+    const prev = await first(env.DB, 'SELECT sent_at FROM reauth_codes WHERE user_id = ?', ctx.uid)
+    const wait = prev ? Math.ceil((Date.parse(prev.sent_at) + 60e3 - Date.now()) / 1000) : 0
+    if (wait > 0) return authErr('over_email_send_rate_limit', `For security purposes, you can only request this after ${wait} seconds.`, 429)
+    const code = String(100000 + (new Uint32Array(randomBytes(4).buffer)[0] % 900000))
+    await run(env.DB, `INSERT INTO reauth_codes (user_id, code_hash, sent_at, expires_at, attempts) VALUES (?, ?, ?, ?, 0)
+      ON CONFLICT(user_id) DO UPDATE SET code_hash = excluded.code_hash, sent_at = excluded.sent_at, expires_at = excluded.expires_at, attempts = 0`,
+      ctx.uid, await sha256(ctx.uid + ':' + code), nowIso(), new Date(Date.now() + 10 * 60e3).toISOString())
+    try { await sendEmail(env, ctx.email, TEMPLATES.reauth(code)) } catch (e) {
+      console.error('email', e.message)
+      throw new ApiError('email_send_failed', 'Error sending reauthentication email', 500)
+    }
+    return json({ ok: true })
+  }
+
   if (path === 'update') {
     if (!ctx.mfaOk) return authErr('insufficient_aal', 'MFA_REQUIRED: introduce el código de verificación en dos pasos', 403)
     if (pwProblem(body.password)) return authErr('weak_password', 'Password should be at least 8 characters and contain letters and numbers.')
+    // Fuera de la sesión de «nueva contraseña» (el enlace del email ya es la verificación) hace falta el código
+    if (!ctx.session.recovery) {
+      const nonce = String(body.nonce || '').trim()
+      if (!nonce) return authErr('reauthentication_needed', 'Password update requires reauthentication.')
+      const rc = await first(env.DB, 'SELECT * FROM reauth_codes WHERE user_id = ?', ctx.uid)
+      if (!rc || rc.expires_at < nowIso() || rc.attempts >= 5) return authErr('reauthentication_not_valid', 'Verification code is invalid or has expired.')
+      if (rc.code_hash !== await sha256(ctx.uid + ':' + nonce)) {
+        await run(env.DB, 'UPDATE reauth_codes SET attempts = attempts + 1 WHERE user_id = ?', ctx.uid)
+        return authErr('reauthentication_not_valid', 'Verification code is invalid or has expired.')
+      }
+    }
     const u = await first(env.DB, 'SELECT * FROM users WHERE id = ?', ctx.uid)
     if ((await verifyPassword(body.password, u.password_hash)).ok) return authErr('same_password', 'New password should be different from the old password.')
     await env.DB.batch([
       env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashPassword(body.password, +(env.PBKDF2_ITER || 100000)), ctx.uid),
       env.DB.prepare('UPDATE sessions SET recovery = 0 WHERE id = ?').bind(ctx.sid),
       env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND id <> ?').bind(ctx.uid, ctx.sid), // cierra las demás sesiones
+      env.DB.prepare('DELETE FROM reauth_codes WHERE user_id = ?').bind(ctx.uid), // el código es de un solo uso
     ])
     return json({ user: userJson(u) })
   }

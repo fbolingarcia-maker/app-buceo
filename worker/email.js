@@ -16,6 +16,10 @@ export const TEMPLATES = {
     subject: 'Nueva contraseña de DivingSlot · Reset your DivingSlot password',
     html: wrap(`<h2>DivingSlot 🤿</h2><p>Pulsa el botón para crear una contraseña nueva.<br>Tap the button to create a new password.</p>${button(url, 'Crear contraseña · Reset password')}${foot('Si no lo has pedido tú, ignora este email.', "If you didn't ask for this, you can ignore this email.")}`),
   }),
+  reauth: (code) => ({
+    subject: 'Tu código de DivingSlot · Your DivingSlot code',
+    html: wrap(`<h2>DivingSlot</h2><p>Escribe este código en la app para confirmar el cambio de contraseña.<br>Enter this code in the app to confirm your password change.</p><p style="font-size:28px;letter-spacing:6px;font-weight:700" data-code="1">${esc(code)}</p>${foot('Caduca en 10 minutos. Si no lo has pedido tú, cambia tu contraseña.', "It expires in 10 minutes. If you didn't ask for it, change your password.")}`),
+  }),
   centerReviewed: (name, decision, note, url) => ({
     subject: decision === 'verified' ? 'Tu centro ya está verificado · Your centre is verified' : 'Revisión de tu centro · Your centre review',
     html: wrap(`<h2>DivingSlot 🤿</h2><p>${decision === 'verified'
@@ -36,7 +40,7 @@ export async function sendEmail(env, to, { subject, html }) {
     return
   }
   if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) return smtpSend(env, to, subject, html)
-  if (env.EMAIL_DEV_LOG === '1') { console.log('EMAIL (modo prueba)', to, subject, html.match(/href="([^"]+)"/)?.[1]?.replace(/&amp;/g, '&')); return }
+  if (env.EMAIL_DEV_LOG === '1') { console.log('EMAIL (modo prueba)', to, subject, html.match(/href="([^"]+)"/)?.[1]?.replace(/&amp;/g, '&') ?? html.match(/data-code="1">(\d{6})</)?.[1]); return }
   throw new Error('email no configurado')
 }
 
