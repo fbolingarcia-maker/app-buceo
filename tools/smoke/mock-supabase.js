@@ -126,6 +126,7 @@ export function createClient() {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: () => Promise.resolve({}), signInWithPassword: () => Promise.resolve({ error: { message: 'Invalid login credentials' } }),
       signUp: () => Promise.resolve({ data: { user: { id: 'n' }, session: null }, error: null }), resetPasswordForEmail: () => Promise.resolve({}), updateUser: () => Promise.resolve({}),
+      reauthenticate: () => Promise.resolve({ data: {}, error: null }),
       refreshSession: () => Promise.resolve({ data: { session } }), resend: () => Promise.resolve({ error: null }), signInWithOAuth: () => Promise.resolve({ error: null }),
       mfa: {
         getAuthenticatorAssuranceLevel: () => Promise.resolve({ data: { currentLevel: 'aal1', nextLevel: rawRole === 'mfa' ? 'aal2' : 'aal1' } }),
