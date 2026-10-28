@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url'
 const SUPABASE = 'https://tosgzcpnkpsrrkfqctgy.supabase.co'
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // Cloudflare inserta su analítica (Web Analytics) en las páginas: se permite solo ese script y su envío
+  "script-src 'self' https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://flagcdn.com https://lh3.googleusercontent.com " + SUPABASE,
-  "connect-src 'self' " + SUPABASE + ' ' + SUPABASE.replace('https://', 'wss://'),
+  "connect-src 'self' https://cloudflareinsights.com " + SUPABASE + ' ' + SUPABASE.replace('https://', 'wss://'),
   "font-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",
