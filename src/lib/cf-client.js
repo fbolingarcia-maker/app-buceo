@@ -91,6 +91,13 @@ export function createCfClient() {
       const r = await call('auth/signup', { email, password, data: options.data, redirect: options.emailRedirectTo })
       return r.error ? { data: { user: null, session: null }, error: r.error } : { data: { user: r.user, session: null }, error: null }
     },
+    // Acceso con Google: el Worker hace el OAuth (worker/google.js) y vuelve a la app con la sesión abierta
+    async signInWithOAuth({ provider, options = {} } = {}) {
+      if (provider !== 'google') return { data: null, error: { message: 'Proveedor no disponible', code: 'provider_disabled' } }
+      const q = new URLSearchParams({ redirect: options.redirectTo || '', prompt: options.queryParams?.prompt || 'select_account' })
+      window.location.assign('/api/auth/oauth/google?' + q)
+      return { data: { provider, url: '/api/auth/oauth/google?' + q }, error: null }
+    },
     async resend({ email, options = {} }) {
       const r = await call('auth/resend', { email, redirect: options.emailRedirectTo })
       return { data: {}, error: r.error }

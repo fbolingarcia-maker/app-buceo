@@ -33,9 +33,18 @@ fs.writeFileSync(OUT + '/index.html', '<!doctype html><html><head><meta charset=
 const db = new D1(path.join(APP, 'worker/schema.sql'))
 await seed(db)
 const mails = []
-const env = { DB: db, AUTH_SECRET: 'e2e-secreto-de-prueba-0123456789', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2() }
+const env = { DB: db, AUTH_SECRET: 'e2e-secreto-de-prueba-0123456789', GOOGLE_CLIENT_ID: 'e2e.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'e2e', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2() }
 const log = console.log
 console.log = (...a) => { if (a[0] === 'EMAIL (modo prueba)') mails.push(a); else log(...a) }
+// Google simulado para el acceso con Google (el Worker cambia el código por el id_token)
+const realFetch = globalThis.fetch
+globalThis.fetch = async (u, opt) => {
+  if (String(u) === 'https://oauth2.googleapis.com/token') {
+    const b64u = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
+    return new Response(JSON.stringify({ id_token: b64u({ alg: 'none' }) + '.' + b64u({ iss: 'https://accounts.google.com', aud: 'e2e.apps.googleusercontent.com', sub: 'g-e2e', email: 'google@divingslot.test', email_verified: true, name: 'Gina Google', picture: 'https://lh3.googleusercontent.com/a/e2e', locale: 'es', exp: Math.floor(Date.now() / 1000) + 600 }) + '.x' }), { status: 200 })
+  }
+  return realFetch(u, opt)
+}
 
 const PORT = 8766
 const ORIGIN = `http://localhost:${PORT}`
@@ -50,9 +59,10 @@ const server = http.createServer(async (req, res) => {
     if (r.status >= 400) apiErrors.push(`${r.status} ${req.method} ${url.pathname} ${chunks.length ? Buffer.concat(chunks).toString().slice(0, 160) : ''} → ${body.toString().slice(0, 160)}`)
     const h = {}
     r.headers.forEach((v, k) => { h[k] = v })
+    if (r.headers.getSetCookie?.().length) h['set-cookie'] = r.headers.getSetCookie() // varias cookies (sesión + borrar la de Google)
     res.writeHead(r.status, h); res.end(body); return
   }
-  const file = url.pathname === '/' ? OUT + '/index.html' : path.join(OUT, path.normalize(url.pathname))
+  const file = url.pathname === '/' || url.pathname === '/app/' ? OUT + '/index.html' : path.join(OUT, path.normalize(url.pathname))
   if (!file.startsWith(OUT) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return }
   const type = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2' }[path.extname(file)] || 'application/octet-stream'
   res.writeHead(200, { 'Content-Type': type }); res.end(fs.readFileSync(file))
@@ -140,6 +150,39 @@ for (const [role, [who, routes]] of Object.entries(plan)) {
     if (before === after) bad.push('la contraseña no cambió en la base de datos')
     report(role, 'cambiar contraseña con código', bad, (txt.match(/Contraseña cambiada/) || [''])[0])
   }
+  await ctx.close()
+}
+// Acceso con Google de verdad por la pantalla: botón → Worker → «Google» (simulado) → vuelta con la sesión abierta
+if (!only.length || only.includes('google')) {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } })
+  await ctx.addInitScript(() => { try { localStorage.setItem('lang', 'es') } catch (e) { /* página de Google simulada */ } })
+  // Playwright no intercepta las redirecciones: se coge la respuesta del Worker (302 a Google + cookie) y se hace de «Google»
+  await ctx.route(/\/api\/auth\/oauth\/google/, async (r) => {
+    const resp = await r.fetch({ maxRedirects: 0 })
+    const loc = new URL(resp.headers()['location'])
+    if (loc.origin !== 'https://accounts.google.com') return r.fulfill({ response: resp })
+    const back = `${ORIGIN}/api/auth/callback/google?code=e2e&state=${loc.searchParams.get('state')}`
+    await r.fulfill({ status: 200, headers: { 'content-type': 'text/html', 'set-cookie': resp.headers()['set-cookie'] }, body: `<script>location.replace(${JSON.stringify(back)})</script>` })
+  })
+  await ctx.route(/^https?:\/\/(?!localhost:8766)/, (r) => r.abort())
+  const page = await ctx.newPage()
+  const errs = []
+  page.on('pageerror', (e) => errs.push('PAGEERROR ' + e.message))
+  if (process.env.DEBUG_GOOGLE) { page.on('request', (r) => log('  >', r.url().slice(0, 90))); page.on('requestfailed', (r) => log('  x', r.url().slice(0, 90), r.failure()?.errorText)); page.on('framenavigated', (f) => log('  nav', f.url().slice(0, 90))) }
+  if (process.env.DEBUG_GOOGLE) page.on('response', (r) => log('  ·', r.status(), r.url().slice(0, 110), r.headers()['location'] || '', (r.headers()['set-cookie'] || '').slice(0, 60)))
+  apiErrors.length = 0
+  await page.goto(ORIGIN + '/#/login', { waitUntil: 'domcontentloaded' })
+  await page.locator('button.google-btn').first().click()
+  await page.waitForURL(/\/app\/#\//, { timeout: 8000 }).catch(() => {})
+  await page.waitForTimeout(1200)
+  await page.goto(ORIGIN + '/app/#/perfil', { waitUntil: 'domcontentloaded' })
+  await page.waitForTimeout(900)
+  const txt = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ')
+  const bad = [...errs, ...apiErrors.map((e) => 'API ' + e)]
+  if (!/google@divingslot\.test/.test(txt)) bad.push('no ha entrado con Google')
+  if (!/Cuenta conectada con Google/.test(txt)) bad.push('no se ve «Cuenta conectada con Google»')
+  if (!/Crea una contraseña/.test(txt)) bad.push('no ofrece crear contraseña a la cuenta de Google')
+  report('google', 'entrar con Google', bad, page.url() + ' · ' + txt.slice(0, 120))
   await ctx.close()
 }
 await browser.close()

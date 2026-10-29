@@ -6,6 +6,8 @@
 //   /api/storage/*          ficheros privados en R2 con enlaces firmados                → storage.js
 //   POST /api/functions/crear-pago, POST /api/webhooks/paymongo                         → payments.js
 //   POST /api/hit, GET /api/stats, POST /api/notify (visitas y avisos de uso)            → stats.js
+//   POST /api/import, GET /api/import/status (copia de datos desde Supabase, una vez)    → import.js
+//   GET  /api/health[?check=1] (estado y, con check=1, qué falta configurar)             → health.js
 import { json, errorResponse, fail, sessionCookie } from './lib/util.js'
 import { loadCtx, handleAuth, rateLimit } from './auth.js'
 import { handleRest } from './rest.js'
@@ -13,6 +15,8 @@ import { handleRpc } from './rpc.js'
 import { handleStorage } from './storage.js'
 import { crearPago, paymongoWebhook } from './payments.js'
 import { cleanup } from './cron.js'
+import { handleImport } from './import.js'
+import { handleHealth } from './health.js'
 import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits } from './stats.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
@@ -30,7 +34,8 @@ export async function handleApi(req, env, ectx) {
   try {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204 }) // sin CORS: solo la propia app
     if (path === 'webhooks/paymongo' && req.method === 'POST') return await paymongoWebhook(req, env)
-    if (path === 'health') return json({ ok: true })
+    if (path === 'health') return await handleHealth(req, env, url)
+    if (path === 'import' || path === 'import/status') return await handleImport(req, env, url)
     // Visitas (sendBeacon no puede poner cabeceras: se comprueba el Origin dentro) y avisos desde Supabase (clave propia)
     if (path === 'hit' && req.method === 'POST') return await handleHit(req, env, url)
     if (path === 'notify' && req.method === 'POST') return await handleNotify(req, env)

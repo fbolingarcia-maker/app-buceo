@@ -75,4 +75,11 @@ export default {
   'Reenviar en {n} s': 'Resend in {n} s',
   'Reenviar código': 'Resend code',
   'Crear contraseña': 'Create password',
+  // Acceso con Google en el backend de Cloudflare (worker/google.js)
+  'El acceso con Google no está configurado': 'Google sign-in is not set up yet',
+  'Has cancelado el acceso con Google': 'You cancelled the Google sign-in',
+  'Google no ha permitido el acceso': "Google didn't allow the sign-in",
+  'La sesión con Google ha caducado. Vuelve a intentarlo': 'The Google sign-in expired. Please try again',
+  'No hemos podido entrar con Google. Vuelve a intentarlo': "We couldn't sign you in with Google. Please try again",
+  'Tu cuenta de Google no tiene un email verificado': "Your Google account doesn't have a verified email",
 }

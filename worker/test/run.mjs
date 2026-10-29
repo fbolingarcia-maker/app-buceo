@@ -10,7 +10,7 @@ import { run } from '../lib/util.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
-const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2(),
+const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', GOOGLE_CLIENT_ID: 'cid.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'csecret', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2(),
   PAYMONGO_SECRET_KEY: 'sk_test_x', PAYMONGO_WEBHOOK_SECRET: 'whsk_x' }
 
 let fails = 0, passes = 0
@@ -25,8 +25,18 @@ console.error = (...a) => { if (process.env.DEBUG) log(...a) }
 
 // PayMongo simulado
 const pmSessions = new Map()
+// Google simulado: el «code» es el JSON del usuario que devuelve el id_token
+const googleCodes = new Map()
 globalThis.fetch = async (url, opt = {}) => {
   const u = String(url)
+  if (u === 'https://oauth2.googleapis.com/token') {
+    const f = new URLSearchParams(opt.body)
+    const who = googleCodes.get(f.get('code'))
+    if (!who || f.get('client_secret') !== 'csecret' || !f.get('code_verifier')) return new Response(JSON.stringify({ error: 'invalid_grant' }), { status: 400 })
+    const b64u = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
+    const idt = b64u({ alg: 'RS256' }) + '.' + b64u({ iss: 'https://accounts.google.com', aud: 'cid.apps.googleusercontent.com', exp: Math.floor(Date.now() / 1000) + 3600, email_verified: true, ...who }) + '.sig'
+    return new Response(JSON.stringify({ id_token: idt, access_token: 'x' }), { status: 200 })
+  }
   if (u === 'https://api.paymongo.com/v1/checkout_sessions' && opt.method === 'POST') {
     const id = 'cs_' + Math.random().toString(36).slice(2)
     pmSessions.set(id, { paid: false, body: JSON.parse(opt.body) })
@@ -359,6 +369,54 @@ for (let i = 0; i < 5; i++) await pwc.call('POST', '/api/auth/update', { passwor
 r = await pwc.call('POST', '/api/auth/update', { password: 'Otra654321', nonce: reCode2 })
 ok(r.error?.code === 'reauthentication_not_valid', 'tras 5 intentos el código deja de valer', r)
 
+section('acceso con Google')
+{
+  // Entra con Google: a Google con state y PKCE; vuelta con el código → cuenta creada, sesión abierta
+  const google = async (who, code, back = '') => {
+    const c = new Client('g-' + code)
+    const start = await c.raw('GET', '/api/auth/oauth/google?redirect=' + encodeURIComponent(back))
+    const loc = new URL(start.headers.get('Location'))
+    const oauthCookie = start.headers.get('Set-Cookie').split(';')[0]
+    googleCodes.set(code, who)
+    const cb = await c.raw('GET', `/api/auth/callback/google?code=${code}&state=${loc.searchParams.get('state')}`, undefined, { Cookie: oauthCookie })
+    return { c, start, loc, cb }
+  }
+  let g = await google({ sub: 'g-111', email: 'Nueva@Gmail.com', name: 'Nueva Buceadora', picture: 'https://lh3.googleusercontent.com/a/x', locale: 'es-ES' }, 'c1')
+  ok(g.loc.origin === 'https://accounts.google.com' && g.loc.searchParams.get('code_challenge_method') === 'S256' && g.loc.searchParams.get('redirect_uri') === ORIGIN + '/api/auth/callback/google', 'va a Google con PKCE y la URI de vuelta', g.loc.toString())
+  ok(g.cb.status === 302 && g.cb.headers.get('Location') === ORIGIN + '/app/#/login', 'vuelve a la app', g.cb.headers.get('Location'))
+  r = await g.c.call('GET', '/api/auth/session')
+  ok(r.session?.user?.email === 'nueva@gmail.com' && r.session.user.identities?.[0]?.provider === 'google' && r.session.user.identities.length === 1, 'sesión abierta con la cuenta de Google', r.session)
+  r = await g.c.rest({ table: 'divers', select: 'full_name, avatar_url, auth_provider, languages', single: 'single' })
+  ok(r.data?.full_name === 'Nueva Buceadora' && r.data.auth_provider === 'google' && r.data.avatar_url?.startsWith('https://lh3') && r.data.languages?.[0] === 'es', 'perfil con nombre, foto e idioma de Google', r.data)
+  ok((await anon.login('nueva@gmail.com', 'Clave1234')).error, 'sin contraseña propia no entra con email')
+  // Segunda vez: misma cuenta
+  g = await google({ sub: 'g-111', email: 'nueva@gmail.com', name: 'Nueva' }, 'c2')
+  ok((await db.prepare("SELECT count(*) AS n FROM users WHERE email = 'nueva@gmail.com'").first()).n === 1, 'la segunda vez entra en la misma cuenta')
+  // Cuenta de email que ya existía: se enlaza y conserva su contraseña
+  g = await google({ sub: 'g-222', email: 'a@divingslot.test', name: 'A Google', picture: 'https://lh3.googleusercontent.com/a/y' }, 'c3', ORIGIN + '/app/#/salida/x')
+  ok(g.cb.headers.get('Location') === ORIGIN + '/app/#/salida/x', 'vuelve a la salida de la que venía')
+  r = await g.c.call('GET', '/api/auth/session')
+  ok(r.session?.user?.identities?.map((i) => i.provider).join() === 'email,google', 'cuenta de email enlazada con Google', r.session?.user)
+  // Cuenta sin confirmar con el mismo email: al enlazar, su contraseña deja de valer (la pudo poner otra persona)
+  await anon.call('POST', '/api/auth/signup', { email: 'robo@gmail.com', password: 'Clave1234' })
+  g = await google({ sub: 'g-333', email: 'robo@gmail.com', name: 'Dueño' }, 'c4')
+  ok(!(await db.prepare("SELECT password_hash FROM users WHERE email = 'robo@gmail.com'").first()).password_hash, 'borra la contraseña de la cuenta sin confirmar')
+  // Errores
+  const c5 = new Client('g5')
+  const s5 = await c5.raw('GET', '/api/auth/oauth/google')
+  const ck5 = s5.headers.get('Set-Cookie').split(';')[0]
+  googleCodes.set('c5', { sub: 'g-5', email: 'x@gmail.com' })
+  const bad = await c5.raw('GET', '/api/auth/callback/google?code=c5&state=otro', undefined, { Cookie: ck5 })
+  ok(bad.headers.get('Location')?.includes('error_description') && !(await db.prepare("SELECT 1 AS x FROM users WHERE email = 'x@gmail.com'").first()), 'state equivocado: no entra')
+  const noCk = await new Client('g6').raw('GET', '/api/auth/callback/google?code=c5&state=' + new URL(s5.headers.get('Location')).searchParams.get('state'))
+  ok(noCk.headers.get('Location')?.includes('error_description'), 'sin la cookie del inicio: no entra')
+  googleCodes.set('c7', { sub: 'g-7', email: 'sinverificar@gmail.com', email_verified: false })
+  const s7c = new Client('g7'); const s7 = await s7c.raw('GET', '/api/auth/oauth/google')
+  const b7 = await s7c.raw('GET', `/api/auth/callback/google?code=c7&state=${new URL(s7.headers.get('Location')).searchParams.get('state')}`, undefined, { Cookie: s7.headers.get('Set-Cookie').split(';')[0] })
+  ok(b7.headers.get('Location')?.includes('error_description'), 'email de Google sin verificar: no entra')
+  ok((await db.prepare("SELECT count(*) AS n FROM notify_log WHERE kind = 'alta' AND title LIKE '%Nueva Buceadora%'").first().catch(() => ({ n: 0 }))).n === 1, 'aviso de cuenta nueva al administrador')
+}
+
 section('CSRF')
 const req = new Request(ORIGIN + '/api/rpc/book_trip', { method: 'POST', headers: { Origin: 'https://malo.example', 'X-DivingSlot': '1', Cookie: B.cookie, 'Content-Type': 'application/json' }, body: '{}' })
 ok((await handleApi(req, env, {})).status === 403, 'otro origen: 403')
@@ -458,6 +516,12 @@ const free = many.find((c, i) => !results[i].data)
 r = await free.rpc('delete_my_account', { p_dry_run: false })
 ok(r.data?.deleted === true, 'borra una cuenta sin reservas', r)
 ok((await free.call('GET', '/api/auth/session')).session === null, 'la sesión deja de valer')
+
+section('avisos al administrador (como los triggers de la migración 030)')
+{
+  const kinds = (await db.prepare('SELECT kind, count(*) AS n FROM notify_log GROUP BY kind').all()).results.reduce((o, r) => ({ ...o, [r.kind]: r.n }), {})
+  ok(kinds.alta >= 3 && kinds.centro >= 1 && kinds.verificacion >= 1 && kinds.reserva >= 2 && kinds.pago >= 1, 'altas, centro nuevo, verificación, reservas y pago online', kinds)
+}
 
 console.log = log
 console.log(`\n${passes} bien, ${fails} mal`)

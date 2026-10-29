@@ -4,8 +4,9 @@ import { t } from './i18n'
 
 // Entrar o crear cuenta con Google (Supabase Auth, proveedor «google»).
 // Google nos da nombre, email, foto e idioma: el trigger handle_new_user crea el perfil con ellos (migración 033).
-// La vuelta llega a la raíz (siteUrl) con #access_token=…; la landing la reenvía a /app/ y auth.jsx la recoge.
-// Con el backend de Cloudflare no hay acceso con Google todavía: el botón no se muestra.
+// Supabase: la vuelta llega a la raíz (siteUrl) con #access_token=…; la landing la reenvía a /app/ y auth.jsx la recoge.
+// Cloudflare (VITE_BACKEND=cloudflare): el Worker hace el OAuth (worker/google.js), abre la sesión con su cookie y vuelve a
+// /app/#/login, que manda al usuario a donde estaba (afterLogin). Los errores llegan como ?error_description=… igual que con Supabase.
 export const GOOGLE_LOGIN = typeof supabase.auth.signInWithOAuth === 'function'
 
 export default function GoogleButton({ label }) {

@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
   last_sign_in_at TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   user_metadata TEXT NOT NULL DEFAULT '{}',
-  provider TEXT NOT NULL DEFAULT 'email'
+  provider TEXT NOT NULL DEFAULT 'email',
+  google_sub TEXT UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS sessions (

@@ -4,7 +4,7 @@
 import { HOLDS, OPERATIVE, APP_AVAILABLE, CERT_LEVELS } from './schema.js'
 import { fail, nowIso, uuid, all, first, run, changes, outRow } from './lib/util.js'
 import { sendEmail, TEMPLATES } from './email.js'
-import { centreEmail } from './stats.js'
+import { centreEmail, notifyLater } from './stats.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -236,7 +236,15 @@ const RPC = {
       const left = (await first(ctx.db, `SELECT ${OPERATIVE('t')} - ${used} AS n FROM trips t WHERE t.id = ?`, t.id))?.n ?? 0
       fail('NO_SEATS', `solo quedan ${left} plazas en el barco`)
     }
-    return booking(ctx.db, id)
+    const b = await booking(ctx.db, id)
+    const c = await first(ctx.db, 'SELECT name FROM centers WHERE id = ?', t.center_id)
+    if (c && !c.name.startsWith('Demo')) {
+      const local = new Date(Date.parse(t.departs_at) + 8 * 36e5).toISOString()
+      notifyLater(ctx, ctx.waitUntil, { kind: 'reserva', title: `Nueva reserva: ${seats} ${seats === 1 ? 'plaza' : 'plazas'} en ${c.name}`,
+        lines: [`Salida: ${local.slice(8, 10)}/${local.slice(5, 7)}/${local.slice(0, 4)} ${local.slice(11, 16)}`, `Buceador: ${guest}`,
+          `Importe: ₱${(b?.amount_php || 0).toLocaleString('en-US')}`, `Origen: ${p_source}`] })
+    }
+    return b
   },
 
   async record_cash_payment(ctx, { p_booking, p_amount = null }) {
@@ -310,7 +318,11 @@ const RPC = {
       ctx.db.prepare("INSERT INTO center_staff (center_id, user_id, role) VALUES (?, ?, 'owner')").bind(id, ctx.uid),
       ctx.db.prepare("UPDATE divers SET account_type = 'center' WHERE user_id = ?").bind(ctx.uid),
     ])
-    return publicCenter(ctx.db, id)
+    const c = await publicCenter(ctx.db, id)
+    if (!c.name.startsWith('Demo')) notifyLater(ctx, ctx.waitUntil, { kind: 'centro', title: 'Nuevo centro: ' + c.name,
+      lines: [c.destination ? 'Destino: ' + c.destination : null, c.claims_center_id ? 'Reclama una ficha del directorio' : null],
+      url: (ctx.origin || 'https://divingslot.com') + '/app/#/admin/centers' })
+    return c
   },
 
   async submit_center_verification(ctx) {
@@ -331,6 +343,8 @@ const RPC = {
       ctx.db.prepare("UPDATE centers SET verification_status = 'pending', review_note = NULL WHERE id = ?").bind(c.id),
       ...(c.verification_status !== 'pending' ? [audit(ctx.db, ctx.uid, 'center_status', c.id, { name: c.name, from: c.verification_status, to: 'pending', note: null })] : []),
     ])
+    if (c.verification_status !== 'pending' && !c.name.startsWith('Demo')) notifyLater(ctx, ctx.waitUntil, { kind: 'verificacion',
+      title: 'Centro pendiente de verificar: ' + c.name, lines: [c.destination ? 'Destino: ' + c.destination : null], url: (ctx.origin || 'https://divingslot.com') + '/app/#/admin/centers' })
     return publicCenter(ctx.db, c.id)
   },
 
@@ -551,6 +565,8 @@ async function notifyCentreBooking(ctx, t, seats, id) {
     `Importe: ₱${(b?.amount_php || 0).toLocaleString('en-US')}`, 'Origen: app']
   const link = `${ctx.origin || 'https://divingslot.com'}/app/#/centro/agenda?dia=${local.slice(0, 10)}`
   for (const s of staff) await sendEmail(ctx.env, s.email, centreEmail(title, lines, link)).catch((e) => console.error('aviso centro', e.message))
+  // Aviso al administrador (como el trigger notify_booking de la migración 030)
+  await notifyLater(ctx, null, { kind: 'reserva', title, lines })
 }
 
 const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_at, locality, website, source_url, lat, lng, location_precision, listing_status, destination, province, languages, course_languages, verification_status, claims_center_id, verified_at, agencies, agency_detail, directory_check, checked_at'

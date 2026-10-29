@@ -4,6 +4,8 @@ import { ApiError, fail, json, nowIso, uuid, all, first, run, changes, parseCook
 import { hashPassword, verifyPassword, randomToken, sha256, encryptSecret, decryptSecret, base32, randomBytes, totpVerify } from './lib/crypto.js'
 import { qrSvgDataUrl } from './lib/qr.js'
 import { sendEmail, TEMPLATES } from './email.js'
+import { googleStart, googleCallback } from './google.js'
+import { notifyAdmin } from './stats.js'
 
 const SESSION_DAYS = 30
 const TOKEN_HOURS = { confirm: 24, recovery: 1 }
@@ -44,7 +46,10 @@ export async function loadCtx(req, env) {
 }
 
 const userJson = (u) => ({
-  id: u.id, email: u.email, user_metadata: safeMeta(u.user_metadata), app_metadata: { provider: u.provider || 'email' },
+  id: u.id, email: u.email, user_metadata: safeMeta(u.user_metadata),
+  app_metadata: { provider: u.provider || 'email', providers: [...(u.password_hash ? ['email'] : []), ...(u.google_sub ? ['google'] : [])] },
+  // Como supabase-js: «email» si tiene contraseña propia, «google» si entra con Google (CambiarClave decide «Crear contraseña»)
+  identities: [...(u.password_hash ? [{ provider: 'email' }] : []), ...(u.google_sub ? [{ provider: 'google' }] : [])],
   email_confirmed_at: u.email_confirmed_at, created_at: u.created_at, aud: 'authenticated',
 })
 function safeMeta(m) { try { return typeof m === 'string' ? JSON.parse(m) : (m || {}) } catch (e) { return {} } }
@@ -102,16 +107,34 @@ async function sendToken(env, req, user, kind, redirect) {
   }
 }
 
-// Perfil de buceador al crear la cuenta (port de handle_new_user)
-async function createDiver(env, user, meta) {
+// Perfil de buceador al crear la cuenta (port de handle_new_user, migraciones 009 y 033)
+async function createDiver(env, user, meta, { provider = 'email', avatar = null, languages = [] } = {}) {
   const name = String(meta.full_name || meta.name || '').trim() || user.email.split('@')[0]
-  await run(env.DB, `INSERT INTO divers (id, user_id, full_name, email, auth_provider, locale, account_type) VALUES (?, ?, ?, ?, 'email', ?, ?)
-    ON CONFLICT(user_id) DO NOTHING`, uuid(), user.id, name.slice(0, 120), user.email, meta.locale || null, meta.account_type === 'center' ? 'center' : 'diver')
+  await run(env.DB, `INSERT INTO divers (id, user_id, full_name, email, auth_provider, locale, account_type, avatar_url, languages) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id) DO NOTHING`, uuid(), user.id, name.slice(0, 120), user.email, provider, meta.locale || null,
+    meta.account_type === 'center' ? 'center' : 'diver', avatar, JSON.stringify(languages))
+}
+
+// Aviso de cuenta nueva al administrador (como el trigger notify_new_diver de la migración 030)
+function notifyNewAccount(env, user, { full_name, account_type, provider }, waitUntil) {
+  const p = notifyAdmin(env, {
+    kind: 'alta', title: (account_type === 'center' ? 'Nueva cuenta de centro: ' : 'Nueva cuenta de buceador: ') + (full_name || '(sin nombre)'),
+    lines: ['Email: ' + user.email, 'Alta con: ' + (provider || 'email')], url: 'https://divingslot.com/app/#/admin/users',
+  }).catch((e) => console.error('aviso alta', e.message))
+  if (waitUntil) waitUntil(p)
+  return p
 }
 
 export async function handleAuth(req, env, ctx, path) {
   const ip = req.headers.get('CF-Connecting-IP') || 'local'
   const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
+
+  // Acceso con Google (google.js)
+  if (path === 'oauth/google' && req.method === 'GET') return googleStart(req, env)
+  if (path === 'callback/google' && req.method === 'GET') {
+    await rateLimit(env, 'google:' + ip, 30, 900)
+    return googleCallback(req, env, { newSession, createDiver, notify: (e, u, info) => notifyNewAccount(e, u, info, ctx.waitUntil) })
+  }
 
   if (path === 'session' && req.method === 'GET') {
     const info = await sessionInfo(ctx)
@@ -134,6 +157,7 @@ export async function handleAuth(req, env, ctx, path) {
     const user = { id: uuid(), email }
     await run(env.DB, 'INSERT INTO users (id, email, password_hash, user_metadata) VALUES (?, ?, ?, ?)', user.id, email, await hashPassword(body.password, +(env.PBKDF2_ITER || 100000)), JSON.stringify(meta))
     await createDiver(env, user, meta)
+    notifyNewAccount(env, user, { full_name: meta.full_name || email.split('@')[0], account_type: meta.account_type, provider: 'email' }, ctx.waitUntil)
     await rateLimit(env, 'mail:' + email, 3, 3600)
     await sendToken(env, req, user, 'confirm', body.redirect)
     return json({ user: { id: user.id, email, user_metadata: meta }, session: null })

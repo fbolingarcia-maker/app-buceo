@@ -105,9 +105,17 @@ export async function handleNotify(req, env) {
   if (!env.NOTIFY_KEY) fail('NOT_CONFIGURED', 'falta NOTIFY_KEY', 503)
   if (!safeEqual(req.headers.get('X-Notify-Key') || '', env.NOTIFY_KEY)) fail('FORBIDDEN', 'clave incorrecta', 403)
   const b = await req.json().catch(() => ({}))
+  return json({ ok: true, ...(await notifyAdmin(env, b)) })
+}
+
+// Aviso de uso: se guarda en notify_log (panel de administración) y se manda por email al administrador y, si se
+// indica, al equipo del centro. Lo usan /api/notify (avisos desde Supabase) y, con el backend de Cloudflare, el
+// propio Worker en las mismas situaciones que los triggers de la migración 030 (alta, centro, verificación, reserva, pago).
+export async function notifyAdmin(env, b = {}) {
+  if (!env.DB) return { emailed: false, centre: 0 }
   const kind = String(b.kind || 'otro').slice(0, 30)
   const title = String(b.title || 'Aviso').slice(0, 200)
-  const lines = (Array.isArray(b.lines) ? b.lines : []).map((x) => String(x).slice(0, 300)).slice(0, 12)
+  const lines = (Array.isArray(b.lines) ? b.lines : []).filter((x) => x != null && x !== '').map((x) => String(x).slice(0, 300)).slice(0, 12)
   const link = typeof b.url === 'string' && /^https:\/\//.test(b.url) ? b.url : null
   await ensureTables(env.DB)
   const r = await env.DB.prepare('INSERT INTO notify_log (ts, day, kind, title, detail) VALUES (?, ?, ?, ?, ?) RETURNING id')
@@ -126,7 +134,15 @@ export async function handleNotify(req, env) {
   for (const addr of to) {
     try { await sendEmail(env, addr, centreEmail(title, lines, link)); centre++ } catch (e) { console.error('notify centre', e.message) }
   }
-  return json({ ok: true, emailed, centre })
+  return { emailed, centre }
+}
+
+// Lanza un aviso sin hacer esperar a la respuesta (y sin que un fallo afecte a la acción)
+export function notifyLater(ctxOrEnv, waitUntil, b) {
+  const env = ctxOrEnv.env || ctxOrEnv
+  const p = notifyAdmin(env, b).catch((e) => console.error('aviso', e.message))
+  if (waitUntil) waitUntil(p)
+  return p
 }
 
 const EMAIL = /^[^@\s]{1,64}@[^@\s]{1,190}\.[a-z]{2,}$/

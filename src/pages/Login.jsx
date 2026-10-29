@@ -24,7 +24,7 @@ export default function Login({ embedded }) {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState(() => { const e = sessionStorage.getItem('authError'); sessionStorage.removeItem('authError'); return e || '' })
+  const [error, setError] = useState(() => { const e = sessionStorage.getItem('authError'); sessionStorage.removeItem('authError'); return e ? errMsg({ message: e }) : '' })
   const [info, setInfo] = useState('')
   const [resend, setResend] = useState(false) // mostrar «Reenviar email de confirmación»
   const [resent, setResent] = useState(false)

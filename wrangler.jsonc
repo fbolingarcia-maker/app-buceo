@@ -1,7 +1,8 @@
 // DivingSlot en Cloudflare: un Worker sirve la app (Static Assets) y la API propia (/api/*, worker/index.js) sobre D1.
 // Cloudflare compila con `npm run build` y publica con `npx wrangler deploy` en cada push a main.
-// Mientras la app se compile sin VITE_BACKEND=cloudflare sigue usando Supabase y la API no recibe tráfico.
-// Pasos para el cambio completo: docs/CLOUDFLARE-BACKEND.md
+// Mientras .env.production diga VITE_BACKEND=supabase, la app usa Supabase y la API solo recibe visitas y avisos.
+// Pasos para el cambio completo: docs/CAMBIO-A-CLOUDFLARE.md (secretos en el panel: AUTH_SECRET, GOOGLE_CLIENT_ID,
+// GOOGLE_CLIENT_SECRET, NOTIFY_KEY, SMTP_* o RESEND_API_KEY; qué falta: https://divingslot.com/api/health?check=1)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "diveslot",
@@ -25,7 +26,7 @@
   //   { "binding": "DIVE_PHOTOS", "bucket_name": "divingslot-dive-photos" },
   //   { "binding": "CENTER_DOCS", "bucket_name": "divingslot-center-docs" }
   // ],
-  // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados)
+  // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados, cierre de la importación)
   "triggers": { "crons": ["17 * * * *"] },
   "observability": { "enabled": true }
 }

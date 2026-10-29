@@ -1,6 +1,7 @@
 // Tarea programada (Cron Trigger, cada hora): limpieza. Las retenciones de plaza de 15 min no necesitan cron:
 // se calculan al leer (holds_seat), igual que en Supabase.
 import { nowIso } from './lib/util.js'
+import { checkImportLock } from './import.js'
 
 export async function cleanup(env) {
   const now = nowIso()
@@ -13,4 +14,5 @@ export async function cleanup(env) {
     // Pagos online abandonados (la página de PayMongo caduca): pasan a «expired» a las 24 h
     env.DB.prepare("UPDATE payments SET status = 'expired' WHERE status = 'pending' AND provider = 'paymongo' AND created_at < ?").bind(new Date(Date.now() - 864e5).toISOString()),
   ])
+  await checkImportLock(env).catch((e) => console.error('import lock', e.message))
 }

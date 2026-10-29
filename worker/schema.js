@@ -24,6 +24,7 @@ export const TABLES = {
     ['created_at', 'ts', { nn: true, def: NOW }],
     ['user_metadata', 'json', { nn: true, def: "'{}'" }],
     ['provider', 'text', { nn: true, def: "'email'" }],
+    ['google_sub', 'text', { unique: true }],     // id de la cuenta de Google (acceso con Google, google.js)
   ] },
   sessions: { internal: true, cols: [
     ['id', 'text', { pk: true }],                 // SHA-256 del token de la cookie

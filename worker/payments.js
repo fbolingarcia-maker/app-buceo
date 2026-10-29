@@ -4,6 +4,17 @@
 import { json, first, run } from './lib/util.js'
 import { hmacHex, safeEqual } from './lib/crypto.js'
 import { startOnlinePayment, settlePayment } from './rpc.js'
+import { notifyAdmin } from './stats.js'
+
+// Cobra el pago y avisa al administrador (como el trigger notify_payment de la migración 030)
+async function settleAndNotify(env, db, paymentId) {
+  const before = await first(db, 'SELECT status, provider, method, kind, amount_php FROM payments WHERE id = ?', paymentId)
+  await settlePayment(db, paymentId)
+  if (before && before.status !== 'paid' && before.provider === 'paymongo') {
+    await notifyAdmin(env, { kind: 'pago', title: 'Pago online recibido: ₱' + (before.amount_php || 0).toLocaleString('en-US'),
+      lines: ['Método: ' + (before.method || '—'), 'Tipo: ' + (before.kind || '—')] }).catch((e) => console.error('aviso pago', e.message))
+  }
+}
 
 const PM = 'https://api.paymongo.com/v1'
 const KIND_LABEL = { deposit: 'Señal 50 %', full: 'Pago total', balance: 'Resto' }
@@ -26,7 +37,7 @@ export async function crearPago(req, env, ctx) {
       const p = await first(ctx.db, 'SELECT p.* FROM payments p JOIN bookings b ON b.id = p.booking_id WHERE p.id = ? AND b.diver_id = ?', String(body.payment_id || ''), ctx.diverId || '')
       if (!p) return json({ error: 'Pago no encontrado' }, 404)
       if (p.status === 'paid') return json({ status: 'paid' })
-      if (key && p.provider_ref && (await sessionPaid(p.provider_ref, key))) { await settlePayment(ctx.db, p.id); return json({ status: 'paid' }) }
+      if (key && p.provider_ref && (await sessionPaid(p.provider_ref, key))) { await settleAndNotify(env, ctx.db, p.id); return json({ status: 'paid' }) }
       return json({ status: p.status })
     }
     const { booking_id, kind, method } = body
@@ -86,7 +97,7 @@ export async function paymongoWebhook(req, env) {
   const p = await first(env.DB, 'SELECT id, status FROM payments WHERE provider_ref = ?', session.id)
   if (!p) return new Response('unknown session')
   try {
-    if (p.status !== 'paid' && (await sessionPaid(session.id, key))) await settlePayment(env.DB, p.id)
+    if (p.status !== 'paid' && (await sessionPaid(session.id, key))) await settleAndNotify(env, env.DB, p.id)
   } catch (e) { console.error('settle', e.message); return new Response('error', { status: 500 }) }
   return new Response('ok')
 }

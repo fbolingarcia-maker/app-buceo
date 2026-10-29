@@ -2,7 +2,7 @@
 
 Sustituye a Supabase sin cambiar las pantallas. La app habla con el backend a través de `src/lib/supabase.js`, que elige el cliente según la variable de compilación `VITE_BACKEND`:
 
-- **Sin variable:** sigue usando Supabase, como ahora.
+- **`VITE_BACKEND=supabase`** (en `.env.production`, como ahora): sigue usando Supabase.
 - **Con `VITE_BACKEND=cloudflare`:** usa `src/lib/cf-client.js`, con la misma forma que supabase-js. Las peticiones van a `/api/*` en el mismo Worker que sirve la app.
 
 ## Qué hay en `worker/`
@@ -16,7 +16,10 @@ Sustituye a Supabase sin cambiar las pantallas. La app habla con el backend a tr
 | `storage.js` | Fotos y documentos en R2, con comprobación del tipo real del fichero, un máximo de 10 MB y enlaces firmados que caducan. | Storage |
 | `payments.js` | Pagos de PayMongo (`/api/functions/crear-pago`) y su webhook (`/api/webhooks/paymongo`). | Edge Functions |
 | `email.js` | Emails bilingües por Resend o por SMTP (Gmail). | SMTP de Auth |
-| `cron.js` | Limpieza cada hora. | pg_cron |
+| `cron.js` | Limpieza cada hora (y cierre de la importación cuando la app ya está en uso). | pg_cron |
+| `google.js` | Acceso con Google (OAuth con PKCE): crea la cuenta o la une por email verificado. | Proveedor Google de Supabase Auth |
+| `stats.js` | Visitas, panel de estadísticas y avisos al administrador (altas, centros, verificaciones, reservas y pagos). | Triggers con pg_net (migraciones 030–031) |
+| `import.js`, `health.js` | Copia de datos desde Supabase (una vez) y comprobación de la configuración. | — |
 
 ### Decisiones
 
@@ -29,7 +32,9 @@ Sustituye a Supabase sin cambiar las pantallas. La app habla con el backend a tr
 ## Pruebas (sin red)
 
 ```bash
-node --no-warnings worker/test/run.mjs   # 114 comprobaciones: aceptación, permisos, concurrencia, 2 pasos, PayMongo, ficheros
+node --no-warnings worker/test/run.mjs     # 152 comprobaciones: aceptación, permisos, concurrencia, 2 pasos, Google, avisos, PayMongo, ficheros
+node --no-warnings worker/test/import.mjs  # 54: copia de datos desde Supabase (fixture real de private.export_to_d1) y /api/health
+node --no-warnings worker/test/stats.mjs   # 15: visitas y avisos
 node --no-warnings worker/test/e2e.mjs   # la app de verdad (cf-client) contra el Worker, en Chromium, por rol
 ```
 
@@ -44,21 +49,12 @@ node --no-warnings worker/test/e2e.mjs   # la app de verdad (cf-client) contra e
 
 ## Puesta en marcha
 
-Cada paso dice quién lo hace. Hasta el paso 5, la web sigue funcionando con Supabase.
+Los pasos exactos, con quién hace cada uno, están en **`docs/CAMBIO-A-CLOUDFLARE.md`**. En resumen:
 
-1. **Base de datos D1 (Claude, hecho).** Las tablas están creadas en la D1 `diveslot`.
-2. **Subir el código a `main` (Claude o Fernando).** Despliega la API junto a la app sin cambiar nada visible. Para comprobarlo: `https://divingslot.com/api/health` responde `{"ok":true}`.
-3. **Secretos del Worker (Fernando).** Se ponen en el panel de Cloudflare: Workers → diveslot → Settings → Variables and Secrets, con el tipo «Secret».
-   - `AUTH_SECRET`: obligatorio. Es una clave aleatoria larga, de 32 caracteres o más. Una forma de generarla: `openssl rand -base64 32`.
-   - Para los emails, una de estas dos opciones:
-     - `RESEND_API_KEY`, con el dominio divingslot.com verificado en Resend.
-     - `SMTP_HOST=smtp.gmail.com`, `SMTP_USER=fbolingarcia@gmail.com` y `SMTP_PASS`, que es la contraseña de aplicación de 16 letras.
-   - Avisos de uso al administrador (ya funcionan con Supabase, ver `worker/stats.js`): `NOTIFY_KEY` (la misma clave que hay en Supabase Vault como `divingslot_notify_key`) y, opcional, `NOTIFY_TO` (a quién llegan; si no, a `SMTP_USER`). Necesitan también los secretos de email de arriba. `NOTIFY_DIGEST=off` quita el resumen diario y `NOTIFY_EMAILS=off` los emails sueltos.
-   - Para cobrar de verdad: `PAYMONGO_SECRET_KEY` y `PAYMONGO_WEBHOOK_SECRET`. En PayMongo, el webhook apunta a `https://divingslot.com/api/webhooks/paymongo` con el evento `checkout_session.payment.paid`.
-4. **R2 (Fernando).** Activa R2 en el panel (pide un método de pago) y crea los buckets `divingslot-dive-photos` y `divingslot-center-docs`. Después, Claude descomenta `r2_buckets` en `wrangler.jsonc`.
-5. **Pasar los datos (Claude, justo antes del cambio).** Copia de Supabase a D1: usuarios con sus hash, perfiles, centros, salidas, reservas, pagos, bitácora y documentos. Los ficheros de Storage se copian a R2.
-6. **El cambio (Fernando o Claude).** En Workers → diveslot → Settings → Build → Variables, añade `VITE_BACKEND = cloudflare` y vuelve a desplegar. GitHub Pages sigue con Supabase.
-7. **Comprobar.** Entra, reserva una salida demo, abre la bitácora y el panel del centro. Si algo falla, quita la variable y vuelve a desplegar: la app vuelve a Supabase al momento.
+1. Fernando pone las claves: plan Workers Paid, Google Cloud y los secretos del Worker.
+2. `https://divingslot.com/api/health?check=1` dice si falta algo.
+3. Supabase manda los datos al Worker con `select private.export_to_d1('cambio-1');`. Ver `worker/import.js` y la migración 034.
+4. Se cambia `VITE_BACKEND=cloudflare` en `.env.production`. Para volver atrás, se pone otra vez `supabase`.
 
 **Plan de Workers.** Con el plan gratuito (10 ms de CPU por petición), entrar o crear una cuenta puede pasarse del límite, porque cada contraseña cuesta unas decenas de milisegundos con 100 000 iteraciones. Lo seguro es el plan Workers Paid (5 USD al mes). Si se prefiere seguir en el gratuito, se puede bajar el coste con la variable `PBKDF2_ITER`, a cambio de algo de seguridad.
 

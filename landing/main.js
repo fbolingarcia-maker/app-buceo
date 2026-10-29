@@ -22,6 +22,7 @@ const APP = import.meta.env.BASE_URL + 'app/'
 const ES = {
   nav_sites: 'Puntos de buceo',
   nav_centres: 'Centros de buceo',
+  nav_dest: 'Destinos de buceo',
   open_app: 'Abrir la app',
   eyebrow: 'Salidas de buceo en Filipinas',
   h1: 'Reserva tu plaza y a bucear',
@@ -84,6 +85,8 @@ const ES = {
 const TITLE = { en: 'DivingSlot · Book dive trips in the Philippines', es: 'DivingSlot · Reserva salidas de buceo en Filipinas' }
 const EN = {}
 document.querySelectorAll('[data-i18n]').forEach((el) => { EN[el.dataset.i18n] = el.textContent })
+// Enlaces con versión en español (páginas de destinos): data-href-es
+document.querySelectorAll('[data-href-es]').forEach((el) => { el.dataset.hrefEn = el.getAttribute('href') })
 
 function initialLang() {
   try {
@@ -95,6 +98,7 @@ function initialLang() {
 function setLang(l, save) {
   const dict = l === 'es' ? ES : EN
   document.querySelectorAll('[data-i18n]').forEach((el) => { const v = dict[el.dataset.i18n]; if (v) el.textContent = v })
+  document.querySelectorAll('[data-href-es]').forEach((el) => el.setAttribute('href', l === 'es' ? el.dataset.hrefEs : el.dataset.hrefEn))
   document.documentElement.lang = l
   document.title = TITLE[l]
   const btn = document.getElementById('lang')

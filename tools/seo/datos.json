@@ -1,0 +1,2963 @@
+{
+"sites": [
+{
+"name": "Coco White",
+"area": "Anda",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Steep wall with pygmy seahorses, frogfish and turtles",
+"hl_es": "Pared vertical con caballitos pigmeos, peces sapo y tortugas"
+},
+{
+"name": "Dap Dap",
+"area": "Anda",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow site with barracuda, bumpheads and octopus",
+"hl_es": "Zona poco profunda con barracudas, peces loro cabezones y pulpos"
+},
+{
+"name": "Lumayak",
+"area": "Anda",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Black coral wall with macro and fish in the blue",
+"hl_es": "Pared de coral negro con macro y peces en el azul"
+},
+{
+"name": "Paradise Garden",
+"area": "Anda",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral garden slope and wall with many turtles",
+"hl_es": "Jardín de coral en talud y pared con muchas tortugas"
+},
+{
+"name": "Snapper Cave",
+"area": "Anda",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall with overhangs, frogfish and pygmy seahorses",
+"hl_es": "Pared con extraplomos, peces sapo y caballitos pigmeos"
+},
+{
+"name": "Wonder Wall",
+"area": "Anda",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Mandarinfish mating at dusk",
+"hl_es": "Apareamiento de peces mandarín al atardecer"
+},
+{
+"name": "Basura",
+"area": "Anilao",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Muck dive famous for rare critters",
+"hl_es": "Inmersión de fango famosa por sus bichos raros"
+},
+{
+"name": "Beatrice Rock",
+"area": "Anilao",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Pinnacle with soft corals and schooling fish",
+"hl_es": "Pináculo con corales blandos y bancos de peces"
+},
+{
+"name": "Cathedral Rock",
+"area": "Anilao",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary rock with underwater cross",
+"hl_es": "Roca en santuario marino con una cruz sumergida"
+},
+{
+"name": "Kirby's Rock",
+"area": "Anilao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Soft corals, frogfish and nudibranchs",
+"hl_es": "Corales blandos, peces sapo y nudibranquios"
+},
+{
+"name": "Mainit Point",
+"area": "Anilao",
+"min": 5,
+"max": 30,
+"level": "advanced",
+"fee": 0,
+"hl": "Strong-current point with big fish and corals",
+"hl_es": "Punta con corriente fuerte, peces grandes y corales"
+},
+{
+"name": "Secret Bay",
+"area": "Anilao",
+"min": 3,
+"max": 15,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow muck: mimic octopus and frogfish",
+"hl_es": "Fango poco profundo: pulpo mimo y peces sapo"
+},
+{
+"name": "Twin Rocks",
+"area": "Anilao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Sanctuary with jacks, frogfish and two coral rocks",
+"hl_es": "Santuario con jureles, peces sapo y dos rocas de coral"
+},
+{
+"name": "Boluarte",
+"area": "Apo Island",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Sandy slope and coral with turtles",
+"hl_es": "Talud de arena y coral con tortugas"
+},
+{
+"name": "Chapel",
+"area": "Apo Island",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Healthy hard corals and turtles near the village",
+"hl_es": "Coral duro sano y tortugas junto al pueblo"
+},
+{
+"name": "Coconut Point",
+"area": "Apo Island",
+"min": 5,
+"max": 25,
+"level": "advanced",
+"fee": 0,
+"hl": "Current-swept drift with jacks, turtles and big fish",
+"hl_es": "Deriva con corriente: jureles, tortugas y peces grandes"
+},
+{
+"name": "Rock Point",
+"area": "Apo Island",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Soft and hard corals with schooling fish",
+"hl_es": "Corales blandos y duros con bancos de peces"
+},
+{
+"name": "Apo 29",
+"area": "Apo Reef",
+"min": null,
+"max": null,
+"level": "advanced",
+"fee": 0,
+"hl": "Seamount with swirling barracuda and several shark species",
+"hl_es": "Monte submarino con bancos de barracudas y varias especies de tiburón"
+},
+{
+"name": "Binangaan Drop-off",
+"area": "Apo Reef",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Steep drop-off with fast-moving pelagics",
+"hl_es": "Veril vertical con pelágicos en movimiento"
+},
+{
+"name": "Hunter's Rock",
+"area": "Apo Reef",
+"min": null,
+"max": null,
+"level": "advanced",
+"fee": 0,
+"hl": "Seamount with sea krait gatherings in June and July",
+"hl_es": "Monte submarino con concentraciones de serpientes marinas en junio y julio"
+},
+{
+"name": "North Wall (Apo Reef)",
+"area": "Apo Reef",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Dramatic drop-off with fast pelagic action",
+"hl_es": "Veril espectacular con mucha acción pelágica"
+},
+{
+"name": "Shark Ridge",
+"area": "Apo Reef",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Drop-off with reef sharks and pelagics",
+"hl_es": "Veril con tiburones de arrecife y pelágicos"
+},
+{
+"name": "Balicasag – Black Forest",
+"area": "Balicasag",
+"min": 8,
+"max": 40,
+"level": "open_water",
+"fee": 0,
+"hl": "Black coral slope drift, jacks, batfish and Spanish dancers",
+"hl_es": "Deriva por talud de coral negro, jureles, peces murciélago y bailarinas españolas"
+},
+{
+"name": "Balicasag – Cathedral Wall",
+"area": "Balicasag",
+"min": 3,
+"max": 30,
+"level": "advanced",
+"fee": 0,
+"hl": "Craggy wall with light-lit caves and schooling jacks",
+"hl_es": "Pared escarpada con cuevas iluminadas y bancos de jureles"
+},
+{
+"name": "Balicasag – Divers Heaven",
+"area": "Balicasag",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Steep slope, turtles, pygmy seahorses and frogfish",
+"hl_es": "Talud empinado, tortugas, caballitos pigmeos y peces sapo"
+},
+{
+"name": "Balicasag – Rico's Wall",
+"area": "Balicasag",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall with overhangs, jacks, unicornfish and sweetlips",
+"hl_es": "Pared con extraplomos, jureles, peces unicornio y burros"
+},
+{
+"name": "Balicasag – Royal Garden",
+"area": "Balicasag",
+"min": 5,
+"max": 18,
+"level": "open_water",
+"fee": 0,
+"hl": "Hard and soft coral plateau with turtles",
+"hl_es": "Meseta de coral duro y blando con tortugas"
+},
+{
+"name": "Balicasag – Turtle Point",
+"area": "Balicasag",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Green and hawksbill turtles resting in wall caves",
+"hl_es": "Tortugas verdes y carey descansando en las cuevas de la pared"
+},
+{
+"name": "Angol Point",
+"area": "Boracay",
+"min": 5,
+"max": 12,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow easy reef ideal for beginners",
+"hl_es": "Arrecife fácil y poco profundo, ideal para principiantes"
+},
+{
+"name": "Camia Wreck",
+"area": "Boracay",
+"min": 20,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Scuttled cargo ship with batfish and lionfish",
+"hl_es": "Carguero hundido a propósito con peces murciélago y peces león"
+},
+{
+"name": "Crocodile Island",
+"area": "Boracay",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Soft corals, sea snakes and reef fish",
+"hl_es": "Corales blandos, serpientes marinas y peces de arrecife"
+},
+{
+"name": "Friday's Rock",
+"area": "Boracay",
+"min": 10,
+"max": 18,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral rocks with groupers and moray eels",
+"hl_es": "Rocas de coral con meros y morenas"
+},
+{
+"name": "Laurel Island",
+"area": "Boracay",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral-covered tunnel and soft corals",
+"hl_es": "Túnel cubierto de coral y corales blandos"
+},
+{
+"name": "Yapak",
+"area": "Boracay",
+"min": 30,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Deep wall drift with reef sharks, tuna and barracuda",
+"hl_es": "Deriva por pared profunda con tiburones de arrecife, atunes y barracudas"
+},
+{
+"name": "Cambaquiz Point",
+"area": "Cabilao",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall and sand with pipefish; great night muck dive",
+"hl_es": "Pared y arena con peces pipa; gran inmersión nocturna de fango"
+},
+{
+"name": "Chapel Point",
+"area": "Cabilao",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Table corals, wall and caves with frogfish",
+"hl_es": "Corales mesa, pared y cuevas con peces sapo"
+},
+{
+"name": "Current View Point",
+"area": "Cabilao",
+"min": null,
+"max": null,
+"level": "advanced",
+"fee": 0,
+"hl": "Current-swept corner: sharks, jacks, barracuda, pygmies",
+"hl_es": "Esquina con corriente: tiburones, jureles, barracudas y pigmeos"
+},
+{
+"name": "Gorgonian Wall",
+"area": "Cabilao",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Deep wall covered in gorgonian fans and sponges",
+"hl_es": "Pared profunda cubierta de abanicos de gorgonias y esponjas"
+},
+{
+"name": "Lighthouse",
+"area": "Cabilao",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Wall and plateau, pygmy seahorses; hammerheads Dec-Apr",
+"hl_es": "Pared y meseta, caballitos pigmeos; tiburones martillo de dic. a abr."
+},
+{
+"name": "Mantigue Island",
+"area": "Camiguin",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary with turtles and coral",
+"hl_es": "Santuario marino con tortugas y coral"
+},
+{
+"name": "Old Volcano (Old Vulcan)",
+"area": "Camiguin",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Lava flows covered in corals",
+"hl_es": "Coladas de lava cubiertas de coral"
+},
+{
+"name": "Sunken Cemetery",
+"area": "Camiguin",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Cemetery sunk by volcano, marked by a giant cross",
+"hl_es": "Cementerio hundido por el volcán, señalado con una gran cruz"
+},
+{
+"name": "Tangub Bay",
+"area": "Camiguin",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Hot spring reef and coral",
+"hl_es": "Arrecife con fuentes termales y coral"
+},
+{
+"name": "White Island",
+"area": "Camiguin",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Reef around the white sandbar",
+"hl_es": "Arrecife alrededor del banco de arena blanca"
+},
+{
+"name": "Akitsushima",
+"area": "Coron",
+"min": 20,
+"max": 36,
+"level": "advanced",
+"fee": 0,
+"hl": "WWII seaplane tender with crane; big fish schools",
+"hl_es": "Portahidroaviones de la 2.ª Guerra Mundial con grúa; grandes bancos de peces"
+},
+{
+"name": "Barracuda Lake",
+"area": "Coron",
+"min": 3,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Freshwater/saltwater thermocline lake in limestone",
+"hl_es": "Lago entre roca caliza con termoclina de agua dulce y salada"
+},
+{
+"name": "Irako",
+"area": "Coron",
+"min": 28,
+"max": 43,
+"level": "advanced",
+"fee": 0,
+"hl": "Deep WWII refrigeration ship, very intact",
+"hl_es": "Buque frigorífico de la 2.ª Guerra Mundial, profundo y muy intacto"
+},
+{
+"name": "Kogyo Maru",
+"area": "Coron",
+"min": 22,
+"max": 36,
+"level": "advanced",
+"fee": 0,
+"hl": "WWII freighter with cargo of cement bags",
+"hl_es": "Carguero de la 2.ª Guerra Mundial con sacos de cemento"
+},
+{
+"name": "Lusong Gunboat",
+"area": "Coron",
+"min": 0,
+"max": 11,
+"level": "open_water",
+"fee": 0,
+"hl": "Very shallow WWII gunboat wreck",
+"hl_es": "Cañonera de la 2.ª Guerra Mundial muy poco profunda"
+},
+{
+"name": "Okikawa Maru",
+"area": "Coron",
+"min": 10,
+"max": 26,
+"level": "open_water",
+"fee": 0,
+"hl": "Large WWII tanker wreck, penetration possible",
+"hl_es": "Gran petrolero de la 2.ª Guerra Mundial, se puede penetrar"
+},
+{
+"name": "Olympia Maru",
+"area": "Coron",
+"min": 12,
+"max": 28,
+"level": "open_water",
+"fee": 0,
+"hl": "WWII cargo ship wreck, easy penetration",
+"hl_es": "Carguero de la 2.ª Guerra Mundial, penetración fácil"
+},
+{
+"name": "Skeleton Wreck",
+"area": "Coron",
+"min": 3,
+"max": 22,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow skeletal wreck, good snorkel/beginner dive",
+"hl_es": "Pecio esquelético poco profundo, bueno para esnórquel y principiantes"
+},
+{
+"name": "Ginama-an",
+"area": "Dauin",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Muck slope known for rare critters and nudibranchs",
+"hl_es": "Talud de fango conocido por bichos raros y nudibranquios"
+},
+{
+"name": "Masaplod Norte",
+"area": "Dauin",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary and muck: seahorses, frogfish, turtles",
+"hl_es": "Santuario marino y fango: caballitos, peces sapo y tortugas"
+},
+{
+"name": "Pyramids",
+"area": "Dauin",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Artificial reef structures full of fish and macro life",
+"hl_es": "Estructuras de arrecife artificial llenas de peces y macro"
+},
+{
+"name": "Sahara",
+"area": "Dauin",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Black-sand muck dive with frogfish and critters",
+"hl_es": "Fango de arena negra con peces sapo y bichos"
+},
+{
+"name": "Ligid Caves",
+"area": "Davao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Caves and overhangs off Talikud",
+"hl_es": "Cuevas y extraplomos frente a Talikud"
+},
+{
+"name": "Marissa Reef",
+"area": "Davao",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Samal reef with corals and reef fish",
+"hl_es": "Arrecife de Samal con corales y peces de arrecife"
+},
+{
+"name": "Pindawon Wall",
+"area": "Davao",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall dive near Samal",
+"hl_es": "Pared cerca de Samal"
+},
+{
+"name": "Small Ligid",
+"area": "Davao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral-covered islet reef",
+"hl_es": "Arrecife de islote cubierto de coral"
+},
+{
+"name": "Manta Bowl (Ticao Pass)",
+"area": "Donsol",
+"min": 15,
+"max": 25,
+"level": "advanced",
+"fee": 0,
+"hl": "Strong-current manta site; whale sharks possible",
+"hl_es": "Punto de mantas con corriente fuerte; posibles tiburones ballena"
+},
+{
+"name": "Dilumacad Tunnel (Helicopter Island)",
+"area": "El Nido",
+"min": 5,
+"max": 15,
+"level": "open_water",
+"fee": 0,
+"hl": "Tunnel leading to an underwater cavern",
+"hl_es": "Túnel que lleva a una caverna submarina"
+},
+{
+"name": "Natnat Beach",
+"area": "El Nido",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Sandy slope in Bacuit Bay with macro life",
+"hl_es": "Talud de arena en la bahía de Bacuit con macro"
+},
+{
+"name": "Paglugaban Island",
+"area": "El Nido",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Bacuit Bay reef dive",
+"hl_es": "Inmersión en arrecife de la bahía de Bacuit"
+},
+{
+"name": "South Miniloc",
+"area": "El Nido",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Reef with jacks, snappers and turtles",
+"hl_es": "Arrecife con jureles, pargos y tortugas"
+},
+{
+"name": "Twin Rocks (El Nido)",
+"area": "El Nido",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral rocks with reef fish; good training site",
+"hl_es": "Rocas de coral con peces de arrecife; buen sitio para cursos"
+},
+{
+"name": "Hilutungan Island Marine Sanctuary",
+"area": "Mactan",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow reefs with batfish schools and turtles",
+"hl_es": "Arrecifes poco profundos con bancos de peces murciélago y tortugas"
+},
+{
+"name": "Kansantik",
+"area": "Mactan",
+"min": 30,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Olango Channel pinnacle, strong currents, groupers, jacks",
+"hl_es": "Pináculo del canal de Olango, corrientes fuertes, meros y jureles"
+},
+{
+"name": "Kontiki House Reef",
+"area": "Mactan",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow reef night dive with shrimp, crabs, sea kraits",
+"hl_es": "Arrecife poco profundo para nocturnas: gambas, cangrejos y serpientes marinas"
+},
+{
+"name": "Marigondon Cave",
+"area": "Mactan",
+"min": 25,
+"max": 37,
+"level": "advanced",
+"fee": 0,
+"hl": "40 m cave with flashlight fish, ends with wall drift",
+"hl_es": "Cueva a 40 m con peces linterna; termina en deriva por la pared"
+},
+{
+"name": "Nalusuan Island Marine Sanctuary",
+"area": "Mactan",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Stingrays, big groupers and table corals",
+"hl_es": "Rayas, meros grandes y corales mesa"
+},
+{
+"name": "San Juan Wreck",
+"area": "Mactan",
+"min": 37,
+"max": 48,
+"level": "advanced",
+"fee": 0,
+"hl": "Intact 180 m passenger ferry; deep, short bottom time",
+"hl_es": "Ferri de pasajeros intacto de 180 m; profundo, poco tiempo de fondo"
+},
+{
+"name": "Shangri-La Marine Sanctuary",
+"area": "Mactan",
+"min": 5,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral garden with spadefish, barracuda and frogfish",
+"hl_es": "Jardín de coral con peces murciélago, barracudas y peces sapo"
+},
+{
+"name": "Tambuli Plane Wreck",
+"area": "Mactan",
+"min": null,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Plane wreck with frogfish, gorgonians and sardines",
+"hl_es": "Avión hundido con peces sapo, gorgonias y sardinas"
+},
+{
+"name": "Bugtong Bato",
+"area": "Malapascua",
+"min": 15,
+"max": 35,
+"level": "advanced",
+"fee": 0,
+"hl": "Pinnacle with batfish and barracuda schools",
+"hl_es": "Pináculo con bancos de peces murciélago y barracudas"
+},
+{
+"name": "Chocolate Island",
+"area": "Malapascua",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow macro: seahorses, frogfish, nudibranchs",
+"hl_es": "Macro poco profunda: caballitos de mar, peces sapo y nudibranquios"
+},
+{
+"name": "Deep Rock",
+"area": "Malapascua",
+"min": 12,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Curving wall with flamboyant cuttlefish and octopus",
+"hl_es": "Pared curva con sepias extravagantes y pulpos"
+},
+{
+"name": "Doña Marilyn Wreck",
+"area": "Malapascua",
+"min": 20,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "1988 ferry wreck, strong currents, marble rays",
+"hl_es": "Ferri hundido en 1988, corrientes fuertes, rayas jaspeadas"
+},
+{
+"name": "Gato Island",
+"area": "Malapascua",
+"min": 8,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine reserve tunnel with whitetip sharks, seahorses",
+"hl_es": "Túnel en reserva marina con tiburones de punta blanca y caballitos"
+},
+{
+"name": "Kalanggaman Island",
+"area": "Malapascua",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Reef and wall by the famous sandbar; turtles",
+"hl_es": "Arrecife y pared junto al famoso banco de arena; tortugas"
+},
+{
+"name": "Kimud Shoal",
+"area": "Malapascua",
+"min": 12,
+"max": 29,
+"level": "advanced",
+"fee": 0,
+"hl": "Pre-sunrise thresher sharks at shallower cleaning stations",
+"hl_es": "Tiburones zorro antes del amanecer en estaciones de limpieza menos profundas"
+},
+{
+"name": "Lapus Lapus",
+"area": "Malapascua",
+"min": 12,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Soft-coral slope, usually drifted with North Wall",
+"hl_es": "Talud de coral blando, normalmente a la deriva con North Wall"
+},
+{
+"name": "Monad Shoal",
+"area": "Malapascua",
+"min": 15,
+"max": 30,
+"level": "advanced",
+"fee": 0,
+"hl": "Dawn thresher shark cleaning stations",
+"hl_es": "Estaciones de limpieza de tiburones zorro al amanecer"
+},
+{
+"name": "Airplane Wreck",
+"area": "Moalboal",
+"min": null,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Small two-seater plane wreck covered in coral",
+"hl_es": "Pequeña avioneta biplaza hundida y cubierta de coral"
+},
+{
+"name": "Dolphin House",
+"area": "Moalboal",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Overhangs with groupers and Napoleon wrasse",
+"hl_es": "Extraplomos con meros y peces Napoleón"
+},
+{
+"name": "Pescador Island",
+"area": "Moalboal",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine park wall with overhangs, sardines and reef fish",
+"hl_es": "Pared en parque marino con extraplomos, sardinas y peces de arrecife"
+},
+{
+"name": "Pescador Island – Cathedral",
+"area": "Moalboal",
+"min": 15,
+"max": 37,
+"level": "advanced",
+"fee": 0,
+"hl": "Funnel-shaped cave lit by sun beams",
+"hl_es": "Cueva en forma de embudo iluminada por rayos de sol"
+},
+{
+"name": "Sardine Run (Panagsama)",
+"area": "Moalboal",
+"min": 3,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Millions of sardines off the drop-off, plus turtles",
+"hl_es": "Millones de sardinas junto al veril, además de tortugas"
+},
+{
+"name": "Sunken Island",
+"area": "Moalboal",
+"min": 22,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Deep seamount with jacks, barracuda, tuna; sharks possible",
+"hl_es": "Monte submarino profundo con jureles, barracudas y atunes; posibles tiburones"
+},
+{
+"name": "Tongo Point",
+"area": "Moalboal",
+"min": 3,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Decorated wall with turtles, pygmy seahorses, electric clams",
+"hl_es": "Pared decorada con tortugas, caballitos pigmeos y almejas eléctricas"
+},
+{
+"name": "Tuble Point",
+"area": "Moalboal",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Macro dive with pygmy seahorses",
+"hl_es": "Macro con caballitos pigmeos"
+},
+{
+"name": "White Beach (Moalboal)",
+"area": "Moalboal",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Sandy slope with garden eels leading to soft-coral wall",
+"hl_es": "Talud de arena con anguilas jardineras hacia una pared de coral blando"
+},
+{
+"name": "Liloan and Looc (Santander)",
+"area": "Oslob",
+"min": null,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Slope with large coral heads, soft corals and rays",
+"hl_es": "Talud con grandes cabezas de coral, corales blandos y rayas"
+},
+{
+"name": "Oslob Whale Shark Watching",
+"area": "Oslob",
+"min": 3,
+"max": 12,
+"level": "open_water",
+"fee": 0,
+"hl": "Whale sharks close to shore (feeding is controversial)",
+"hl_es": "Tiburones ballena cerca de la orilla (la alimentación es polémica)"
+},
+{
+"name": "Sumilon Island Marine Sanctuary",
+"area": "Oslob",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral gardens and wall, turtles; sharks on drift days",
+"hl_es": "Jardines de coral y pared, tortugas; tiburones en días de deriva"
+},
+{
+"name": "Wall of Death (Santander)",
+"area": "Oslob",
+"min": null,
+"max": null,
+"level": "advanced",
+"fee": 0,
+"hl": "Steep wall with strong current, nudibranchs and frogfish; mantas and whale sharks possible March to June",
+"hl_es": "Pared vertical con corriente fuerte, nudibranquios y peces sapo; posibles mantas y tiburones ballena de marzo a junio"
+},
+{
+"name": "Pamilacan",
+"area": "Pamilacan",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Soft-coral walls, turtles, Napoleon wrasse; dolphins en route",
+"hl_es": "Paredes de coral blando, tortugas y peces Napoleón; delfines en el trayecto"
+},
+{
+"name": "Pamilacan – Sanctuary",
+"area": "Pamilacan",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Gentle slope with turtles, frogfish and nudibranchs",
+"hl_es": "Talud suave con tortugas, peces sapo y nudibranquios"
+},
+{
+"name": "Pamilacan – South Point",
+"area": "Pamilacan",
+"min": null,
+"max": null,
+"level": "advanced",
+"fee": 0,
+"hl": "Strong-current drift with dogtooth tuna and barracuda",
+"hl_es": "Deriva con corriente fuerte, atunes de diente de perro y barracudas"
+},
+{
+"name": "Pamilacan – Wall",
+"area": "Pamilacan",
+"min": 10,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Deep wall with black coral, reef sharks and eagle rays",
+"hl_es": "Pared profunda con coral negro, tiburones de arrecife y águilas marinas"
+},
+{
+"name": "Snake Island (Cervera Shoal)",
+"area": "Pamilacan",
+"min": 18,
+"max": 30,
+"level": "advanced",
+"fee": 0,
+"hl": "Sunken plateau with many banded sea kraits; strong current",
+"hl_es": "Meseta sumergida con muchas serpientes marinas; corriente fuerte"
+},
+{
+"name": "Alona House Reef",
+"area": "Panglao",
+"min": 3,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow sanctuary wall, frogfish and sea snakes; great night dive",
+"hl_es": "Pared poco profunda en santuario, peces sapo y serpientes marinas; gran inmersión nocturna"
+},
+{
+"name": "Arco Point",
+"area": "Panglao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Chimney swim-through (8-18 m), soft corals and frogfish",
+"hl_es": "Chimenea para atravesar (8-18 m), corales blandos y peces sapo"
+},
+{
+"name": "Bohol Beach Club (BBC)",
+"area": "Panglao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Sunken jeepneys, cardinalfish cave, frogfish and pegasus",
+"hl_es": "Jeepneys hundidos, cueva de peces cardenal, peces sapo y pegasos"
+},
+{
+"name": "Doljo Point",
+"area": "Panglao",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall with sponges, gorgonians, frogfish and batfish",
+"hl_es": "Pared con esponjas, gorgonias, peces sapo y peces murciélago"
+},
+{
+"name": "Habagat Wreck",
+"area": "Panglao",
+"min": 18,
+"max": 24,
+"level": "open_water",
+"fee": 0,
+"hl": "Sunken pontoon with soft corals, batfish and ghost pipefish",
+"hl_es": "Pontón hundido con corales blandos, peces murciélago y peces fantasma"
+},
+{
+"name": "Kalipayan",
+"area": "Panglao",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Easy wall/slope with ghost pipefish, batfish and nudibranchs",
+"hl_es": "Pared/talud fácil con peces fantasma, peces murciélago y nudibranquios"
+},
+{
+"name": "Momo Beach",
+"area": "Panglao",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "North-coast reef and wall dive",
+"hl_es": "Arrecife y pared en la costa norte"
+},
+{
+"name": "Napaling",
+"area": "Panglao",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Year-round sardine ball, turtles and wall with big gorgonians",
+"hl_es": "Bola de sardinas todo el año, tortugas y pared con grandes gorgonias"
+},
+{
+"name": "Puntod Wall",
+"area": "Panglao",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Steep wall with gorgonians, soft coral and squid",
+"hl_es": "Pared vertical con gorgonias, coral blando y calamares"
+},
+{
+"name": "Alma Jane Wreck",
+"area": "Puerto Galera",
+"min": 18,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Scuttled cargo ship with batfish and frogfish",
+"hl_es": "Carguero hundido a propósito con peces murciélago y peces sapo"
+},
+{
+"name": "Canyons",
+"area": "Puerto Galera",
+"min": 18,
+"max": 30,
+"level": "advanced",
+"fee": 0,
+"hl": "Current drift through canyons, sweetlips, anchor",
+"hl_es": "Deriva entre cañones, burros y un ancla antigua"
+},
+{
+"name": "Hole in the Wall",
+"area": "Puerto Galera",
+"min": 5,
+"max": 15,
+"level": "open_water",
+"fee": 0,
+"hl": "Swim-through hole in a coral wall",
+"hl_es": "Agujero en una pared de coral para atravesar"
+},
+{
+"name": "Monkey Beach",
+"area": "Puerto Galera",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Easy reef with turtles and frogfish",
+"hl_es": "Arrecife fácil con tortugas y peces sapo"
+},
+{
+"name": "Sinandigan Wall",
+"area": "Puerto Galera",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Nudibranch capital wall with macro life",
+"hl_es": "Pared, «capital de los nudibranquios», con mucha macro"
+},
+{
+"name": "Helen's Garden (Honda Bay)",
+"area": "Puerto Princesa",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Small shallow reef with hard and soft corals",
+"hl_es": "Arrecife pequeño y poco profundo con corales duros y blandos"
+},
+{
+"name": "Pandan Island (Honda Bay)",
+"area": "Puerto Princesa",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Manta ray encounters; longer boat ride",
+"hl_es": "Encuentros con mantas; trayecto en barco más largo"
+},
+{
+"name": "Bangug Island",
+"area": "Romblon",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Island reef, popular for night dives",
+"hl_es": "Arrecife de la isla, muy elegido para inmersiones nocturnas"
+},
+{
+"name": "Bonbon Block I",
+"area": "Romblon",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Colourful corals off Bonbon Beach",
+"hl_es": "Corales de colores frente a la playa de Bonbon"
+},
+{
+"name": "Logbon Sanctuary",
+"area": "Romblon",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary known for phantom nudibranchs",
+"hl_es": "Santuario marino conocido por el nudibranquio fantasma"
+},
+{
+"name": "Blue Cathedral",
+"area": "Siargao",
+"min": null,
+"max": null,
+"level": "advanced",
+"fee": 0,
+"hl": "Cavern dive, often called the island's best site; far from General Luna",
+"hl_es": "Inmersión en caverna, considerada la mejor de la isla; lejos de General Luna"
+},
+{
+"name": "Daku Island",
+"area": "Siargao",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Coral reefs around Daku Island",
+"hl_es": "Arrecifes de coral alrededor de la isla Daku"
+},
+{
+"name": "Mansud Wall",
+"area": "Siargao",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall dive",
+"hl_es": "Inmersión en pared"
+},
+{
+"name": "Ballo Garden",
+"area": "Sipalay",
+"min": 3,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Varied coral garden cut by canyons",
+"hl_es": "Jardín de coral variado cortado por cañones"
+},
+{
+"name": "Danjugan Island",
+"area": "Sipalay",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Nature reserve: limited dives with a permit and a reserve guide",
+"hl_es": "Reserva natural: pocas inmersiones, con permiso y guía de la reserva"
+},
+{
+"name": "Eva's Point",
+"area": "Sipalay",
+"min": 2,
+"max": 28,
+"level": "open_water",
+"fee": 0,
+"hl": "Densely overgrown wall at the entrance to Campomanes Bay",
+"hl_es": "Pared llena de vida a la entrada de la bahía de Campomanes"
+},
+{
+"name": "Mad Max",
+"area": "Sipalay",
+"min": 5,
+"max": 28,
+"level": "open_water",
+"fee": 0,
+"hl": "Old dock with steel structures, tyres and an anchor: pipefish, stonefish, morays",
+"hl_es": "Antiguo muelle con estructuras de acero, neumáticos y un ancla: peces pipa, peces piedra y morenas"
+},
+{
+"name": "Marco Polo",
+"area": "Sipalay",
+"min": null,
+"max": 27,
+"level": "advanced",
+"fee": 0,
+"hl": "Direct descent in good visibility with hundreds of big fish",
+"hl_es": "Descenso directo con buena visibilidad y cientos de peces grandes"
+},
+{
+"name": "MS Jojo Wreck",
+"area": "Sipalay",
+"min": 22,
+"max": 33,
+"level": "advanced",
+"fee": 0,
+"hl": "Freighter on its side on a sandbank, batfish and big lionfish",
+"hl_es": "Carguero tumbado sobre un banco de arena, peces murciélago y grandes peces león"
+},
+{
+"name": "Sunken Island (Sipalay)",
+"area": "Sipalay",
+"min": 8,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Popular sunken island with lots of fish and corals",
+"hl_es": "Isla sumergida muy popular, con muchos peces y corales"
+},
+{
+"name": "Turtle Head Point",
+"area": "Sipalay",
+"min": 3,
+"max": 35,
+"level": "open_water",
+"fee": 0,
+"hl": "Slope by Turtle Island with small and big fish",
+"hl_es": "Talud junto a Turtle Island con peces pequeños y grandes"
+},
+{
+"name": "Paliton Wall",
+"area": "Siquijor",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Wall dive with sea fans and reef fish",
+"hl_es": "Pared con abanicos de mar y peces de arrecife"
+},
+{
+"name": "Salagdoong",
+"area": "Siquijor",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "East-coast reef dive",
+"hl_es": "Arrecife de la costa este"
+},
+{
+"name": "Sandugan Sanctuary",
+"area": "Siquijor",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary reef on the north coast",
+"hl_es": "Arrecife en santuario marino de la costa norte"
+},
+{
+"name": "Tongo Sanctuary",
+"area": "Siquijor",
+"min": 5,
+"max": 25,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary reef and slope",
+"hl_es": "Arrecife y talud en santuario marino"
+},
+{
+"name": "Limasawa Island",
+"area": "Southern Leyte",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Walls and reefs off historic Limasawa",
+"hl_es": "Paredes y arrecifes frente a la histórica Limasawa"
+},
+{
+"name": "Max Climax Wall",
+"area": "Southern Leyte",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Sogod Bay wall with soft corals and macro",
+"hl_es": "Pared de la bahía de Sogod con corales blandos y macro"
+},
+{
+"name": "Medicare",
+"area": "Southern Leyte",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Sogod Bay reef dive",
+"hl_es": "Inmersión en arrecife de la bahía de Sogod"
+},
+{
+"name": "Napantao",
+"area": "Southern Leyte",
+"min": 5,
+"max": 30,
+"level": "open_water",
+"fee": 0,
+"hl": "Marine sanctuary wall with healthy corals",
+"hl_es": "Pared en santuario marino con corales sanos"
+},
+{
+"name": "Voltaire's Rock",
+"area": "Southern Leyte",
+"min": null,
+"max": null,
+"level": "open_water",
+"fee": 0,
+"hl": "Sogod Bay rock and reef dive",
+"hl_es": "Roca y arrecife de la bahía de Sogod"
+},
+{
+"name": "El Capitan",
+"area": "Subic",
+"min": 5,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "Shallow intact wreck, good for beginners",
+"hl_es": "Pecio intacto y poco profundo, bueno para principiantes"
+},
+{
+"name": "LST",
+"area": "Subic",
+"min": 30,
+"max": 37,
+"level": "advanced",
+"fee": 0,
+"hl": "Deep landing ship tank wreck",
+"hl_es": "Pecio profundo de un buque de desembarco de tanques"
+},
+{
+"name": "Oryoku Maru",
+"area": "Subic",
+"min": 15,
+"max": 20,
+"level": "open_water",
+"fee": 0,
+"hl": "WWII 'hell ship' wreck",
+"hl_es": "Pecio del «barco del infierno» de la 2.ª Guerra Mundial"
+},
+{
+"name": "San Quentin",
+"area": "Subic",
+"min": 12,
+"max": 16,
+"level": "open_water",
+"fee": 0,
+"hl": "Old Spanish gunboat wreck",
+"hl_es": "Antigua cañonera española hundida"
+},
+{
+"name": "USS New York",
+"area": "Subic",
+"min": 18,
+"max": 28,
+"level": "advanced",
+"fee": 0,
+"hl": "Armoured cruiser wreck, penetration for qualified divers",
+"hl_es": "Pecio de crucero acorazado, penetración solo para buceadores cualificados"
+},
+{
+"name": "Amos Rock",
+"area": "Tubbataha",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Wall with sharks and pelagics at South Atoll",
+"hl_es": "Pared con tiburones y pelágicos en el Atolón Sur"
+},
+{
+"name": "Black Rock",
+"area": "Tubbataha",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Wall with mantas and pelagics",
+"hl_es": "Pared con mantas y pelágicos"
+},
+{
+"name": "Delsan Wreck",
+"area": "Tubbataha",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Wreck and wall with grey reef sharks",
+"hl_es": "Pecio y pared con tiburones grises de arrecife"
+},
+{
+"name": "Jessie Beazley Reef",
+"area": "Tubbataha",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Isolated reef with sharks and big fish",
+"hl_es": "Arrecife aislado con tiburones y peces grandes"
+},
+{
+"name": "Malayan Wreck",
+"area": "Tubbataha",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Wreck and wall with reef sharks and turtles",
+"hl_es": "Pecio y pared con tiburones de arrecife y tortugas"
+},
+{
+"name": "Shark Airport",
+"area": "Tubbataha",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Whitetip sharks resting on sandy terrace",
+"hl_es": "Tiburones de punta blanca descansando en una terraza de arena"
+},
+{
+"name": "Verde Island – Drop Off",
+"area": "Verde Island",
+"min": 5,
+"max": 40,
+"level": "advanced",
+"fee": 0,
+"hl": "Center of marine biodiversity; wall with strong currents",
+"hl_es": "Centro de biodiversidad marina; pared con corrientes fuertes"
+}
+],
+"centers": [
+{
+"id": "ca17b86a-46ac-41ea-8154-e6003429d490",
+"name": "Amun Ini Dive",
+"dest": "Anda",
+"locality": "Candabong",
+"socio": false
+},
+{
+"id": "0c25596f-8532-49d6-8492-8ff36ea9d718",
+"name": "Blue Star Dive Resort",
+"dest": "Anda",
+"locality": "Anda",
+"socio": false
+},
+{
+"id": "1082641f-e42c-421c-9957-834c26bb2d32",
+"name": "Magic Oceans Dive Resort",
+"dest": "Anda",
+"locality": "Anda",
+"socio": false
+},
+{
+"id": "4635cc03-ddee-4eb0-9245-b31fc4d432e5",
+"name": "Aiyanar Beach & Dive Resort",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "f8fc1977-f8f1-4a80-83a4-8b41b225c958",
+"name": "Altamare Dive and Leisure Resort Anilao",
+"dest": "Anilao",
+"locality": "San Teodoro, Mabini",
+"socio": false
+},
+{
+"id": "b5955501-346c-41f6-9a93-b425a2d97815",
+"name": "Bentrina Diving Resort",
+"dest": "Anilao",
+"locality": "Ligaya, Mabini",
+"socio": false
+},
+{
+"id": "7e7be21d-604f-4cb2-8989-88e927f1468f",
+"name": "Blue Ribbon Dive Resort",
+"dest": "Anilao",
+"locality": "Ligaya, Mabini",
+"socio": false
+},
+{
+"id": "d7838491-8f0a-4cbe-a736-bf6c57d5e809",
+"name": "Buceo Anilao Beach & Dive Resort",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "e3df0ac9-2fdb-4bf0-a0a4-8a2c014081b1",
+"name": "Camp Netanya Resort and Spa",
+"dest": "Anilao",
+"locality": "Ligaya, Mabini",
+"socio": false
+},
+{
+"id": "9035721b-24d9-4ae2-b94d-40f0a5feb2c5",
+"name": "Casa Escondida Anilao Resort Dive Center",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "6616b582-19cb-4ed1-a83c-5367ed3f0ae2",
+"name": "Club Ocellaris",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "ef55e2d0-e056-46be-9760-7e4f6c097869",
+"name": "Crystal Blue Resort",
+"dest": "Anilao",
+"locality": "San Teodoro, Mabini",
+"socio": false
+},
+{
+"id": "d4e8b800-e4b4-4fa8-b3aa-07692168a522",
+"name": "Dive Solana",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "f2e354d4-be33-4934-aa0f-e0a52dd316b7",
+"name": "Eagle Point Beach and Dive Resort",
+"dest": "Anilao",
+"locality": "Bagalangit, Mabini",
+"socio": false
+},
+{
+"id": "5decb8be-051c-4bfa-8819-184ab37acfeb",
+"name": "Pier Uno Resort and Dive Centre",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "c4f80a77-6889-4d38-a950-38969012fa03",
+"name": "Planet Dive Resort",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "eb1af01d-92d5-49c2-815b-9cb4f73a9867",
+"name": "Porto Novo Anilao Dive & Leisure Resort",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "4a12e19f-d871-4036-a479-9b0b302c6e4d",
+"name": "Portulano Dive Resort",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "983fee6e-2465-4d59-8475-36834729a89b",
+"name": "Saltitude Dive & Beach Resort",
+"dest": "Anilao",
+"locality": "San Jose, Mabini",
+"socio": false
+},
+{
+"id": "6778f470-cf8a-46f1-b633-eb8883948455",
+"name": "Solitude Acacia Resort",
+"dest": "Anilao",
+"locality": "Ligaya, Mabini",
+"socio": false
+},
+{
+"id": "17b22c67-c8e4-4b80-87de-55e5dac230fc",
+"name": "The Asri Dive and Leisure Resort",
+"dest": "Anilao",
+"locality": "Mabini",
+"socio": false
+},
+{
+"id": "22054b48-d438-452a-a5b4-c1949643cc8e",
+"name": "The Philip Ann Resort",
+"dest": "Anilao",
+"locality": "Solo, Mabini",
+"socio": false
+},
+{
+"id": "0ad88c01-3487-4fce-9119-1fc37b3ae7c5",
+"name": "Liberty's Lodge and Dive",
+"dest": "Apo Island",
+"locality": "Apo Island",
+"socio": false
+},
+{
+"id": "4ffffbf6-13f4-4928-9cd6-4052a4aa7f7d",
+"name": "Calypso Beach & Dive Resort",
+"dest": "Boracay",
+"locality": "White Beach Station 3",
+"socio": false
+},
+{
+"id": "108e5398-0c94-4dee-8f94-43b973ff00da",
+"name": "Fisheye Divers Boracay",
+"dest": "Boracay",
+"locality": null,
+"socio": false
+},
+{
+"id": "915f6446-6932-4d94-91c7-359155fdf392",
+"name": "Gravity Dive Center Boracay",
+"dest": "Boracay",
+"locality": "Station 1, White Beach",
+"socio": false
+},
+{
+"id": "fde5e4cc-b345-4959-b08f-c5913a0a8eb3",
+"name": "New Wave Divers",
+"dest": "Boracay",
+"locality": "White Beach",
+"socio": false
+},
+{
+"id": "c4811131-dec7-466c-a267-d34360d4db89",
+"name": "Scotty's Action Sports Network",
+"dest": "Boracay",
+"locality": null,
+"socio": false
+},
+{
+"id": "df1aab52-6099-4216-add6-9fb99fdf0241",
+"name": "Sea World Dive Center Boracay",
+"dest": "Boracay",
+"locality": "White Beach",
+"socio": false
+},
+{
+"id": "d6eccbe3-48f3-4acb-8efb-eacc191d41a6",
+"name": "Victory Divers",
+"dest": "Boracay",
+"locality": "White Beach",
+"socio": false
+},
+{
+"id": "57d8cf8f-102d-4e56-b97d-43f5ef686fd4",
+"name": "White Beach Divers",
+"dest": "Boracay",
+"locality": "White Beach",
+"socio": false
+},
+{
+"id": "1b110bd8-8ebc-48ec-8bda-ea3be35aeb6b",
+"name": "Cabilao Sanctuary Beach & Dive Resort",
+"dest": "Cabilao",
+"locality": "Cabilao Island",
+"socio": false
+},
+{
+"id": "44fc656d-f7c5-4168-b65e-6054189c992e",
+"name": "La Estrella Beach Resort & Cabilao Dive Center",
+"dest": "Cabilao",
+"locality": "Cabilao",
+"socio": false
+},
+{
+"id": "01c3aa5d-ad9e-43b7-812e-7e56a0465418",
+"name": "Polaris Beach and Dive Resort",
+"dest": "Cabilao",
+"locality": "Cabilao",
+"socio": false
+},
+{
+"id": "465ed024-8555-47c3-9b2f-ba770279243b",
+"name": "Sea Explorers Cabilao",
+"dest": "Cabilao",
+"locality": "Cabilao",
+"socio": false
+},
+{
+"id": "0445e524-486d-4e3f-8510-57571f8ad65b",
+"name": "Ajis Camiguin Adventures",
+"dest": "Camiguin",
+"locality": "Mahinog",
+"socio": false
+},
+{
+"id": "57dd9cf7-97ec-40cf-b274-ea9766f55e17",
+"name": "Black Beach Divers",
+"dest": "Camiguin",
+"locality": "Mambajao",
+"socio": false
+},
+{
+"id": "6e622831-9dab-43ce-be4a-2e5402a6b717",
+"name": "Camiguin Souldivers",
+"dest": "Camiguin",
+"locality": "Tupsan, Mambajao",
+"socio": false
+},
+{
+"id": "8feaa9c2-25d9-4105-ac92-6347d3e47358",
+"name": "Camiguin Volcan Beach",
+"dest": "Camiguin",
+"locality": "Mambajao",
+"socio": false
+},
+{
+"id": "4e3106eb-ea21-48ba-813b-5bafa6bef9d4",
+"name": "Coraya Divers Camiguin",
+"dest": "Camiguin",
+"locality": null,
+"socio": false
+},
+{
+"id": "eef1a326-ac62-48e4-857f-217af55f3c0b",
+"name": "Johnny's Dive N' Fun",
+"dest": "Camiguin",
+"locality": "Mambajao",
+"socio": false
+},
+{
+"id": "19df955c-36bb-405b-908c-808a334b4508",
+"name": "Kurma Eco-Beach Lodge (Kurma Freedive)",
+"dest": "Camiguin",
+"locality": "Mambajao",
+"socio": false
+},
+{
+"id": "f8d6666f-1555-437f-898e-e96a945ba4b0",
+"name": "Opaw Diving Center",
+"dest": "Camiguin",
+"locality": "Camiguin",
+"socio": false
+},
+{
+"id": "aba799c2-d5a9-4936-bbd1-462658d1c172",
+"name": "Scuba de Oro",
+"dest": "Camiguin",
+"locality": "Mambajao",
+"socio": false
+},
+{
+"id": "2001f865-ed47-4d06-a531-58291f5b873f",
+"name": "Coron Divers",
+"dest": "Coron",
+"locality": "Coron Town Proper",
+"socio": false
+},
+{
+"id": "be8139ee-763f-43ac-a011-77a3fcf362fa",
+"name": "Coron Easy Diving Corporation",
+"dest": "Coron",
+"locality": "Coron Town",
+"socio": false
+},
+{
+"id": "2a18f0c8-1433-44b0-9a3d-d5d7c4c2ee6d",
+"name": "Coron Sanho Dive Center",
+"dest": "Coron",
+"locality": "Coron Town",
+"socio": false
+},
+{
+"id": "e5e71868-fa59-42b9-8206-9c56b6084f15",
+"name": "Corto Divers Dive Center",
+"dest": "Coron",
+"locality": "Coron Town",
+"socio": false
+},
+{
+"id": "f454e2dc-3640-43c0-a0a5-3e2e4219eb0d",
+"name": "Diveunda",
+"dest": "Coron",
+"locality": "Coron",
+"socio": false
+},
+{
+"id": "d020ae12-b776-491d-ad55-3330b657ec83",
+"name": "Dugong Dive Center",
+"dest": "Coron",
+"locality": "Busuanga",
+"socio": false
+},
+{
+"id": "3ae29603-1093-4eba-82cf-cd412e41be19",
+"name": "Gunter's Dive Center",
+"dest": "Coron",
+"locality": "D'Pearl Bay, Busuanga",
+"socio": false
+},
+{
+"id": "62c08360-9584-4098-b0c4-92ee7ac0b52a",
+"name": "Neptune Dive Center",
+"dest": "Coron",
+"locality": "Coron Town",
+"socio": false
+},
+{
+"id": "ebb17715-0570-4089-9dd2-653f2d2ac82d",
+"name": "Pirates Diving Resort",
+"dest": "Coron",
+"locality": "Coron",
+"socio": false
+},
+{
+"id": "0fae8710-1611-4fec-ae79-dfb83e7aae92",
+"name": "Reggae Dive Center",
+"dest": "Coron",
+"locality": "Coron Town",
+"socio": false
+},
+{
+"id": "d808f496-785e-488b-a6e7-6e4ae56fa73f",
+"name": "Secret Explorers Dive Center",
+"dest": "Coron",
+"locality": null,
+"socio": false
+},
+{
+"id": "6e92a05d-8eb7-4c3a-b19b-852afd43ba6c",
+"name": "WDivers Coron Inc",
+"dest": "Coron",
+"locality": null,
+"socio": false
+},
+{
+"id": "7c35ef4c-5f61-420c-b89f-3eae5fcf7f9f",
+"name": "ScubaCrew Dive Shop (Ocean Bay Beach Resort)",
+"dest": "Dalaguete",
+"locality": "Poblacion",
+"socio": false
+},
+{
+"id": "2e6be410-3165-4770-b9aa-791019195448",
+"name": "Atlantis Dive Resort Dumaguete",
+"dest": "Dauin",
+"locality": "Lipayo",
+"socio": false
+},
+{
+"id": "aeeec093-410b-455b-b879-c19a43b78800",
+"name": "Atmosphere Resorts & Spa",
+"dest": "Dauin",
+"locality": "Dauin",
+"socio": false
+},
+{
+"id": "680162d0-2c2d-457e-8868-4401fa55b142",
+"name": "Bongo Bongo Divers",
+"dest": "Dauin",
+"locality": "Dauin",
+"socio": false
+},
+{
+"id": "dfda6ab8-7e02-4836-9d18-9d70947d39e5",
+"name": "Easy Diving Dauin",
+"dest": "Dauin",
+"locality": "Masaplod Sur (Sea Dream Resort)",
+"socio": false
+},
+{
+"id": "38a7878b-48e1-4997-9ead-b98c49bfd617",
+"name": "Liquid Dive Resort",
+"dest": "Dauin",
+"locality": "Bulak",
+"socio": false
+},
+{
+"id": "195978bb-4dd3-4699-bb83-39a5adbec867",
+"name": "Mike's Dauin Dive Resort",
+"dest": "Dauin",
+"locality": "Poblacion District III",
+"socio": false
+},
+{
+"id": "8c8fa277-8145-4664-8647-48ce32cf9c99",
+"name": "Salaya Beach Houses",
+"dest": "Dauin",
+"locality": "Dauin",
+"socio": false
+},
+{
+"id": "ff2a7b60-ea03-4b29-88c5-e3fbfbc073e4",
+"name": "Sea Explorers Dauin",
+"dest": "Dauin",
+"locality": "Poblacion District III (Pura Vida Beach & Dive Resort)",
+"socio": false
+},
+{
+"id": "5b0c2ed0-c5fe-4a8b-a61a-3a0dc5252cc0",
+"name": "Carabao Dive Center",
+"dest": "Davao",
+"locality": "Davao City",
+"socio": false
+},
+{
+"id": "8465cd5f-7109-411a-904b-6dcec97b7c14",
+"name": "Davao Scuba Dive Center",
+"dest": "Davao",
+"locality": "Davao City",
+"socio": false
+},
+{
+"id": "ce00bc63-550d-45e2-88f2-b65022e59763",
+"name": "Santosidad Tour Services and Dive Center",
+"dest": "Davao",
+"locality": "Davao City",
+"socio": false
+},
+{
+"id": "45eee666-aea5-4bc4-adea-00b399355fab",
+"name": "South Shore Divers",
+"dest": "Davao",
+"locality": null,
+"socio": false
+},
+{
+"id": "781ca198-df69-4064-bf7f-513e2d6d53cc",
+"name": "Bicol Dive Center",
+"dest": "Donsol",
+"locality": "Donsol town (opposite tourist centre)",
+"socio": false
+},
+{
+"id": "039f811f-d581-409a-8a9d-02f50ec48887",
+"name": "Giddy's Place PADI Dive Resort",
+"dest": "Donsol",
+"locality": "Donsol town",
+"socio": false
+},
+{
+"id": "6e77264c-f196-4979-b6aa-b9998292f493",
+"name": "Harold's Dive Center",
+"dest": "Dumaguete",
+"locality": "Dumaguete City",
+"socio": false
+},
+{
+"id": "8a1eabc3-3b29-474d-9fc4-d52a26170fd7",
+"name": "Scuba Ventures Dumaguete",
+"dest": "Dumaguete",
+"locality": "Dumaguete City",
+"socio": false
+},
+{
+"id": "8b385d4e-a618-439c-b0c5-011e0bb486ec",
+"name": "Aquanaut Dive Center",
+"dest": "El Nido",
+"locality": "El Nido town",
+"socio": false
+},
+{
+"id": "2bb0a2c0-97e3-4e53-81dc-d964a86a6358",
+"name": "Deep Blue Seafari",
+"dest": "El Nido",
+"locality": "El Nido town",
+"socio": false
+},
+{
+"id": "e7a8b787-5bf3-46f8-9838-60c1c9725b7b",
+"name": "El Nido Resorts Lagen Island",
+"dest": "El Nido",
+"locality": "Lagen Island, Bacuit Bay",
+"socio": false
+},
+{
+"id": "99ad6b48-bc4f-4a3e-af39-2b85c8ece7c8",
+"name": "El Nido Resorts Miniloc Island",
+"dest": "El Nido",
+"locality": "Miniloc Island, Bacuit Bay",
+"socio": false
+},
+{
+"id": "7756e055-f4f6-4d6b-8523-a1bbbb3c4730",
+"name": "Palawan Divers",
+"dest": "El Nido",
+"locality": "El Nido town",
+"socio": false
+},
+{
+"id": "ad77c45a-06b0-457a-9056-f99ab9c47515",
+"name": "Submariner Diving Centre",
+"dest": "El Nido",
+"locality": "El Nido town",
+"socio": false
+},
+{
+"id": "30592dd3-7c63-4f8e-8213-f42fc661a4f8",
+"name": "50bar SSI Diving Center Cebu",
+"dest": "Mactan",
+"locality": "Lapu-Lapu City",
+"socio": false
+},
+{
+"id": "ce479e30-bae1-46ae-b9e8-d80b6be0cdf9",
+"name": "All Blue Diving Cebu",
+"dest": "Mactan",
+"locality": "Lapu-Lapu City",
+"socio": false
+},
+{
+"id": "4c4f50bf-9c78-48dc-ad5e-5140e54df306",
+"name": "Big Boss Dive Cebu",
+"dest": "Mactan",
+"locality": "Datag, Maribago",
+"socio": false
+},
+{
+"id": "43ac0dab-3d20-493e-b063-c315ffb27af6",
+"name": "Blue Coral Diving",
+"dest": "Mactan",
+"locality": "Lapu-Lapu City",
+"socio": false
+},
+{
+"id": "6b915a40-a143-4ba6-a4ab-1c624f34b567",
+"name": "Dive Malditas Scuba Diving Services",
+"dest": "Mactan",
+"locality": "Lapu-Lapu City",
+"socio": false
+},
+{
+"id": "0e182866-29be-402c-9a9e-b00877be7f97",
+"name": "Mactan Scuba Dive Center",
+"dest": "Mactan",
+"locality": "Lapu-Lapu City",
+"socio": false
+},
+{
+"id": "b42050c7-957b-40a0-853f-851a90613a0a",
+"name": "Sidive Diving Center",
+"dest": "Mactan",
+"locality": "Kontiki Marina, Maribago",
+"socio": false
+},
+{
+"id": "459e4b72-fb0b-42bb-ae84-f0ba7bbda7ab",
+"name": "WeOcean",
+"dest": "Mactan",
+"locality": "Lapu-Lapu City",
+"socio": false
+},
+{
+"id": "36da1282-fe3f-4e23-a424-82a1bb7a7203",
+"name": "Bantigue Cove Dive Resort",
+"dest": "Malapascua",
+"locality": "Bantigue",
+"socio": false
+},
+{
+"id": "655007d5-315b-470b-9492-c6961581322f",
+"name": "Devocean Divers",
+"dest": "Malapascua",
+"locality": "Bounty Beach",
+"socio": false
+},
+{
+"id": "2519a163-d168-42a0-9397-2f8a8a6e1324",
+"name": "Evolution Dive & Beach Resort",
+"dest": "Malapascua",
+"locality": "Bounty Beach",
+"socio": false
+},
+{
+"id": "a51ae3ee-5e1d-4ca2-811f-219ec3547b2f",
+"name": "Malapascua Exotic Island Dive Resort",
+"dest": "Malapascua",
+"locality": "Logon",
+"socio": false
+},
+{
+"id": "1da852b6-9e58-406a-8e4b-71edccba6191",
+"name": "MBI Dive Center",
+"dest": "Malapascua",
+"locality": null,
+"socio": false
+},
+{
+"id": "2693c883-6e4b-4acc-9742-62b573737b6c",
+"name": "Sea Explorers Malapascua",
+"dest": "Malapascua",
+"locality": "Bounty Beach (Ocean Vida Beach Resort)",
+"socio": false
+},
+{
+"id": "8e7426fe-4c5d-4d60-9f51-9d0783239e7c",
+"name": "Thresher Shark Divers",
+"dest": "Malapascua",
+"locality": "Bounty Beach",
+"socio": false
+},
+{
+"id": "6203e6ff-4d32-44fc-88a8-21c3e66fcb10",
+"name": "Cebu Dive Centre",
+"dest": "Moalboal",
+"locality": "Panagsama Beach",
+"socio": false
+},
+{
+"id": "58c557f9-f67c-4ee4-93b7-d020e7217ff9",
+"name": "Cebu Fun Divers (Cebu Seaview Dive Resort)",
+"dest": "Moalboal",
+"locality": "Panagsama Beach",
+"socio": false
+},
+{
+"id": "b5e38c9a-a555-4f1c-81e8-ff5400f39085",
+"name": "Neptune Diving Resort Moalboal",
+"dest": "Moalboal",
+"locality": "Panagsama Beach",
+"socio": false
+},
+{
+"id": "03d31898-ea38-4c4c-8b51-67bd843e303e",
+"name": "Quo Vadis Dive Resort",
+"dest": "Moalboal",
+"locality": "Panagsama Beach",
+"socio": false
+},
+{
+"id": "59e2ade1-56b2-4f9e-8c70-78eb2fc0cb60",
+"name": "Savedra Dive Center",
+"dest": "Moalboal",
+"locality": "Panagsama Beach",
+"socio": false
+},
+{
+"id": "8133e173-fda6-411f-9fae-249bd3400e90",
+"name": "The Blue Abyss Dive Shop",
+"dest": "Moalboal",
+"locality": "Panagsama Beach",
+"socio": false
+},
+{
+"id": "5f291cac-6191-4238-a374-3136d38b609d",
+"name": "Turtle Bay Dive Resort",
+"dest": "Moalboal",
+"locality": "Moalboal",
+"socio": false
+},
+{
+"id": "0a8c2f63-32ea-41b3-86f9-27d4dfb57447",
+"name": "PSI Dive Oslob",
+"dest": "Oslob",
+"locality": "Oslob",
+"socio": false
+},
+{
+"id": "29ec4888-780c-4110-a807-0c49f62a470e",
+"name": "Alona Divers",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "4d26c4c1-c746-4cd9-afca-c32096d760e0",
+"name": "Big Blue Divers",
+"dest": "Panglao",
+"locality": "Danao (Kalipayan Road)",
+"socio": false
+},
+{
+"id": "8c44d385-c74a-48d9-aced-7b3d08b57dd8",
+"name": "Bohol Beach Club (centro de buceo)",
+"dest": "Panglao",
+"locality": "Bolod",
+"socio": false
+},
+{
+"id": "b4ac3666-0b78-4d3f-a3a7-418c584577ba",
+"name": "Bohol Divers Club",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "522b6f5c-c732-4481-b27e-caf7c6f6f0ba",
+"name": "Bohol Pearl Dive Center",
+"dest": "Panglao",
+"locality": "Poblacion",
+"socio": false
+},
+{
+"id": "3a1aa90b-dab9-410a-903d-896f6bb2e982",
+"name": "Genesis Divers",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "e7619ae4-f7a6-4b46-9977-9d7ef5fbf2ac",
+"name": "Go Scuba Bohol",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "b70c4a17-2bd6-47e8-9b6b-afc5ec380dc1",
+"name": "Godeep Diving Center Panglao",
+"dest": "Panglao",
+"locality": "Alona Beach, Tawala",
+"socio": false
+},
+{
+"id": "00aff470-2169-4016-8ce8-fe0a58b8f595",
+"name": "Haka Dive Center",
+"dest": "Panglao",
+"locality": "Danao",
+"socio": false
+},
+{
+"id": "04ba1914-0497-4351-ba4e-a25e70897e9d",
+"name": "Honu Dive Center",
+"dest": "Panglao",
+"locality": "The Bellevue Resort, Doljo",
+"socio": false
+},
+{
+"id": "18202cdb-4db5-4194-873c-abf8365b7822",
+"name": "Island Adventure Dive Center",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "3db4b513-6199-4eb9-8921-0af976e9037f",
+"name": "Keep Diving Resort Bohol",
+"dest": "Panglao",
+"locality": "Danao (Taporok)",
+"socio": false
+},
+{
+"id": "0f9a0b41-e766-4dae-8903-a88574db7496",
+"name": "Let's Go Diving",
+"dest": "Panglao",
+"locality": null,
+"socio": false
+},
+{
+"id": "99eb84aa-1c29-4b67-917a-075e9ebc6927",
+"name": "Mr. Diver Dive Center",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "dcf019c7-b7f8-44b1-9a90-3d58dc1aead2",
+"name": "Oceanholic Diving Resort",
+"dest": "Panglao",
+"locality": "Danao",
+"socio": false
+},
+{
+"id": "c855dddc-6fb4-4762-83d8-b099fa11806c",
+"name": "Pata Negra Dive Center",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "fb182ace-818d-4166-8946-228b75ba5ffb",
+"name": "Philippine Fun Divers",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "38dc0c13-e6dd-40b7-b08e-8d640b7b42cf",
+"name": "Piratas Alona Dive Center",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "b0e6c296-1c90-45a8-9915-49b46cfd59c9",
+"name": "Prana Divers",
+"dest": "Panglao",
+"locality": "Vanilla Sky Resort, Kalipayan Rd, Danao",
+"socio": false
+},
+{
+"id": "52eac07e-a18d-40a9-a19d-ba50a818dfe5",
+"name": "Sea Explorers Alona",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "2048545e-2afc-4475-b9e4-8a9667788c7c",
+"name": "Sea U Diving",
+"dest": "Panglao",
+"locality": null,
+"socio": false
+},
+{
+"id": "55912bad-365c-478b-a714-16829ad33a4f",
+"name": "SeaQuest Dive Center",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "4225b914-7046-4a48-acaa-b5de32a3fba5",
+"name": "Sierra Madre Divers",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "c09900d6-a93b-4b4a-9a17-cb094b699d08",
+"name": "Sun Divers",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "dc536b4a-2339-4175-a437-486602ae57c7",
+"name": "Tropical Divers Dive Center",
+"dest": "Panglao",
+"locality": "Alona Beach",
+"socio": false
+},
+{
+"id": "8a1b52a4-9f21-41eb-bf68-f41b40000ca2",
+"name": "Ultra Mint Dive Resort",
+"dest": "Panglao",
+"locality": "Tawala",
+"socio": false
+},
+{
+"id": "51ebdeae-a82c-4ce7-8d37-adeaa8c5ef66",
+"name": "Valm Divers Service and Water Sport",
+"dest": "Panglao",
+"locality": "Alona Beach (Pyramid Beach Resort)",
+"socio": false
+},
+{
+"id": "bd689b66-30f0-42a0-8cbd-7356a729f6f6",
+"name": "Sunset Divers Palawan",
+"dest": "Port Barton",
+"locality": "Port Barton, San Vicente",
+"socio": false
+},
+{
+"id": "16465044-22b1-40d4-90f4-72b70e6a4eab",
+"name": "Action Divers",
+"dest": "Puerto Galera",
+"locality": "Small La Laguna Beach, Sabang",
+"socio": false
+},
+{
+"id": "664d6eeb-cc83-415f-ade2-96c4edaa50cb",
+"name": "Angelyn's Dive Resort",
+"dest": "Puerto Galera",
+"locality": "Small La Laguna Beach, Sabang",
+"socio": false
+},
+{
+"id": "7cf0ec4a-28cb-4ac3-8809-d3c1a6402c6b",
+"name": "Arkipelago Divers",
+"dest": "Puerto Galera",
+"locality": "Puerto Galera",
+"socio": false
+},
+{
+"id": "55ebba39-105f-484c-9539-4feb518dc7be",
+"name": "Asia Divers (El Galleon Resort)",
+"dest": "Puerto Galera",
+"locality": "Small La Laguna Beach, Sabang",
+"socio": false
+},
+{
+"id": "8f421221-e4f1-4b97-8441-222eb2b5d89f",
+"name": "Atlantis Dive Resort Puerto Galera",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "1b8b05d6-973b-49e1-a060-28681d7769f2",
+"name": "Badladz Dive Resort",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "c2b6a5d7-e683-49b3-917c-322adf7fb800",
+"name": "Big Apple Dive Resort",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "94240ab2-fc75-42fa-8b85-5fc9a1688391",
+"name": "Capt'n Gregg's Dive Resort",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "2589c314-0e8a-4554-8f0a-4d1b3c2a15b3",
+"name": "Casalay Divers",
+"dest": "Puerto Galera",
+"locality": null,
+"socio": false
+},
+{
+"id": "542640ff-a427-4f34-8a48-5260aa5768d5",
+"name": "Frontier Scuba",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "9d3cfe40-c825-4fe6-a3e3-17a99a540246",
+"name": "Izakaya Palm Divers",
+"dest": "Puerto Galera",
+"locality": "Puerto Galera",
+"socio": false
+},
+{
+"id": "fb6ec6e2-86b8-44c3-8b3a-b23a2b60504f",
+"name": "Lalaguna Villas Luxury Dive Resort & Spa",
+"dest": "Puerto Galera",
+"locality": "Small La Laguna Beach, Sabang",
+"socio": false
+},
+{
+"id": "8b7a0556-cb55-436f-a9a5-b7e154807955",
+"name": "Marco Vincent Dive Resort",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "ca10f0b6-4958-443e-8eae-dbda427b4fa9",
+"name": "Sabang Inn Diver Dream Resort",
+"dest": "Puerto Galera",
+"locality": "Sabang",
+"socio": false
+},
+{
+"id": "226a0cc0-82d2-44c0-a744-7d4adcc1d40b",
+"name": "Scandi Divers",
+"dest": "Puerto Galera",
+"locality": "Big La Laguna Beach, Sabang",
+"socio": false
+},
+{
+"id": "18d47394-e450-4258-8c68-8cbb2ca2424b",
+"name": "Leo Dive Palawan",
+"dest": "Puerto Princesa",
+"locality": "Puerto Princesa City",
+"socio": false
+},
+{
+"id": "768f3ffd-9c09-4944-86bd-10c83293c524",
+"name": "Let's Dive Center",
+"dest": "Puerto Princesa",
+"locality": "Puerto Princesa City",
+"socio": false
+},
+{
+"id": "a55848be-343e-44ef-854c-a44f60e80664",
+"name": "Palawan Scuba Diving School",
+"dest": "Puerto Princesa",
+"locality": "Puerto Princesa City",
+"socio": false
+},
+{
+"id": "4ab5ad40-b4ae-428e-8822-13e1546bb9c7",
+"name": "Sunset Cove Beach & Dive Resort",
+"dest": "Romblon",
+"locality": "Romblon Island",
+"socio": false
+},
+{
+"id": "a90e8514-76e2-4667-900f-3bfa70d7dcf4",
+"name": "The Three P Holiday & Dive Resort (Ducks Diving)",
+"dest": "Romblon",
+"locality": "Lonos, Romblon town",
+"socio": false
+},
+{
+"id": "b23f0368-dfcc-485d-8a9b-1a35f668d993",
+"name": "Ocean Tribe Siargao",
+"dest": "Siargao",
+"locality": "Cloud 9, Brgy. Catangnan, General Luna",
+"socio": false
+},
+{
+"id": "06fead71-78de-4ea4-9376-3495430b84f1",
+"name": "Palaka Siargao Dive Center",
+"dest": "Siargao",
+"locality": "General Luna",
+"socio": false
+},
+{
+"id": "1d514879-91df-4886-8474-5f7b7e5400a8",
+"name": "Artistic Diving Beach Resort",
+"dest": "Sipalay",
+"locality": "Punta Ballo",
+"socio": false
+},
+{
+"id": "9cb09886-169f-482f-b71b-b4dabc7187cf",
+"name": "Easy Diving Sipalay",
+"dest": "Sipalay",
+"locality": "Punta Ballo",
+"socio": false
+},
+{
+"id": "8f8bd9e4-92b9-4319-b594-913a9f8b9c10",
+"name": "Sea Explorers Sipalay",
+"dest": "Sipalay",
+"locality": "Sugar Beach, Nauhang",
+"socio": false
+},
+{
+"id": "0d3493ea-e034-4ec0-8ea2-24de2fdf2d4f",
+"name": "Apo Diver Siquijor",
+"dest": "Siquijor",
+"locality": null,
+"socio": false
+},
+{
+"id": "e8be4efb-d232-40ec-9793-5e69799cbaed",
+"name": "Bahura Dive Siquijor",
+"dest": "Siquijor",
+"locality": "Siquijor",
+"socio": false
+},
+{
+"id": "953544cc-553b-436b-8d37-0ad9a95a40de",
+"name": "Coco Grove Dive Center",
+"dest": "Siquijor",
+"locality": "Tubod, San Juan",
+"socio": false
+},
+{
+"id": "b4192b91-e496-4a85-a150-7a2e382f93e5",
+"name": "Kiwi Dive Resort",
+"dest": "Siquijor",
+"locality": "Sandugan, Larena",
+"socio": false
+},
+{
+"id": "76ef8366-be51-4182-af14-6cd6422f9481",
+"name": "Sea Explorers Siquijor",
+"dest": "Siquijor",
+"locality": "Siquijor",
+"socio": false
+},
+{
+"id": "b25b4b75-2eaf-4503-b544-36a3435da918",
+"name": "Siquijor Divers Center",
+"dest": "Siquijor",
+"locality": "Siquijor",
+"socio": false
+},
+{
+"id": "df560841-e729-46ab-883e-fae60daaaafb",
+"name": "Ustory Divers Siquijor",
+"dest": "Siquijor",
+"locality": "Siquijor",
+"socio": false
+},
+{
+"id": "eaa20aa7-992f-47e3-8f54-74196428ed39",
+"name": "Voodoo Diving Center",
+"dest": "Siquijor",
+"locality": "Lala-o, San Juan",
+"socio": false
+},
+{
+"id": "fec26df2-fb9d-488a-bc22-7497df2557b7",
+"name": "Peter's Dive Resort",
+"dest": "Sogod Bay",
+"locality": "Padre Burgos",
+"socio": false
+},
+{
+"id": "ba8d0901-7eca-4eb8-bd36-6110f320629e",
+"name": "Sogod Bay Scuba Resort",
+"dest": "Sogod Bay",
+"locality": "Padre Burgos",
+"socio": false
+},
+{
+"id": "55c03660-736f-4488-bd1d-47d68ca0b356",
+"name": "Southern Leyte Divers",
+"dest": "Sogod Bay",
+"locality": "San Roque, Macrohon",
+"socio": false
+},
+{
+"id": "7a5f6ba1-1a15-416b-9788-3195f1f3bbc9",
+"name": "Camayan Divers",
+"dest": "Subic",
+"locality": "Camayan Beach, Subic Bay Freeport",
+"socio": false
+},
+{
+"id": "44bbe641-e3bd-4725-9f4a-eeefce29d8ca",
+"name": "Johan's Beach Resort",
+"dest": "Subic",
+"locality": "Barretto, Olongapo",
+"socio": false
+},
+{
+"id": "7ba27561-f788-4daa-b9ba-2731f257aaad",
+"name": "Scubaholics Subic",
+"dest": "Subic",
+"locality": "Subic Bay",
+"socio": false
+},
+{
+"id": "5914ce63-ba22-4427-8086-8e4149ddecbc",
+"name": "Atlantis Adventurer",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+},
+{
+"id": "f9519442-e647-4ba7-9b24-dea7cdfd1c43",
+"name": "Infiniti",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+},
+{
+"id": "63a75091-9131-4c1e-866d-85048b152daa",
+"name": "Narayana",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+},
+{
+"id": "6fdd5071-b9f9-4187-b08e-a0bcd047ce8f",
+"name": "Philippine Siren",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+},
+{
+"id": "37655673-4ae0-410d-8514-1f973eb53ae3",
+"name": "Philippines Aggressor II",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+},
+{
+"id": "96b9d13b-9ac1-4296-9945-a3781778c5e4",
+"name": "Resolute",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+},
+{
+"id": "e30a60fe-3407-48c4-b6eb-7c4e91221953",
+"name": "Seadoors",
+"dest": "Tubbataha",
+"locality": "Liveaboard (departs Puerto Princesa)",
+"socio": false
+}
+],
+"destinations": [
+{
+"name": "Anilao",
+"province": "Batangas",
+"island_group": "Luzon",
+"lat": 13.76,
+"lng": 120.926
+},
+{
+"name": "Donsol",
+"province": "Sorsogon",
+"island_group": "Luzon",
+"lat": 12.9083,
+"lng": 123.5953
+},
+{
+"name": "Subic",
+"province": "Zambales",
+"island_group": "Luzon",
+"lat": 14.835,
+"lng": 120.27
+},
+{
+"name": "Camiguin",
+"province": "Camiguin",
+"island_group": "Mindanao",
+"lat": 9.251,
+"lng": 124.717
+},
+{
+"name": "Davao",
+"province": "Davao del Sur",
+"island_group": "Mindanao",
+"lat": 7.0731,
+"lng": 125.6128
+},
+{
+"name": "Siargao",
+"province": "Surigao del Norte",
+"island_group": "Mindanao",
+"lat": 9.786,
+"lng": 126.158
+},
+{
+"name": "Apo Reef",
+"province": "Occidental Mindoro",
+"island_group": "Mindoro",
+"lat": 12.66,
+"lng": 120.43
+},
+{
+"name": "Puerto Galera",
+"province": "Oriental Mindoro",
+"island_group": "Mindoro",
+"lat": 13.52,
+"lng": 120.974
+},
+{
+"name": "Coron",
+"province": "Palawan",
+"island_group": "Palawan",
+"lat": 11.9986,
+"lng": 120.2043
+},
+{
+"name": "El Nido",
+"province": "Palawan",
+"island_group": "Palawan",
+"lat": 11.1956,
+"lng": 119.4013
+},
+{
+"name": "Port Barton",
+"province": "Palawan",
+"island_group": "Palawan",
+"lat": 10.406,
+"lng": 119.158
+},
+{
+"name": "Puerto Princesa",
+"province": "Palawan",
+"island_group": "Palawan",
+"lat": 9.7392,
+"lng": 118.7353
+},
+{
+"name": "Tubbataha",
+"province": "Palawan",
+"island_group": "Palawan",
+"lat": 8.88,
+"lng": 119.92
+},
+{
+"name": "Romblon",
+"province": "Romblon",
+"island_group": "Romblon",
+"lat": 12.5752,
+"lng": 122.27
+},
+{
+"name": "Anda",
+"province": "Bohol",
+"island_group": "Visayas",
+"lat": 9.744,
+"lng": 124.576
+},
+{
+"name": "Apo Island",
+"province": "Negros Oriental",
+"island_group": "Visayas",
+"lat": 9.076,
+"lng": 123.27
+},
+{
+"name": "Boracay",
+"province": "Aklan",
+"island_group": "Visayas",
+"lat": 11.962,
+"lng": 121.925
+},
+{
+"name": "Cabilao",
+"province": "Bohol",
+"island_group": "Visayas",
+"lat": 9.879,
+"lng": 123.771
+},
+{
+"name": "Dalaguete",
+"province": "Cebu",
+"island_group": "Visayas",
+"lat": 9.761,
+"lng": 123.535
+},
+{
+"name": "Dauin",
+"province": "Negros Oriental",
+"island_group": "Visayas",
+"lat": 9.192,
+"lng": 123.27
+},
+{
+"name": "Dumaguete",
+"province": "Negros Oriental",
+"island_group": "Visayas",
+"lat": 9.307,
+"lng": 123.308
+},
+{
+"name": "Mactan",
+"province": "Cebu",
+"island_group": "Visayas",
+"lat": 10.3,
+"lng": 124.01
+},
+{
+"name": "Malapascua",
+"province": "Cebu",
+"island_group": "Visayas",
+"lat": 11.331,
+"lng": 124.114
+},
+{
+"name": "Moalboal",
+"province": "Cebu",
+"island_group": "Visayas",
+"lat": 9.943,
+"lng": 123.372
+},
+{
+"name": "Oslob",
+"province": "Cebu",
+"island_group": "Visayas",
+"lat": 9.465,
+"lng": 123.38
+},
+{
+"name": "Panglao",
+"province": "Bohol",
+"island_group": "Visayas",
+"lat": 9.5494,
+"lng": 123.7735
+},
+{
+"name": "Sipalay",
+"province": "Negros Occidental",
+"island_group": "Visayas",
+"lat": 9.718,
+"lng": 122.396
+},
+{
+"name": "Siquijor",
+"province": "Siquijor",
+"island_group": "Visayas",
+"lat": 9.18,
+"lng": 123.56
+},
+{
+"name": "Sogod Bay",
+"province": "Southern Leyte",
+"island_group": "Visayas",
+"lat": 10.029,
+"lng": 125.017
+}
+]
+}
