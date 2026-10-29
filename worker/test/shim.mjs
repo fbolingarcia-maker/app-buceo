@@ -11,7 +11,7 @@ class Stmt {
   }
   _exec() {
     const st = this.db.prepare(this.sql)
-    const reader = /^\s*(SELECT|WITH)\b/i.test(this.sql) || /\bRETURNING\b/i.test(this.sql)
+    const reader = /^\s*(SELECT|WITH|PRAGMA\s+table_info)\b/i.test(this.sql) || /\bRETURNING\b/i.test(this.sql)
     if (reader) return { results: st.all(...this.params).map((r) => ({ ...r })), success: true, meta: { changes: 0 } }
     const r = st.run(...this.params)
     return { results: [], success: true, meta: { changes: Number(r.changes), last_row_id: Number(r.lastInsertRowid) } }

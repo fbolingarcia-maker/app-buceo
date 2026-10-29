@@ -30,8 +30,10 @@ export async function handleHealth(req, env, url) {
   let schema = null, data = null, imp = null
   if (env.DB) {
     try {
-      const rows = (await env.DB.prepare("SELECT m.name AS t, p.name AS c FROM sqlite_master m JOIN pragma_table_info(m.name) p WHERE m.type = 'table'").all()).results
-      const have = new Set(rows.map((r) => r.t + '.' + r.c))
+      // D1 no deja leer pragma_table_info() en una consulta, pero sí PRAGMA table_info(t); en un lote cuenta como una sola
+      const names = Object.keys(TABLES)
+      const res = await env.DB.batch(names.map((t) => env.DB.prepare(`PRAGMA table_info(${t})`)))
+      const have = new Set(res.flatMap((r, i) => (r.results || []).map((c) => names[i] + '.' + c.name)))
       const lack = Object.entries(TABLES).flatMap(([t, d]) => d.cols.map(([col]) => t + '.' + col)).filter((x) => !have.has(x))
       schema = { up_to_date: lack.length === 0, missing_columns: lack.slice(0, 20) }
       if (lack.length) missing.push('Esquema de D1 antiguo: se pone al día solo al importar los datos (reset) o con schema.sql')
