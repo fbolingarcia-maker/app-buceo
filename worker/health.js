@@ -10,20 +10,19 @@ export async function handleHealth(req, env, url) {
   const has = (k) => !!(env[k] && String(env[k]).length)
   const c = {
     d1: !!env.DB,
-    auth_secret: has('AUTH_SECRET') && String(env.AUTH_SECRET).length >= 32,
+    auth_secret: has('AUTH_SECRET') && String(env.AUTH_SECRET).length >= 32 ? (env.AUTH_SECRET_AUTO ? 'automatico' : 'secreto') : false,
     google: has('GOOGLE_CLIENT_ID') && has('GOOGLE_CLIENT_SECRET'),
-    email: has('RESEND_API_KEY') ? 'resend' : has('SMTP_HOST') && has('SMTP_USER') && has('SMTP_PASS') ? 'smtp' : env.EMAIL_DEV_LOG === '1' ? 'solo-log' : 'no',
-    notify_key: has('NOTIFY_KEY'),
+    email: env.EMAIL?.send ? 'cloudflare' : has('RESEND_API_KEY') ? 'resend' : has('SMTP_HOST') && has('SMTP_USER') && has('SMTP_PASS') ? 'smtp' : env.EMAIL_DEV_LOG === '1' ? 'solo-log' : 'no',
+    notify: has('NOTIFY_KEY') ? 'clave' : 'cola-supabase',
     r2_dive_photos: !!env.DIVE_PHOTOS,
     r2_center_docs: !!env.CENTER_DOCS,
     paymongo: has('PAYMONGO_SECRET_KEY'),
     paymongo_webhook: has('PAYMONGO_WEBHOOK_SECRET'),
   }
   if (!c.d1) missing.push('Base de datos D1 (binding DB en wrangler.jsonc)')
-  if (!c.auth_secret) missing.push('Secreto AUTH_SECRET (32+ caracteres aleatorios)')
-  if (!c.google) missing.push('Acceso con Google: secretos GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET')
-  if (c.email === 'no' || c.email === 'solo-log') missing.push('Email: RESEND_API_KEY o SMTP_HOST/SMTP_USER/SMTP_PASS')
-  if (!c.notify_key) missing.push('Secreto NOTIFY_KEY (el mismo que «divingslot_notify_key» en Supabase Vault)')
+  if (!c.auth_secret) missing.push('AUTH_SECRET: se genera solo en D1 la primera vez que la API recibe una petición')
+  if (!c.google) missing.push('Acceso con Google: secreto GOOGLE_CLIENT_SECRET (el GOOGLE_CLIENT_ID ya va en wrangler.jsonc)')
+  if (c.email === 'no' || c.email === 'solo-log') missing.push('Email: Workers Paid + Email Sending de divingslot.com (y descomentar send_email en wrangler.jsonc), o RESEND_API_KEY, o SMTP_HOST/SMTP_USER/SMTP_PASS')
   if (!c.r2_dive_photos || !c.r2_center_docs) missing.push('(Opcional) R2: buckets de fotos y documentos; sin ellos la app funciona pero no se pueden subir ficheros')
   if (!c.paymongo) missing.push('(Opcional) PAYMONGO_SECRET_KEY y PAYMONGO_WEBHOOK_SECRET para cobros online')
 
@@ -49,6 +48,6 @@ export async function handleHealth(req, env, url) {
       imp = { last: imp || null, locked: !!lock }
     } catch { imp = { last: null, locked: false } }
   }
-  const ready = c.d1 && c.auth_secret && c.google && (c.email === 'resend' || c.email === 'smtp') && c.notify_key && !!schema?.up_to_date && !!data?.users
+  const ready = c.d1 && c.auth_secret && c.google && ['cloudflare', 'resend', 'smtp'].includes(c.email) && !!schema?.up_to_date && !!data?.users
   return json({ ok: true, ready, checks: c, schema, data, import: imp, missing })
 }

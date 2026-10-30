@@ -1,5 +1,5 @@
 // Emails de DivingSlot desde el Worker (bilingües, mismas plantillas que tenía Supabase).
-// Envío por Resend (RESEND_API_KEY) o, si no, por SMTP con TLS (SMTP_HOST, SMTP_PORT=465, SMTP_USER, SMTP_PASS),
+// Envío por Cloudflare Email Service (binding EMAIL), por Resend (RESEND_API_KEY) o, si no, por SMTP con TLS (SMTP_HOST, SMTP_PORT=465, SMTP_USER, SMTP_PASS),
 // p. ej. la contraseña de aplicación de Gmail que ya usaba Supabase.
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -30,6 +30,13 @@ export const TEMPLATES = {
 
 export async function sendEmail(env, to, { subject, html }) {
   const from = env.EMAIL_FROM || 'DivingSlot <no-reply@divingslot.com>'
+  // Cloudflare Email Service (binding send_email «EMAIL» en wrangler.jsonc): sin claves. Necesita Workers Paid y el
+  // dominio dado de alta en Email Sending (o, en el plan gratuito, solo a direcciones verificadas de Email Routing).
+  if (env.EMAIL?.send) {
+    const m = /^(.*?)\s*<([^>]+)>$/.exec(from)
+    await env.EMAIL.send({ from: m ? { name: m[1], email: m[2] } : from, to, subject, html })
+    return
+  }
   if (env.RESEND_API_KEY) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',

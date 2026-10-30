@@ -17,6 +17,7 @@ import { crearPago, paymongoWebhook } from './payments.js'
 import { cleanup } from './cron.js'
 import { handleImport } from './import.js'
 import { handleHealth } from './health.js'
+import { withSecrets } from './lib/secrets.js'
 import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits } from './stats.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
@@ -30,6 +31,7 @@ function csrfOk(req, url) {
 
 export async function handleApi(req, env, ectx) {
   const url = new URL(req.url)
+  env = await withSecrets(env).catch(() => env) // AUTH_SECRET automático si no está configurado (lib/secrets.js)
   const path = url.pathname.slice(5) // sin "/api/"
   try {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204 }) // sin CORS: solo la propia app
@@ -70,9 +72,12 @@ export default {
   async fetch(req, env, ectx) {
     const url = new URL(req.url)
     if (url.pathname.startsWith('/api/')) return handleApi(req, env, ectx)
+    // Verificación de Google Search Console: se sirve tal cual (Static Assets redirigiría *.html a la ruta sin .html)
+    if (url.pathname === '/google3f09e05f2c350262.html') return new Response('google-site-verification: google3f09e05f2c350262.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
     return env.ASSETS.fetch(req)
   },
   async scheduled(event, env, ectx) {
+    env = await withSecrets(env).catch(() => env)
     ectx.waitUntil(cleanup(env))
     ectx.waitUntil(pruneVisits(env).catch((e) => console.error('visits', e.message)))
     ectx.waitUntil(dailyDigest(env).catch((e) => console.error('digest', e.message)))

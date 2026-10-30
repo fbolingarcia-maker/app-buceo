@@ -1,6 +1,7 @@
 // Copia de datos Supabase → D1 para el cambio a Cloudflare (se usa una vez, el día del cambio, o para ensayarlo).
-//   POST /api/import          Supabase manda las sentencias por trozos (private.export_to_d1, migración 034), con la
-//                             cabecera X-Notify-Key = NOTIFY_KEY. Cuerpo: { run, seq, total, reset, statements: [...] }.
+//   POST /api/import          Supabase manda las sentencias por trozos (private.export_to_d1, migraciones 034/035): cada
+//                             trozo queda en su cola y llega { claim: uuid } (o, con NOTIFY_KEY, el trozo con X-Notify-Key).
+//                             Trozo: { run, seq, total, reset, statements: [...] }.
 //                             Los trozos se guardan en import_chunks; al llegar el último se ejecuta TODO en un solo
 //                             lote de D1 (una transacción: o entra todo o no cambia nada).
 //   GET  /api/import/status?run=…   cómo va (trozos recibidos, estado, filas por tabla al terminar).
@@ -14,7 +15,8 @@
 //   · reset: true borra y vuelve a crear todas las tablas (excepto visitas, avisos e importaciones) con el esquema
 //     actual de schema.js: así D1 queda al día aunque se creara con una versión antigua. Cierra todas las sesiones.
 import { json, fail, nowIso } from './lib/util.js'
-import { safeEqual } from './lib/crypto.js'
+import { claimFromSupabase, hasNotifyKey } from './lib/outbox.js'
+import { rateLimit } from './auth.js'
 import { TABLES, VIEWS, schemaSql } from './schema.js'
 
 const KEEP = new Set(['visits', 'notify_log', 'import_chunks', 'import_runs'])
@@ -131,10 +133,14 @@ export async function handleImport(req, env, url) {
       detail: r?.status === 'done' ? JSON.parse(r.detail || '{}') : r?.detail || null, locked: await locked(db) })
   }
   if (req.method !== 'POST') fail('NOT_FOUND', 'ruta desconocida', 404)
-  if (!env.NOTIFY_KEY) fail('NOT_CONFIGURED', 'falta NOTIFY_KEY', 503)
-  if (!safeEqual(req.headers.get('X-Notify-Key') || '', env.NOTIFY_KEY)) fail('FORBIDDEN', 'clave incorrecta', 403)
+  let b = await req.json().catch(() => null)
+  // Con la clave X-Notify-Key o, sin clave, con { claim } (el trozo se recoge de la cola de Supabase, lib/outbox.js)
+  if (!hasNotifyKey(req, env)) {
+    if (!b?.claim) fail('FORBIDDEN', 'clave incorrecta', 403)
+    await rateLimit(env, 'claim:' + (req.headers.get('CF-Connecting-IP') || ''), 120, 60)
+    b = await claimFromSupabase(env, b.claim, 'import')
+  }
   if (await locked(db)) fail('LOCKED', 'la app ya está en marcha en Cloudflare: no se puede volver a importar', 409)
-  const b = await req.json().catch(() => null)
   const run = String(b?.run || '')
   const seq = b?.seq, total = b?.total
   if (!/^[A-Za-z0-9_.:-]{1,64}$/.test(run) || run.startsWith('#')) fail('INVALID', 'run no válido')

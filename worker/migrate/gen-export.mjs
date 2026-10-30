@@ -1,9 +1,9 @@
 // Copia de datos Supabase → D1 para el cambio a Cloudflare.
 //   node worker/migrate/gen-export.mjs            → worker/migrate/export-supabase.sql (con los hash de contraseñas)
 //   node worker/migrate/gen-export.mjs --ensayo   → igual pero sin hash (para ensayar sin sacar contraseñas de Supabase)
-//   Además (siempre) genera la migración de Supabase supabase/migrations/…_034_exportar_a_d1.sql con la función
-//   private.export_to_d1(run, passwords, reset, chunk), que manda esas mismas sentencias al Worker (POST /api/import,
-//   worker/import.js) por trozos con pg_net. Es el camino recomendado: los datos van directos de Supabase a Cloudflare.
+//   Además (siempre) genera la migración de Supabase supabase/migrations/…_036_exportar_a_d1_sin_clave.sql con la función
+//   private.export_to_d1(run, passwords, reset, chunk, dry), que manda esas mismas sentencias al Worker (POST /api/import,
+//   worker/import.js) por trozos, por la cola private.outbox de la migración 035 (sin clave). Es el camino recomendado: los datos van directos de Supabase a Cloudflare.
 //
 // export-supabase.sql es UNA consulta de Postgres para el SQL Editor de Supabase (o execute_sql): devuelve una fila por
 // sentencia SQLite (columna «sql», en orden). Esas sentencias se ejecutan tal cual en D1, por lotes:
@@ -70,25 +70,23 @@ const out = new URL(ensayo ? './export-ensayo.sql' : './export-supabase.sql', im
 fs.writeFileSync(out, sql)
 console.log(out.pathname, sql.length, 'bytes,', appTables.length + 1, 'tablas')
 
-// Migración de Supabase con la función que empuja los datos al Worker
-const mig = `-- 034: copia de datos Supabase → Cloudflare D1 (para el cambio de backend). Generado por worker/migrate/gen-export.mjs.
+// Migración de Supabase con la función que empuja los datos al Worker (versión 036: por la cola private.outbox de la
+// migración 035, sin clave compartida; la 034 era la primera versión, con X-Notify-Key)
+const mig = `-- 036: copia de datos Supabase → Cloudflare D1 (para el cambio de backend). Generado por worker/migrate/gen-export.mjs.
+-- Sustituye a la función de la 034: ya no necesita la clave «divingslot_notify_key» (usa la cola de la migración 035).
 -- No hace nada por sí sola: solo crea la función. El día del cambio se ejecuta en el SQL Editor de Supabase:
 --     select private.export_to_d1('cambio-1');             -- con las contraseñas (la gente entra con la misma)
 --     select private.export_to_d1('ensayo-1', false);      -- ensayo: sin contraseñas
 --     select private.export_to_d1('x', p_dry := true);     -- solo cuenta (no manda nada)
--- Manda todas las filas al Worker (POST <url de avisos con /api/import>, cabecera X-Notify-Key = la misma clave de
--- Vault «divingslot_notify_key» que ya usan los avisos) por trozos con pg_net. El Worker las comprueba una a una y,
--- al llegar el último trozo, borra y crea de nuevo las tablas de D1 (p_reset) y mete todo en una sola transacción.
+-- Cada trozo se guarda en private.outbox y al Worker (POST <url de avisos con /api/import>) le llega { claim }; el Worker lo
+-- recoge con outbox_claim, comprueba cada sentencia y, al llegar el último trozo, borra y crea de nuevo las tablas de D1
+-- (p_reset) y mete todo en una sola transacción.
 -- Resultado: https://divingslot.com/api/import/status?run=cambio-1  (status «done» y filas por tabla).
 -- Solo la puede ejecutar el propietario de la base de datos (SQL Editor); nadie desde la app.
-
-create extension if not exists pg_net with schema extensions;
-create schema if not exists private;
 
 create or replace function private.export_to_d1(p_run text, p_passwords boolean default true, p_reset boolean default true, p_chunk int default 300, p_dry boolean default false)
 returns jsonb language plpgsql security definer set search_path = '' as $fn$
 declare
-  k text;
   u text;
   stmts text[];
   total int;
@@ -98,8 +96,6 @@ declare
 begin
   if p_run !~ '^[A-Za-z0-9_.:-]{1,64}$' then raise exception 'nombre de importación no válido: %', p_run; end if;
   if p_chunk < 10 or p_chunk > 2000 then raise exception 'p_chunk entre 10 y 2000'; end if;
-  select decrypted_secret into k from vault.decrypted_secrets where name = 'divingslot_notify_key';
-  if k is null then raise exception 'falta la clave «divingslot_notify_key» en Vault (la misma que NOTIFY_KEY del Worker)'; end if;
   select coalesce((select decrypted_secret from vault.decrypted_secrets where name = 'divingslot_notify_url'),
                   'https://divingslot.com/api/notify') into u;
   u := regexp_replace(u, '/api/notify$', '/api/import');
@@ -116,12 +112,10 @@ ${unionSql('p_passwords')}
       'users', (select count(*) from unnest(stmts) x where x like 'INSERT INTO users %'));
   end if;
   for i in 1..nchunks loop
-    ids := ids || net.http_post(
-      url := u,
-      body := jsonb_build_object('run', p_run, 'seq', i, 'total', nchunks, 'reset', p_reset,
-                                 'statements', to_jsonb(coalesce(stmts[(i - 1) * p_chunk + 1 : i * p_chunk], '{}'::text[]))),
-      headers := jsonb_build_object('Content-Type', 'application/json', 'X-Notify-Key', k),
-      timeout_milliseconds := 60000);
+    ids := ids || private.outbox_push('import',
+      jsonb_build_object('run', p_run, 'seq', i, 'total', nchunks, 'reset', p_reset,
+                         'statements', to_jsonb(coalesce(stmts[(i - 1) * p_chunk + 1 : i * p_chunk], '{}'::text[]))),
+      '/api/import', 60000);
   end loop;
   return jsonb_build_object('run', p_run, 'statements', total, 'chunks', nchunks, 'url', u, 'passwords', p_passwords,
     'reset', p_reset, 'request_ids', to_jsonb(ids),
@@ -130,6 +124,6 @@ end $fn$;
 revoke all on function private.export_to_d1(text, boolean, boolean, int, boolean) from public, anon, authenticated;
 comment on function private.export_to_d1(text, boolean, boolean, int, boolean) is 'Copia los datos a Cloudflare D1 (worker/import.js). Ver docs/CAMBIO-A-CLOUDFLARE.md';
 `
-const migOut = new URL('../../supabase/migrations/20261030100000_034_exportar_a_d1.sql', import.meta.url)
+const migOut = new URL('../../supabase/migrations/20261031100000_036_exportar_a_d1_sin_clave.sql', import.meta.url)
 fs.writeFileSync(migOut, mig)
 console.log(migOut.pathname, mig.length, 'bytes')

@@ -2,47 +2,52 @@
 
 Todo el código está listo y probado: la API en el Worker (`worker/`), el acceso con Google, los avisos al administrador y la copia de datos. Ahora mismo la app sigue usando Supabase. Este documento dice qué falta y quién lo hace.
 
-**Resumen:** Fernando dedica unos 20 minutos, una sola vez, a poner claves en los paneles (pasos 1 a 4). El día del cambio son dos órdenes, y se pueden deshacer.
+**Resumen:** a Fernando le queda muy poco, todo en los paneles (pasos 1 a 3). El día del cambio son dos órdenes, y se pueden deshacer.
+
+Hecho por Claude el 30 oct 2026, para ahorrar pasos:
+
+- **Google Cloud:** ya tiene las URI de redirección `https://divingslot.com/api/auth/callback/google` y `https://diveslot.divingslot.workers.dev/api/auth/callback/google`. La de Supabase sigue puesta.
+- **`GOOGLE_CLIENT_ID`:** ya va en `wrangler.jsonc` (es público). Es la cuenta de Google `authuser=1` del navegador, proyecto «My First Project», cliente «Cliente web 1».
+- **`AUTH_SECRET`:** ya no hay que crearlo. El Worker lo genera solo la primera vez y lo guarda en D1, en la tabla `app_secrets` (`worker/lib/secrets.js`). Una vez en marcha, no lo cambies: la gente tendría que volver a activar los dos pasos.
+- **`NOTIFY_KEY`:** ya no hace falta. Los avisos y la copia de datos llegan desde Supabase por una cola (migración 035) sin clave compartida. Desde el 30 oct, los avisos de altas, centros y reservas ya se guardan en el Worker y aparecen en el panel de administración; los emails, cuando haya email (paso 2).
 
 ## Antes del cambio (se puede hacer cualquier día; la web sigue igual)
 
 ### 1. Plan Workers Paid (Fernando, 2 min)
 
-Cloudflare → **Workers & Pages → Plans** → Workers Paid (5 USD/mes).
+Cloudflare → **Workers & Pages → Plans** → Workers Paid (5 USD al mes más uso). La tarjeta ya está guardada.
 
-Hace falta porque cada contraseña cuesta unos 50 ms de CPU y la importación de datos, algo más. El plan gratuito corta a los 10 ms.
+Hace falta por dos motivos:
 
-### 2. Google Cloud (Fernando, 5 min)
+- Cada contraseña cuesta unos 50 ms de CPU y la importación de datos, algo más. El plan gratuito corta a los 10 ms.
+- Habilita **Email Sending**, que es el email sin contraseñas del paso 2.
 
-En [console.cloud.google.com](https://console.cloud.google.com) → APIs y servicios → Credenciales → el cliente OAuth «Web» que usa ya Supabase:
+### 2. Email (Fernando o Claude, 5 min)
 
-1. En **URI de redireccionamiento autorizados**, añade `https://divingslot.com/api/auth/callback/google`. **No quites** la de Supabase (`https://tosgzcpnkpsrrkfqctgy.supabase.co/auth/v1/callback`) hasta que el cambio esté hecho.
-2. **Rota el secreto del cliente** (se pegó en un chat): «Añadir secreto», copia el nuevo y, cuando esté puesto en los dos sitios, desactiva el antiguo.
-   - Ponlo en **Supabase**: Authentication → Sign In / Providers → Google → Client Secret. Si no lo haces, el acceso con Google deja de funcionar al desactivar el antiguo.
-   - Ponlo también en Cloudflare, en el paso 3.
+**Opción recomendada, sin claves:** Cloudflare Email Service. Necesita Workers Paid.
 
-### 3. Secretos del Worker (Fernando, 10 min)
+1. Cloudflare → **Compute → Email Service → Email Sending → Onboard Domain** → `divingslot.com`. Añade solo los registros DNS (SPF, DKIM y DMARC). Claude no puede hacer este paso porque no tiene permiso para tocar DNS.
+2. Claude quita el comentario de `"send_email": [{ "name": "EMAIL" }]` en `wrangler.jsonc` y lo sube.
 
-Cloudflare → Workers & Pages → **diveslot → Settings → Variables and Secrets** → «Add», con el tipo **Secret**:
+Con eso salen los emails de confirmación, «nueva contraseña», códigos y avisos. Los avisos al administrador llegan al primer administrador de la plataforma o a `NOTIFY_TO`, si se pone.
 
-| Nombre | Valor |
-|---|---|
-| `AUTH_SECRET` | Una clave aleatoria de 32 caracteres o más. Puedes generarla con `openssl rand -base64 32` o con un gestor de contraseñas. |
-| `GOOGLE_CLIENT_ID` | El «ID de cliente» de Google, el del paso 2 (termina en `.apps.googleusercontent.com`). |
-| `GOOGLE_CLIENT_SECRET` | El secreto nuevo del paso 2. |
-| `NOTIFY_KEY` | El mismo valor que el secreto `divingslot_notify_key` de Supabase. Lo ves en Supabase → Project Settings → Vault → `divingslot_notify_key` → «Reveal». También sirve para que lleguen ya los avisos de altas y reservas. |
-| `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_USER` | `fbolingarcia@gmail.com` |
-| `SMTP_PASS` | La contraseña de aplicación de Google, de 16 letras ([myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)). Es la misma que va en el SMTP de Supabase (`docs/EMAIL.md`). |
-| `PAYMONGO_SECRET_KEY`, `PAYMONGO_WEBHOOK_SECRET` | Opcional, solo para cobrar con tarjeta o GCash de verdad. |
+**Alternativa:** Gmail. Pon los secretos `SMTP_HOST` = `smtp.gmail.com`, `SMTP_USER` = `fbolingarcia@gmail.com` y `SMTP_PASS` = la contraseña de aplicación de 16 letras (la misma del SMTP de Supabase, `docs/EMAIL.md`). También sirve `RESEND_API_KEY`.
 
-En lugar de Gmail, también sirve `RESEND_API_KEY` si el dominio está verificado en Resend.
+### 3. Google: secreto nuevo (Fernando, 5 min)
+
+El secreto del cliente se pegó en un chat, así que hay que rotarlo. Ve a [console.cloud.google.com](https://console.cloud.google.com/auth/clients?authuser=1) → «Cliente web 1» → **Añadir secreto** y copia el nuevo.
+
+- Ponlo en **Supabase**: Authentication → Sign In / Providers → Google → Client Secret.
+- Ponlo en **Cloudflare**: Workers & Pages → diveslot → Settings → Variables and Secrets → Add → tipo **Secret**, nombre `GOOGLE_CLIENT_SECRET`.
+- Desactiva el secreto antiguo en Google.
+
+Opcional: `PAYMONGO_SECRET_KEY` y `PAYMONGO_WEBHOOK_SECRET` como secretos, solo para cobrar con tarjeta o GCash de verdad.
 
 ### 4. Comprobar (Fernando o Claude, 1 min)
 
 Abre **https://divingslot.com/api/health?check=1**:
 
-- En `checks`, todo debe estar en `true`, y `email` debe decir `smtp` o `resend`.
+- En `checks`: `auth_secret` dice `automatico` y `google` dice `true`. `email` dice `cloudflare`, `smtp` o `resend`. `notify` dice `cola-supabase`.
 - En `missing` solo deben quedar cosas marcadas «(Opcional)» y, antes de importar, «Esquema de D1 antiguo» y «Datos: aún no se han copiado». Esas dos se arreglan solas en el paso 5.
 
 ### 5. Ensayo de la copia de datos (Claude o Fernando, 2 min, opcional pero recomendable)
@@ -58,7 +63,7 @@ Después abre `https://divingslot.com/api/import/status?run=ensayo-1`. Debe deci
 
 Qué hace la copia:
 
-- La función manda los datos directamente de Supabase al Worker, por trozos, con la clave de los avisos.
+- La función deja los datos en la cola de Supabase, por trozos. El Worker los recoge sin clave (migraciones 035 y 036).
 - El Worker comprueba cada sentencia.
 - Al final, rehace las tablas de D1 con el esquema actual y lo mete todo en una sola transacción: o entra todo o no cambia nada.
 
@@ -108,7 +113,9 @@ La importación se cierra sola cuando la app ya está en uso en Cloudflare: en c
 ## Para Claude (detalles técnicos)
 
 - **Exportación:**
-  - `worker/migrate/gen-export.mjs` genera la migración `supabase/migrations/…_034_exportar_a_d1.sql` (aplicada en Supabase el 28-10-2026; md5 de `prosrc` = `e2614d4a812e0cba65bc859d1330f9a0`) y las consultas sueltas `export-supabase.sql` y `export-ensayo.sql`.
+  - `worker/migrate/gen-export.mjs` genera la migración `supabase/migrations/…_036_exportar_a_d1_sin_clave.sql` y las consultas sueltas `export-supabase.sql` y `export-ensayo.sql`.
+  - La 036 se aplicó en Supabase el 30-10-2026; el md5 de `prosrc` es `a5b1ebc4456b7773c82375b04a32b3d1`.
+  - La 034 es la primera versión, con clave, y ya está sustituida.
   - Si cambia `worker/schema.js`: regenera, aplica la migración otra vez y ejecuta `bash worker/migrate/ensayo-local.sh` (Postgres 16 local con datos inventados) y `node --no-warnings worker/test/import.mjs`.
 - **Importación:** `worker/import.js`.
   - Lista blanca de sentencias.
@@ -116,5 +123,8 @@ La importación se cierra sola cuando la app ya está en uso en Cloudflare: en c
   - Ejecución única con `import_runs`.
   - `reset` borra y crea el esquema (menos `visits`, `notify_log` e `import_*`).
   - Cierre en `import_runs` con `run = '#locked'`.
+- **Cola sin clave:** migración 035 (`private.outbox`, `private.outbox_push`, RPC pública `outbox_claim`) y `worker/lib/outbox.js`. Si el Worker tiene `NOTIFY_KEY`, también acepta la cabecera `X-Notify-Key` como antes.
+- **AUTH_SECRET automático:** `worker/lib/secrets.js` (tabla `app_secrets` de D1, que el reset de la importación no borra).
+- **Pruebas sin claves:** `node --no-warnings worker/test/sin-claves.mjs`.
 - **Comprobación:** `worker/health.js`.
 - **Acceso con Google en el Worker:** `worker/google.js` (PKCE, `state` firmado en la cookie `__Host-ds_oauth`, unión por `google_sub` o por email verificado).

@@ -8,6 +8,8 @@
 import { json, fail, all, first, run } from './lib/util.js'
 import { sha256, safeEqual } from './lib/crypto.js'
 import { sendEmail } from './email.js'
+import { claimFromSupabase, hasNotifyKey } from './lib/outbox.js'
+import { rateLimit } from './auth.js'
 
 // Supabase (mientras la app use Supabase, los administradores se comprueban allí). Clave publishable: es pública.
 const SUPABASE_URL = 'https://tosgzcpnkpsrrkfqctgy.supabase.co'
@@ -97,14 +99,23 @@ export async function handleStats(req, env, ctx, url) {
 }
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
-const notifyTo = (env) => env.NOTIFY_TO || env.SMTP_USER
+// A quién llegan los avisos: NOTIFY_TO, si no SMTP_USER y, si no, los administradores de la plataforma (backend Cloudflare)
+async function notifyTo(env) {
+  if (env.NOTIFY_TO || env.SMTP_USER) return env.NOTIFY_TO || env.SMTP_USER
+  const r = await env.DB?.prepare('SELECT u.email FROM platform_admins a JOIN users u ON u.id = a.user_id ORDER BY a.created_at LIMIT 1').all().catch(() => null)
+  return (r?.results || []).map((x) => x.email).find(Boolean) || null
+}
 const box = (title, body) => `<div style="font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#0b1f2c;max-width:560px">
   <p style="margin:0 0 4px;color:#0a5a85;font-weight:700">DivingSlot</p><h2 style="margin:0 0 12px;font-size:20px">${title}</h2>${body}</div>`
 
+// Con la clave X-Notify-Key (si el Worker tiene NOTIFY_KEY) o, sin clave, con { claim } (ver lib/outbox.js)
 export async function handleNotify(req, env) {
-  if (!env.NOTIFY_KEY) fail('NOT_CONFIGURED', 'falta NOTIFY_KEY', 503)
-  if (!safeEqual(req.headers.get('X-Notify-Key') || '', env.NOTIFY_KEY)) fail('FORBIDDEN', 'clave incorrecta', 403)
-  const b = await req.json().catch(() => ({}))
+  let b = await req.json().catch(() => ({}))
+  if (!hasNotifyKey(req, env)) {
+    if (!b?.claim) fail('FORBIDDEN', 'clave incorrecta', 403)
+    await rateLimit(env, 'claim:' + (req.headers.get('CF-Connecting-IP') || ''), 120, 60)
+    b = await claimFromSupabase(env, b.claim, 'notify')
+  }
   return json({ ok: true, ...(await notifyAdmin(env, b)) })
 }
 
@@ -121,10 +132,11 @@ export async function notifyAdmin(env, b = {}) {
   const r = await env.DB.prepare('INSERT INTO notify_log (ts, day, kind, title, detail) VALUES (?, ?, ?, ?, ?) RETURNING id')
     .bind(new Date().toISOString(), manilaDay(), kind, title, lines.join(' · ')).first()
   let emailed = false
-  if (notifyTo(env) && env.NOTIFY_EMAILS !== 'off') {
+  const adminTo = env.NOTIFY_EMAILS !== 'off' ? await notifyTo(env) : null
+  if (adminTo) {
     const body = `<ul style="padding-left:18px;margin:0 0 12px">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
       + (link ? `<p><a href="${esc(link)}" style="color:#0a5a85">Abrir en DivingSlot</a></p>` : '')
-    try { await sendEmail(env, notifyTo(env), { subject: 'DivingSlot · ' + title, html: box(esc(title), body) }); emailed = true }
+    try { await sendEmail(env, adminTo, { subject: 'DivingSlot · ' + title, html: box(esc(title), body) }); emailed = true }
     catch (e) { console.error('notify email', e.message) }
     if (emailed) await run(env.DB, 'UPDATE notify_log SET emailed = 1 WHERE id = ?', r.id)
   }
@@ -163,7 +175,9 @@ export function centreEmail(title, lines, link) {
 // Resumen diario: visitas y avisos del día anterior (hora de Manila)
 export async function dailyDigest(env, force = false) {
   const hour = new Date(Date.now() + 8 * 36e5).getUTCHours()
-  if ((!force && hour !== 8) || !notifyTo(env) || env.NOTIFY_DIGEST === 'off' || !env.DB) return
+  if ((!force && hour !== 8) || env.NOTIFY_DIGEST === 'off' || !env.DB) return
+  const digestTo = await notifyTo(env)
+  if (!digestTo) return
   await ensureTables(env.DB)
   const day = manilaDay(Date.now() - 864e5)
   const db = env.DB
@@ -182,7 +196,7 @@ export async function dailyDigest(env, force = false) {
     + '<b>Páginas más vistas</b>' + list(pages, (x) => `${esc(x.path)} · ${x.n}`)
     + '<b>De dónde llegan</b>' + list(refs, (x) => `${esc(x.ref)} · ${x.n}`)
     + '<b>Países</b>' + list(countries, (x) => `${esc(x.country)} · ${x.n}`))
-  await sendEmail(env, notifyTo(env), { subject: `DivingSlot · Resumen del ${day}: ${tot.visitors} visitantes, ${events.length} avisos`, html })
+  await sendEmail(env, digestTo, { subject: `DivingSlot · Resumen del ${day}: ${tot.visitors} visitantes, ${events.length} avisos`, html })
 }
 
 // Las visitas se guardan 13 meses
