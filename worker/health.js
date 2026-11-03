@@ -1,8 +1,10 @@
 // GET /api/health            → { ok: true } (para monitores)
-// GET /api/health?check=1    → qué está listo y qué falta para pasar la app a Cloudflare (solo sí/no, nunca valores).
-//   Lo usa el paso 1 de docs/CAMBIO-A-CLOUDFLARE.md: abre https://divingslot.com/api/health?check=1 y mira «missing».
+// GET /api/health?check=1    → qué está listo y qué falta (solo sí/no, nunca valores). El detalle (servicios
+//   configurados, recuentos, importación) solo lo ve un administrador con sesión abierta; el resto recibe { ok, ready }.
+//   HEALTH_DETAIL_PUBLIC=1 lo deja ver a cualquiera (pruebas). Guía: docs/CAMBIO-A-CLOUDFLARE.md.
 import { json } from './lib/util.js'
 import { TABLES } from './schema.js'
+import { loadCtx } from './auth.js'
 
 export async function handleHealth(req, env, url) {
   if (url.searchParams.get('check') !== '1') return json({ ok: true })
@@ -49,5 +51,7 @@ export async function handleHealth(req, env, url) {
     } catch { imp = { last: null, locked: false } }
   }
   const ready = c.d1 && c.auth_secret && c.google && ['cloudflare', 'resend', 'smtp'].includes(c.email) && !!schema?.up_to_date && !!data?.users
+  const admin = env.HEALTH_DETAIL_PUBLIC === '1' || (env.DB && (await loadCtx(req, env).catch(() => null))?.isAdmin)
+  if (!admin) return json({ ok: true, ready, detail: 'solo administradores' })
   return json({ ok: true, ready, checks: c, schema, data, import: imp, missing })
 }

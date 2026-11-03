@@ -6,9 +6,9 @@
 // y el botón a las salidas de la app. Sin JavaScript; el estilo es public/dive/dive.css. También regenera
 // public/sitemap.xml.
 //
-// Datos: tools/seo/datos.json, una foto de las tablas públicas de Supabase (destinations, dive_sites y el directorio
-// de centers). Para actualizarla, ejecuta en Supabase la consulta de tools/seo/README.md, guarda el resultado en
-// datos.json y vuelve a ejecutar: node tools/seo/gen-destinos.mjs
+// Datos: tools/seo/datos.json, una foto de las tablas públicas de D1 (destinations, dive_sites y el directorio de
+// centers). Para actualizarla: npx wrangler d1 execute diveslot --remote --json --file tools/seo/datos.sql |
+// node tools/seo/from-d1.mjs, y vuelve a ejecutar: node tools/seo/gen-destinos.mjs (detalles en tools/seo/README.md)
 import fs from 'node:fs'
 import path from 'node:path'
 

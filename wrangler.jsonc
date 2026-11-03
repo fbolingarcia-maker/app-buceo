@@ -20,10 +20,11 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "diveslot", "database_id": "73f322b7-43c2-4234-a313-5f7e2e78c928" }
   ],
-  // Ficheros privados (fotos de la bitácora y documentos de verificación). R2 activado el 3 nov 2026.
+  // Ficheros privados (fotos de la bitácora y documentos de verificación). R2 activado el 3 nov 2026; buckets en
+  // Asia-Pacífico (APAC) para que carguen rápido en Filipinas.
   "r2_buckets": [
-    { "binding": "DIVE_PHOTOS", "bucket_name": "divingslot-dive-photos" },
-    { "binding": "CENTER_DOCS", "bucket_name": "divingslot-center-docs" }
+    { "binding": "DIVE_PHOTOS", "bucket_name": "divingslot-photos" },
+    { "binding": "CENTER_DOCS", "bucket_name": "divingslot-docs" }
   ],
   // Valores públicos (los secretos van en el panel: GOOGLE_CLIENT_SECRET y, si se usa, SMTP_*/RESEND_API_KEY)
   "vars": {

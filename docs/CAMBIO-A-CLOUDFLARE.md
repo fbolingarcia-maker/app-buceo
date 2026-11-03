@@ -104,7 +104,7 @@ La importación se cierra sola cuando la app ya está en uso en Cloudflare: en c
 - **Google:** quita la URI de redirección de Supabase.
 - **R2 (opcional, para fotos de la bitácora y documentos de verificación):**
   1. Activa R2 en Cloudflare.
-  2. Crea los buckets `divingslot-dive-photos` y `divingslot-center-docs`.
+  2. Crea los buckets `divingslot-photos` y `divingslot-docs` (hecho el 3 nov 2026, en Asia-Pacífico).
   3. Claude descomenta `r2_buckets` en `wrangler.jsonc`.
 
   Sin R2, la app funciona, pero no deja subir ficheros. Hoy no hay ningún fichero en Supabase Storage, así que no hay nada que copiar.

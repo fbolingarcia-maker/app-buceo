@@ -4,12 +4,12 @@
 //     Supabase con la RPC outbox_claim (lib/outbox.js, migración 035). Supabase está simulado.
 import fs from 'node:fs'
 import { D1 } from './shim.mjs'
-import { handleApi } from '../index.js'
+import { handleApi, alertError } from '../index.js'
 import { _resetSecretsCache } from '../lib/secrets.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
-const env = { DB: db, EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', NOTIFY_TO: 'admin@divingslot.test' }
+const env = { DB: db, EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', NOTIFY_TO: 'admin@divingslot.test', HEALTH_DETAIL_PUBLIC: '1' }
 _resetSecretsCache()
 let fails = 0, passes = 0
 const ok = (c, name, extra) => { if (c) passes++; else { fails++; console.log('  ✗', name, extra !== undefined ? JSON.stringify(extra).slice(0, 400) : '') } }
@@ -52,6 +52,12 @@ const su = await call('POST', '/api/auth/signup', { email: 'a@divingslot.test', 
 ok(su.http === 200, 'alta de cuenta', su)
 ok(mails.some((m) => m.to === 'a@divingslot.test'), 'email de confirmación (modo prueba)')
 
+section('health sin sesión de administrador')
+env.HEALTH_DETAIL_PUBLIC = ''
+h = await call('GET', '/api/health?check=1')
+ok(h.http === 200 && typeof h.ready === 'boolean' && !h.checks && !h.data && !h.missing, 'sin administrador: solo ok/ready', h)
+env.HEALTH_DETAIL_PUBLIC = '1'
+
 section('avisos sin clave')
 ok((await call('POST', '/api/notify', { kind: 'alta', title: 'colado' })).http === 403, 'sin clave ni claim → 403')
 ok((await call('POST', '/api/notify', { claim: 'no-es-un-uuid' })).http === 400, 'claim mal formado → 400')
@@ -76,6 +82,14 @@ ok((await db.prepare("SELECT value FROM app_secrets WHERE name = 'auth_secret'")
 ok((await call('POST', '/api/import', { claim: put('notify', { kind: 'x' }) })).http === 403, 'un aviso no vale como trozo de importación')
 const li = await call('POST', '/api/auth/login', { email: 'ana@example.com', password: 'Secreta123' }, { Origin: ORIGIN, 'X-DivingSlot': '1' })
 ok(li.http === 200, 'entrar con la contraseña de Supabase', li)
+
+section('aviso de errores')
+const before = (await db.prepare("SELECT count(*) AS n FROM notify_log WHERE kind = 'error'").first()).n
+await alertError(env, null, 'prueba', new Error('fallo de prueba'))
+await alertError(env, null, 'prueba', new Error('segundo fallo'))
+const after = (await db.prepare("SELECT count(*) AS n FROM notify_log WHERE kind = 'error'").first()).n
+ok(after - before === 1, 'un solo aviso por hora', { before, after })
+ok(mails.some((m) => /Error en prueba/.test(m.subject)), 'email del error al administrador')
 
 console.log(`\n${passes} bien, ${fails} mal`)
 process.exit(fails ? 1 : 0)

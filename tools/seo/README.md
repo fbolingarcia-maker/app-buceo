@@ -9,20 +9,17 @@ Cada página incluye los puntos de buceo, los centros del directorio, los destin
 
 ## Actualizar
 
-Hay que actualizarlas cuando cambien los destinos, los puntos o el directorio de centros:
+Hay que actualizarlas cuando cambien los destinos, los puntos o el directorio de centros. Los datos salen de D1 (Cloudflare), la base de datos de la app desde el 3 nov 2026:
 
-1. En Supabase (SQL Editor o `execute_sql`), ejecuta esta consulta. Solo lee datos públicos:
+1. Saca los datos públicos con `tools/seo/datos.sql` (solo lee) y guárdalos en `tools/seo/datos.json`:
 
-   ```sql
-   select jsonb_build_object(
-    'destinations', (select jsonb_agg(jsonb_build_object('name',name,'province',province,'island_group',island_group,'lat',lat,'lng',lng) order by island_group, name) from public.destinations),
-    'sites', (select jsonb_agg(jsonb_build_object('name',name,'area',area,'min',min_depth_m,'max',max_depth_m,'level',recommended_min,'fee',sanctuary_fee_php,'hl',highlight,'hl_es',highlight_es) order by area, name) from public.dive_sites),
-    'centers', (select jsonb_agg(jsonb_build_object('id',id,'name',name,'dest',destination,'locality',locality,'socio',listing_status='socio') order by destination, name) from public.centers
-                where listing_status <> 'cerrado' and name not like 'Demo%' and (listing_status <> 'socio' or verification_status = 'verified'))
-   ) as data
+   ```bash
+   npx wrangler d1 execute diveslot --remote --json --file tools/seo/datos.sql | node tools/seo/from-d1.mjs
    ```
 
-2. Guarda el valor de `data` en `tools/seo/datos.json`.
-3. Ejecuta `node tools/seo/gen-destinos.mjs`. Regenera `public/dive/`, `public/es/buceo/` y `public/sitemap.xml`.
+   Sin wrangler: ejecuta el contenido de `datos.sql` en el panel de Cloudflare (D1 → diveslot → Console) o con la herramienta `d1_database_query`, copia el valor de la columna `data` y pásalo a `node tools/seo/from-d1.mjs` por la entrada estándar.
+2. Ejecuta `node tools/seo/gen-destinos.mjs`. Regenera `public/dive/`, `public/es/buceo/` y `public/sitemap.xml`.
 
 Si cambia `EXTRA_AREAS` en `src/lib/places.js`, cópialo también en `gen-destinos.mjs`.
+
+(Antes del 3 nov 2026 los datos salían de Supabase con una consulta equivalente en Postgres.)

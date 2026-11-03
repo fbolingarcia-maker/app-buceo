@@ -16,7 +16,7 @@ const tmp = new URL('./fixtures/.schema-antiguo.sql', import.meta.url).pathname
 fs.writeFileSync(tmp, old)
 const db = new D1(tmp)
 fs.unlinkSync(tmp)
-const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', NOTIFY_KEY: 'clave-avisos', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000' }
+const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', NOTIFY_KEY: 'clave-avisos', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', HEALTH_DETAIL_PUBLIC: '1' }
 const reqs = JSON.parse(fs.readFileSync(new URL('./fixtures/import-supabase.json', import.meta.url), 'utf8'))
 
 let fails = 0, passes = 0

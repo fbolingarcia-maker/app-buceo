@@ -18,7 +18,7 @@ import { cleanup } from './cron.js'
 import { handleImport } from './import.js'
 import { handleHealth } from './health.js'
 import { withSecrets } from './lib/secrets.js'
-import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits } from './stats.js'
+import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits, notifyAdmin } from './stats.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
@@ -64,8 +64,24 @@ export async function handleApi(req, env, ectx) {
     if (ctx.renew && ctx.token && !res.headers.get('Set-Cookie')) { res = new Response(res.body, res); res.headers.append('Set-Cookie', sessionCookie(ctx.token, 30 * 86400)) }
     return res
   } catch (e) {
-    return errorResponse(e)
+    const res = errorResponse(e)
+    if (res.status >= 500) alertError(env, ectx, 'API /api/' + path, e)
+    return res
   }
+}
+
+// Error inesperado (500 o cron que falla): aviso por email al administrador, como mucho uno por hora
+export function alertError(env, ectx, where, e) {
+  if (!env?.DB) return null
+  const p = rateLimit(env, 'alert:error', 1, 3600)
+    .then(() => notifyAdmin(env, { kind: 'error', title: 'Error en ' + where, lines: [
+      String(e?.message || e).slice(0, 280),
+      'Este aviso se manda como mucho una vez por hora; puede haber más errores.',
+      'Detalle: Cloudflare → Workers & Pages → diveslot → Observability.',
+    ] }))
+    .catch(() => {})
+  ectx?.waitUntil?.(p)
+  return p
 }
 
 export default {
@@ -78,8 +94,9 @@ export default {
   },
   async scheduled(event, env, ectx) {
     env = await withSecrets(env).catch(() => env)
-    ectx.waitUntil(cleanup(env))
-    ectx.waitUntil(pruneVisits(env).catch((e) => console.error('visits', e.message)))
-    ectx.waitUntil(dailyDigest(env).catch((e) => console.error('digest', e.message)))
+    const onFail = (what) => (e) => { console.error(what, e?.message); alertError(env, ectx, 'la tarea programada (' + what + ')', e) }
+    ectx.waitUntil(cleanup(env).catch(onFail('limpieza')))
+    ectx.waitUntil(pruneVisits(env).catch(onFail('visitas')))
+    ectx.waitUntil(dailyDigest(env).catch(onFail('resumen diario')))
   },
 }
