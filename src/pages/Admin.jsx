@@ -49,7 +49,7 @@ function Centers() {
 
   async function load() {
     const { data, error } = await supabase.from('centers')
-      .select('id, name, destination, province, phone, website, listing_status, verification_status, claims_center_id, verified_at, created_at')
+      .select('id, name, destination, province, phone, website, listing_status, verification_status, claims_center_id, verified_at, created_at, green_fins, green_fins_verified')
       .eq('verification_status', tab).neq('listing_status', 'directorio').order('created_at', { ascending: false }).limit(200)
     if (error) setMsg({ ok: false, text: errMsg(error) })
     setList(data || [])
@@ -289,6 +289,16 @@ function Review({ c, onDone }) {
         {c.verification_status === 'verified' && <button className="btn small ghost" disabled={busy} onClick={() => decide('suspended')}>{t('Suspender')}</button>}
         {c.verification_status === 'suspended' && <button className="btn small ghost" disabled={busy} onClick={() => decide('pending')}>{t('Volver a revisión')}</button>}
       </div>
+      {c.green_fins && (
+        <div className="row wrap small" style={{ gap: 8, alignItems: 'center' }}>
+          <span>{t('Green Fins declarado: {nivel}', { nivel: c.green_fins })}</span>
+          <a href="https://greenfins.net/" target="_blank" rel="noreferrer">{t('Comprobar en greenfins.net')}</a>
+          <button type="button" className="btn small ghost" disabled={busy} onClick={async () => {
+            const { error } = await supabase.rpc('admin_set_green_fins', { p_center: c.id, p_verified: !c.green_fins_verified })
+            if (error) setError(errMsg(error)); else onDone(c.green_fins_verified ? t('Green Fins sin comprobar') : t('Green Fins comprobado'))
+          }}>{c.green_fins_verified ? t('Quitar comprobación') : t('Marcar como comprobado')}</button>
+        </div>
+      )}
     </div>
   )
 }

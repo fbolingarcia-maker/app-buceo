@@ -15,7 +15,7 @@ const C1 = '4ec918c7-1b17-477e-acb7-2c33276224ac', C2 = 'b8a7b4ba-bf90-4534-a87f
 const UID = '03a20db7-3776-4425-b95c-56f2144b5cee'
 const pubTrips = []
 for (let d = 0; d < 8; d++) {
-  pubTrips.push({ id: 't1-' + d, center_id: C1, departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, center_name: 'Demo · Centro Alona', boat_name: d % 2 ? 'Banca Uno' : null, sites: ['Balicasag – Black Forest', 'Pamilacan'], available_seats: d === 2 ? 0 : 10, center_area: 'Panglao', center_locality: 'Alona Beach', center_lat: 9.5487, center_lng: 123.7745, booked_seats: d % 3, center_destination: 'Panglao', center_province: 'Bohol', center_languages: ['en', 'es'], center_agencies: ['PADI'], center_course_languages: ['en', 'es'] })
+  pubTrips.push({ last_minute_pct: d === 1 ? 20 : 0, include_fees: true, fees_php: 300, center_green_fins: 'member', center_green_fins_verified: d === 0, id: 't1-' + d, center_id: C1, departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, center_name: 'Demo · Centro Alona', boat_name: d % 2 ? 'Banca Uno' : null, sites: ['Balicasag – Black Forest', 'Pamilacan'], available_seats: d === 2 ? 0 : 10, center_area: 'Panglao', center_locality: 'Alona Beach', center_lat: 9.5487, center_lng: 123.7745, booked_seats: d % 3, center_destination: 'Panglao', center_province: 'Bohol', center_languages: ['en', 'es'], center_agencies: ['PADI'], center_course_languages: ['en', 'es'] })
   // Más horarios del mismo centro: última plaza (Advanced) y completa (Divemaster)
   pubTrips.push({ ...pubTrips[pubTrips.length - 1], id: 't3-' + d, departs_at: iso(day0 + d * D + 13.5 * H), min_level: 'advanced', price_php: 6200, available_seats: 1, booked_seats: 5 })
   pubTrips.push({ ...pubTrips[pubTrips.length - 1], id: 't4-' + d, departs_at: iso(day0 + d * D + 18 * H), min_level: 'divemaster', price_php: 3500, available_seats: 0, booked_seats: 6, sites: ['Alona House Reef'] })
@@ -24,7 +24,7 @@ for (let d = 0; d < 8; d++) {
 const centerRow = (st) => ({ id: MY, name: 'PRUEBA', area: 'Panglao', destination: 'Panglao', province: 'Bohol', phone: '+63 900', lat: null, lng: null, languages: [], course_languages: [], agencies: [], verification_status: st, listing_status: 'socio', review_note: st === 'rejected' ? 'Documento ilegible' : null, default_divers_per_guide: 4, created_at: iso(now - 3 * D) })
 const myCenter = role === 'center' ? centerRow('unverified') : role === 'centerv' || role === 'admin' ? centerRow('verified') : role === 'centerr' ? centerRow('rejected') : null
 const diverRow = role === 'anon' ? null : { id: 'dv1', user_id: UID, full_name: 'Fernando B', account_type: myCenter ? 'center' : 'diver', languages: ['es'], logged_dives: 40, country: 'España', bio: '', seeks_buddy: false, show_on_trips: true, buddy_ratings_enabled: rawRole !== 'vacio', wetsuit_size: 'M', bcd_size: 'L', fin_size: '42', last_dive_date: '2025-06-10', nitrox: true, medical_done_at: null, medical_result: null }
-const booking = (id, st, paid, ci) => ({ id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', wetsuit_size: 'S', bcd_size: 'S', fin_size: '38', last_dive_date: '2026-09-20', nitrox: false, medical_done_at: '2026-03-01', medical_result: 'all_no', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
+const booking = (id, st, paid, ci) => ({ id, channel: id === 'bk1' ? 'direct' : 'marketplace', pay_on_site: id === 'bk2', booking_extras: id === 'bk1' ? [{ kind: 'video', name: 'Vídeo de la salida', qty: 1 }] : [], id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', wetsuit_size: 'S', bcd_size: 'S', fin_size: '38', last_dive_date: '2026-09-20', nitrox: false, medical_done_at: '2026-03-01', medical_result: 'all_no', allergies: 'Penicilina', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
 const myTrips = myCenter ? [0, 1, 2].map((d) => ({ id: 'mt' + d, center_id: MY, boat_id: 'b1', departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, guides: 2, divers_per_guide: 4, seat_override: null, blocked_seats: 0, status: d === 2 ? 'draft' : 'published', boats: { name: 'Banca Uno', capacity: 12 }, trip_sites: [{ position: 1, dive_sites: { name: 'Napaling' } }], bookings: d === 0 ? [booking('bk1', 'confirmed', 5800, null), booking('bk2', 'pending_payment', 0, null)] : [] })) : []
 const T = {
   published_trips: rawRole === 'vacio' ? [] : pubTrips,
@@ -45,11 +45,13 @@ const T = {
   trips: myTrips,
   bookings: role === 'diver' ? [
     { ...booking('bk9', 'pending_payment', 0, null), trip_id: 't1-1', hold_until: iso(now + 10 * 60e3), trips: { departs_at: iso(day0 + D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: false } } },
-    { ...booking('bk8', 'confirmed', 2900, null), trip_id: 't1-3', trips: { departs_at: iso(day0 + 3 * D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: true } } },
+    { ...booking('bk8', 'confirmed', 2900, null), fees_php: 300, booking_extras: [{ name: 'Seguro de buceo 1 día', qty: 1, price_php: 400 }], payment_shares: [{ id: 'ps1', label: 'Yo', amount_php: 1450, token: 'a'.repeat(32), paid_at: iso(now - H) }, { id: 'ps2', label: 'Marta', amount_php: 1450, token: 'b'.repeat(32), paid_at: null }], trip_id: 't1-3', trips: { departs_at: iso(day0 + 3 * D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: true } } },
     { ...booking('bk6', 'confirmed', 5800, null), trip_id: 't1-x', trips: { departs_at: iso(day0 - 2 * D + 7.5 * H), num_dives: 2, status: 'completed', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: null } },
     { ...booking('bk7', 'cancelled_by_center', 2900, null), trip_id: 't2-4', refund_php: 2900, trips: { departs_at: iso(day0 + 4 * D + 13.5 * H), num_dives: 2, status: 'cancelled_weather', centers: { name: 'Demo · Centro Danao', phone: '+63 913', destination: 'Panglao' }, boats: null } },
   ] : [],
   app_config: [{ key: 'payments_mode', value: 'demo' }],
+  center_extras: [{ id: 'x1', center_id: C1, kind: 'insurance', name: 'Seguro de buceo 1 día', price_php: 400, per_seat: true, active: true },
+    { id: 'x2', center_id: C1, kind: 'video', name: 'Vídeo de la salida', description: 'GoPro 4K, entregado el mismo día', price_php: 1500, per_seat: false, active: true }],
   center_verifications: role === 'admin' ? [{ center_id: 'pend1', legal_name: 'Nuevo SA', owner_name: 'Juan', contact_email: 'j@x.com', contact_phone: '1', address: 'Panglao', business_reg_type: 'DTI', business_reg_number: '123', submitted_at: iso(now - D) }] : [],
   center_documents: role === 'admin' ? [{ id: 'd1', center_id: 'pend1', kind: 'owner_id', path: 'pend1/a.pdf', file_name: 'id.pdf' }] : [],
   dive_logs: role === 'diver' ? [
@@ -101,6 +103,7 @@ const RPC = {
     { diver_id: 'd3', name: 'Marco R.', level: 'open_water', dives: 12, rated: false },
   ] },
   rate_buddy: { ok: true },
+  get_share: { label: 'Marta', amount_php: 1450, paid: false, open: true, mode: 'demo', center_name: 'Demo · Centro Alona', departs_at: iso(day0 + 3 * D + 7.5 * H), seats: 2, organiser: 'Fernando B.', num_dives: 3 },
 }
 function builder(table) {
   let rows = T[table] ? [...T[table]] : []

@@ -8,16 +8,23 @@ import DestinoSelect from '../lib/DestinoSelect'
 import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
 import { LocateFixed } from 'lucide-react'
+import { CanalPropio, Extras, GreenFins } from '../lib/centroExtras'
 
 export default function CentroAjustes() {
-  const { center, refresh } = useAuth()
+  const { center, refresh, readOnly } = useAuth()
   return (
     <>
       <h1>{t('Mi centro')}</h1>
+      <h2>{t('Tu enlace de reservas · 0 % de comisión')}</h2>
+      <CanalPropio center={center} />
+      <h2>{t('Extras al reservar')}</h2>
+      <Extras center={center} readOnly={readOnly} />
       <h2>{t('Barcos y plazas')}</h2>
       <Barcos center={center} />
       <h2>{t('Datos del centro')}</h2>
       <Datos center={center} refresh={refresh} />
+      <h2>{t('Green Fins y prácticas ecológicas')}</h2>
+      <GreenFins center={center} refresh={refresh} readOnly={readOnly} />
     </>
   )
 }

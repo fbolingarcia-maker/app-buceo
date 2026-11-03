@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { Link } from '../lib/router'
 import { t } from '../lib/i18n'
-import { levelName, php, time, dayLabel, manilaDate } from '../lib/format'
+import { levelName, time, dayLabel, manilaDate } from '../lib/format'
 import { loadRatings } from '../lib/places'
 import { Flags, langName } from '../lib/langs'
 import { Agencies } from '../lib/agencies'
+import { GreenFinsBadge, EcoList, LastMinuteTag, PriceTag } from '../lib/extras'
 import Icon from '../lib/Icon'
 import FavButton from '../lib/FavButton'
 import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
@@ -19,7 +20,7 @@ export default function CentroInfo({ id }) {
   const [allDays, setAllDays] = useState(false)
 
   useEffect(() => {
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages, agencies, agency_detail, verification_status').eq('id', id).maybeSingle()
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages, agencies, agency_detail, verification_status, green_fins, green_fins_verified, eco').eq('id', id).maybeSingle()
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setC(data || false) })
     supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(60)
       .then(({ data }) => setTrips(data || []))
@@ -43,12 +44,17 @@ export default function CentroInfo({ id }) {
         {dest && <Link to={'/d/' + encodeURIComponent(dest)} className="small"><Icon icon={MapPin} size={14} /> {[c.locality !== dest ? c.locality : null, dest, c.province].filter(Boolean).join(', ')}</Link>}
         {rating && <span className="pill ok">★ {rating.rating} · {rating.reviews === 1 ? t('1 valoración') : t('{n} valoraciones', { n: rating.reviews })}</span>}
         {c.listing_status === 'socio' ? <span className="pill ok">{t('Reserva en la app')}</span> : <span className="pill">{t('Próximamente')}</span>}
+        <GreenFinsBadge level={c.green_fins} verified={c.green_fins_verified} />
         {c.verification_status === 'verified' && c.listing_status === 'socio' && <span className="pill ok" title={t('DivingSlot ha comprobado los permisos y la identidad de este centro')}><Icon icon={ShieldCheck} size={14} /> {t('Centro verificado')}</span>}
       </div>
       {c.agencies?.length > 0 && (
         <div className="row wrap small" style={{ gap: 8, marginBottom: 12 }}>
           <span className="muted">{t('Certifica con')}</span><Agencies list={c.agencies} />{c.agency_detail && <span className="muted">· {c.agency_detail}</span>}
         </div>
+      )}
+
+      {Object.values(c.eco || {}).some(Boolean) && (
+        <div className="card"><div className="over" style={{ marginBottom: 6 }}>{t('Prácticas ecológicas')}</div><EcoList eco={c.eco} /></div>
       )}
 
       {(c.languages?.length > 0 || c.course_languages?.length > 0) && (
@@ -85,7 +91,7 @@ export default function CentroInfo({ id }) {
                   <small className="ellipsis">{t('{n} inmersiones', { n: tr.num_dives })} · {t('Mín. {nivel}', { nivel: levelName(tr.min_level) })}</small>
                 </span>
                 <span style={{ textAlign: 'right' }}>
-                  <b>{php(tr.price_php)}</b>
+                  <span><LastMinuteTag trip={tr} /> <PriceTag trip={tr} /></span>
                   <small className={tr.available_seats > 0 ? (tr.available_seats === 1 ? 'last' : '') : 'full'}>{tr.available_seats > 0 ? (tr.available_seats === 1 ? t('Última plaza') : t('{n} plazas', { n: tr.available_seats })) : t('Completa')}</small>
                 </span>
                 <ChevronRight size={18} />

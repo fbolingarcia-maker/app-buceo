@@ -28,6 +28,24 @@ export const TEMPLATES = {
   }),
 }
 
+// Fecha y hora de Manila para los emails (bilingüe)
+const when = (iso, lang) => new Date(iso).toLocaleString(lang === 'es' ? 'es-ES' : 'en-GB', { timeZone: 'Asia/Manila', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+const peso = (n) => '₱' + Number(n || 0).toLocaleString('en-US')
+Object.assign(TEMPLATES, {
+  // 24 h antes: enlace para pagar el resto (o recordatorio de llevarlo en efectivo)
+  balanceDue: (center, departs, due, url, cash) => ({
+    subject: cash ? `Mañana buceas con ${center} · Diving tomorrow with ${center}` : `Paga el resto de tu salida · Pay the rest of your dive trip`,
+    html: wrap(`<h2>DivingSlot 🤿</h2><p>${cash
+      ? `Tu salida con <b>${esc(center)}</b> es el ${esc(when(departs, 'es'))}. Lleva <b>${peso(due)}</b> en efectivo para pagar el resto en el centro.<br>Your trip with <b>${esc(center)}</b> is on ${esc(when(departs, 'en'))}. Bring <b>${peso(due)}</b> in cash to pay the rest at the centre.`
+      : `Tu salida con <b>${esc(center)}</b> es el ${esc(when(departs, 'es'))}. Te quedan <b>${peso(due)}</b> por pagar: hazlo ahora con GCash o tarjeta, o en efectivo en el centro.<br>Your trip with <b>${esc(center)}</b> is on ${esc(when(departs, 'en'))}. <b>${peso(due)}</b> is still due: pay now by GCash or card, or in cash at the centre.`}</p>${button(url, cash ? 'Ver mi reserva · View my booking' : 'Pagar el resto · Pay the rest')}${foot('Lleva tu tarjeta de certificación.', 'Bring your certification card.')}`),
+  }),
+  // Plazas de última hora en un destino que el buceador sigue
+  lastMinute: (center, dest, departs, free, unit, price, url) => ({
+    subject: `Última hora en ${dest}: ${free === 1 ? '1 plaza' : free + ' plazas'} · Last-minute spots in ${dest}`,
+    html: wrap(`<h2>DivingSlot 🤿</h2><p><b>${esc(center)}</b> tiene ${free === 1 ? '1 plaza libre' : free + ' plazas libres'} en el barco del ${esc(when(departs, 'es'))}${unit < price ? `, a <b>${peso(unit)}</b> en vez de ${peso(price)}` : ` por ${peso(price)}`}.<br><b>${esc(center)}</b> has ${free === 1 ? '1 spot' : free + ' spots'} left on the boat on ${esc(when(departs, 'en'))}${unit < price ? `, at <b>${peso(unit)}</b> instead of ${peso(price)}` : ` for ${peso(price)}`}.</p>${button(url, 'Ver la salida · See the trip')}${foot('Recibes este aviso porque lo activaste en tu perfil (Avisos de última hora). Puedes quitarlo allí.', 'You get this alert because you turned on last-minute alerts in your profile. You can turn it off there.')}`),
+  }),
+})
+
 export async function sendEmail(env, to, { subject, html }) {
   const from = env.EMAIL_FROM || 'DivingSlot <no-reply@divingslot.com>'
   // Cloudflare Email Service (binding send_email «EMAIL» en wrangler.jsonc): sin claves. Necesita Workers Paid y el

@@ -103,6 +103,10 @@ export const TABLES = {
     ['agency_detail', 'text'],
     ['directory_check', 'text'],
     ['checked_at', 'date'],
+    // Sello Green Fins (declarado por el centro; green_fins_verified lo marca la plataforma) y prácticas ecológicas
+    ['green_fins', 'text', { check: ENUM('green_fins', ['member', 'certified', 'digital']) }],
+    ['green_fins_verified', 'bool', { nn: true, def: '0' }],
+    ['eco', 'json', { nn: true, def: "'{}'" }],
   ] },
   center_staff: { pk: ['center_id', 'user_id'], cols: [
     ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
@@ -144,6 +148,13 @@ export const TABLES = {
     ['blocked_seats', 'int', { nn: true, def: '0', check: 'blocked_seats >= 0' }],
     ['status', 'text', { nn: true, def: "'draft'", check: ENUM('status', TRIP_STATUSES) }],
     ['created_at', 'ts', { nn: true, def: NOW }],
+    // Tasas de santuarios y parques marinos incluidas en el precio (suma de dive_sites.sanctuary_fee_php por plaza)
+    ['include_fees', 'bool', { nn: true, def: '0' }],
+    ['fees_per_diver', 'int', { check: 'fees_per_diver BETWEEN 0 AND 20000' }], // importe que pone el centro; si falta, la suma de los puntos
+    // Plazas de última hora: descuento sobre el precio de la salida en las últimas 48 h
+    ['last_minute_pct', 'int', { nn: true, def: '0', check: 'last_minute_pct BETWEEN 0 AND 50' }],
+    ['last_minute_at', 'ts'],
+    ['last_minute_notified_at', 'ts'],
   ] },
   trip_sites: { pk: ['trip_id', 'position'], cols: [
     ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
@@ -175,6 +186,9 @@ export const TABLES = {
     ['medical_result', 'text', { check: ENUM('medical_result', ['all_no', 'physician_ok']) }],
     // Valoraciones entre buddies (migración 032): el buceador decide si le pueden valorar
     ['buddy_ratings_enabled', 'bool', { nn: true, def: '0' }],
+    // Alergias (opcional; solo las ve el centro de una salida reservada) y avisos de plazas de última hora por destino
+    ['allergies', 'text', { check: 'length(allergies) <= 300' }],
+    ['alert_destinations', 'json', { nn: true, def: "'[]'" }],
   ] },
   certifications: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -210,6 +224,13 @@ export const TABLES = {
     ['hold_until', 'ts'],
     ['balance_paid_at', 'ts'],
     ['checked_in_at', 'ts'],
+    // Canal: «direct» = llegó por el enlace del propio centro (sin comisión) · «marketplace» = lo trajo DivingSlot
+    ['channel', 'text', { check: ENUM('channel', ['marketplace', 'direct']) }],
+    ['fees_php', 'int', { nn: true, def: '0', check: 'fees_php >= 0' }],
+    ['extras_php', 'int', { nn: true, def: '0', check: 'extras_php >= 0' }],
+    ['discount_php', 'int', { nn: true, def: '0', check: 'discount_php >= 0' }],
+    ['pay_on_site', 'bool', { nn: true, def: '0' }],
+    ['balance_reminded_at', 'ts'],
   ] },
   payments: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -224,6 +245,38 @@ export const TABLES = {
     ['recorded_by', 'uuid'],
     ['created_at', 'ts', { nn: true, def: NOW }],
     ['paid_at', 'ts'],
+    ['share_id', 'uuid'],                         // parte de un pago dividido entre buddies (payment_shares)
+  ] },
+  // Pago dividido: cada buddy paga su parte con un enlace (token) sin necesidad de cuenta
+  payment_shares: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['booking_id', 'uuid', { nn: true, ref: 'bookings(id)', onDelete: 'CASCADE' }],
+    ['label', 'text', { check: 'length(label) <= 60' }],
+    ['amount_php', 'int', { nn: true, check: 'amount_php > 0' }],
+    ['token', 'text', { nn: true, unique: true }],
+    ['paid_at', 'ts'],
+    ['payment_id', 'uuid'],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // Extras que vende el centro (seguro, cursos, fotos o vídeo de la salida…)
+  center_extras: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
+    ['kind', 'text', { nn: true, def: "'other'", check: ENUM('kind', ['insurance', 'course', 'photo', 'video', 'nitrox', 'other']) }],
+    ['name', 'text', { nn: true, check: 'length(name) BETWEEN 1 AND 80' }],
+    ['description', 'text', { check: 'length(description) <= 200' }],
+    ['price_php', 'int', { nn: true, check: 'price_php BETWEEN 0 AND 200000' }],
+    ['per_seat', 'bool', { nn: true, def: '1' }],
+    ['active', 'bool', { nn: true, def: '1' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  booking_extras: { pk: ['booking_id', 'extra_id'], cols: [
+    ['booking_id', 'uuid', { nn: true, ref: 'bookings(id)', onDelete: 'CASCADE' }],
+    ['extra_id', 'uuid', { nn: true, ref: 'center_extras(id)' }],
+    ['kind', 'text', { nn: true }],
+    ['name', 'text', { nn: true }],
+    ['qty', 'int', { nn: true, def: '1', check: 'qty BETWEEN 1 AND 20' }],
+    ['price_php', 'int', { nn: true, check: 'price_php >= 0' }],
   ] },
   dive_logs: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -316,6 +369,10 @@ export const OPERATIVE = (t) => `max(0, min((SELECT capacity FROM boats WHERE id
 const SUM_HOLD = (t, cond) => `(SELECT coalesce(sum(b.seats), 0) FROM bookings b WHERE b.trip_id = ${t}.id AND ${cond} AND ${HOLDS('b')})`
 export const APP_AVAILABLE = (t) => `(CASE WHEN ${t}.status <> 'published' THEN 0 ELSE max(0, ${OPERATIVE(t)} - max(${t}.blocked_seats, ${SUM_HOLD(t, "b.source <> 'app'")}) - ${SUM_HOLD(t, "b.source = 'app'")}) END)`
 export const BOOKED = (t) => SUM_HOLD(t, '1')
+// Tasas de santuarios/parques por plaza de una salida (0 si la salida no las incluye): la cifra del centro o la suma de los puntos
+export const FEES = (t) => `(CASE WHEN ${t}.include_fees THEN coalesce(${t}.fees_per_diver, (SELECT coalesce(sum(ds.sanctuary_fee_php), 0) FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = ${t}.id)) ELSE 0 END)`
+// Descuento de última hora activo: hasta 48 h antes de salir
+export const LAST_MINUTE = (t) => `(${t}.last_minute_pct > 0 AND ${t}.departs_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+48 hours'))`
 
 // Vistas (solo lectura)
 export const VIEWS = {
@@ -323,14 +380,18 @@ export const VIEWS = {
     cols: [['id', 'uuid'], ['center_id', 'uuid'], ['departs_at', 'ts'], ['num_dives', 'int'], ['min_level', 'text'], ['price_php', 'int'],
       ['gear_rental_php', 'int'], ['center_name', 'text'], ['boat_name', 'text'], ['sites', 'json'], ['available_seats', 'int'],
       ['center_area', 'text'], ['center_locality', 'text'], ['center_lat', 'real'], ['center_lng', 'real'], ['booked_seats', 'int'],
-      ['center_destination', 'text'], ['center_province', 'text'], ['center_languages', 'json'], ['center_agencies', 'json'], ['center_course_languages', 'json']],
+      ['center_destination', 'text'], ['center_province', 'text'], ['center_languages', 'json'], ['center_agencies', 'json'], ['center_course_languages', 'json'],
+      ['include_fees', 'bool'], ['fees_php', 'int'], ['last_minute_pct', 'int'], ['center_green_fins', 'text'], ['center_green_fins_verified', 'bool']],
     sql: `SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t.gear_rental_php, c.name AS center_name,
   CASE WHEN bo.show_to_divers THEN bo.name END AS boat_name,
   (SELECT json_group_array(name) FROM (SELECT ds.name FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = t.id ORDER BY ts.position)) AS sites,
   ${APP_AVAILABLE('t')} AS available_seats,
   c.area AS center_area, c.locality AS center_locality, c.lat AS center_lat, c.lng AS center_lng,
   ${BOOKED('t')} AS booked_seats,
-  c.destination AS center_destination, c.province AS center_province, c.languages AS center_languages, c.agencies AS center_agencies, c.course_languages AS center_course_languages
+  c.destination AS center_destination, c.province AS center_province, c.languages AS center_languages, c.agencies AS center_agencies, c.course_languages AS center_course_languages,
+  t.include_fees, ${FEES('t')} AS fees_php,
+  CASE WHEN ${LAST_MINUTE('t')} THEN t.last_minute_pct ELSE 0 END AS last_minute_pct,
+  c.green_fins AS center_green_fins, c.green_fins_verified AS center_green_fins_verified
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified'`,
   },
@@ -358,6 +419,9 @@ export const INDEXES = [
   'CREATE INDEX IF NOT EXISTS photos_log ON dive_log_photos(log_id)',
   'CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id)',
   'CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at)',
+  'CREATE INDEX IF NOT EXISTS shares_booking ON payment_shares(booking_id)',
+  'CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id)',
+  'CREATE INDEX IF NOT EXISTS payments_share ON payments(share_id)',
 ]
 
 // Relaciones para incrustar tablas en un select: tabla.columna → tabla(col)
@@ -393,6 +457,6 @@ export function schemaSql() {
   }
   for (const [v, def] of Object.entries(VIEWS)) out.push(`DROP VIEW IF EXISTS ${v};\nCREATE VIEW ${v} AS\n${def.sql};`)
   out.push(...INDEXES.map((i) => i + ';'))
-  out.push("INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50');")
+  out.push("INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250');")
   return out.join('\n\n') + '\n'
 }

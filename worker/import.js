@@ -22,6 +22,13 @@ import { TABLES, VIEWS, schemaSql } from './schema.js'
 const KEEP = new Set(['visits', 'notify_log', 'import_chunks', 'import_runs'])
 const IMPORTABLE = Object.keys(TABLES).filter((t) => t === 'users' || !TABLES[t].internal)
 const COLS = Object.fromEntries(IMPORTABLE.map((t) => [t, TABLES[t].cols.map((c) => c[0]).join(', ')]))
+// Una copia de Supabase no trae las columnas añadidas después en D1: valen si faltan solo columnas finales opcionales o con valor por defecto
+const colsOk = (t, given) => {
+  if (given === COLS[t]) return true
+  const all = TABLES[t].cols, g = given.split(', ')
+  if (g.length >= all.length || g.some((c, i) => c !== all[i][0])) return false
+  return all.slice(g.length).every(([, , o = {}]) => !o.nn || o.def)
+}
 const MAX_STATEMENTS = 200000
 
 let ready = false
@@ -73,7 +80,7 @@ export function checkStatement(sql) {
   m = /^INSERT INTO ([a-z0-9_]+) \(([a-z0-9_, ]+)\) VALUES \(([\s\S]*)\);$/.exec(sql)
   if (!m) return 'forma no permitida'
   if (!IMPORTABLE.includes(m[1])) return 'tabla desconocida ' + m[1]
-  if (m[2] !== COLS[m[1]]) return 'columnas distintas en ' + m[1]
+  if (!colsOk(m[1], m[2])) return 'columnas distintas en ' + m[1]
   return literalsOk(m[3]) ? null : 'valores no válidos en ' + m[1]
 }
 

@@ -91,7 +91,12 @@ function Resumen({ onPick }) {
     const seats = active.reduce((a, tr) => { const s = seatsSummary(tr); return { booked: a.booked + s.booked, op: a.op + s.operative } }, { booked: 0, op: 0 })
     const total = live.reduce((s, b) => s + b.amount_php, 0)
     const paid = live.reduce((s, b) => s + (b.paid_php || 0), 0)
-    const commission = live.filter((b) => b.status === 'confirmed').reduce((s, b) => s + (b.commission_php || 0), 0)
+    // Comisión: ₱250 por buceador que trae DivingSlot (confirmadas y cancelaciones tardías); 0 por tu enlace y tus reservas manuales
+    const billable = all.filter((b) => b.trip.status !== 'cancelled_weather' && (b.status === 'confirmed' || b.status === 'cancelled_by_diver') && (b.commission_php || 0) > 0)
+    const commission = billable.reduce((s, b) => s + b.commission_php, 0)
+    const appLive = live.filter((b) => b.source === 'app' && b.status === 'confirmed')
+    const fee = { market: billable.reduce((s, b) => s + b.seats, 0), direct: appLive.filter((b) => b.channel === 'direct').reduce((s, b) => s + b.seats, 0),
+      manual: live.filter((b) => b.source !== 'app').reduce((s, b) => s + b.seats, 0) }
     const refunds = all.reduce((s, b) => s + (b.refund_php || 0), 0)
     const bySource = {}
     for (const b of live) bySource[b.source] = (bySource[b.source] || 0) + b.seats
@@ -111,7 +116,7 @@ function Resumen({ onPick }) {
       done: active.filter((tr) => new Date(tr.departs_at).getTime() < now).length,
       upcoming: active.filter((tr) => new Date(tr.departs_at).getTime() >= now).length,
       weather: trips.length - active.length,
-      seats, total, paid, pending: total - paid, commission, refunds,
+      seats, total, paid, pending: total - paid, commission, fee, refunds,
       cancelled: cancelled.length, cancelledSeats: cancelled.reduce((s, b) => s + b.seats, 0),
       bySource, sites: Object.entries(sites).sort((a, b) => b[1] - a[1]).slice(0, 8), wd,
       hours: Object.entries(hours).sort((a, b) => a[0].localeCompare(b[0])), clients: divers.size,
@@ -148,10 +153,17 @@ function Resumen({ onPick }) {
           <div className="card stack small">
             <div className="row between"><span className="muted">{t('Cobrado de estas salidas')}</span><b>{php(r.paid)}</b></div>
             <div className="row between"><span className="muted">{t('Pendiente de cobrar')}</span><b style={{ color: r.pending ? 'var(--warn)' : undefined }}>{php(r.pending)}</b></div>
-            {r.commission > 0 && <div className="row between"><span className="muted">{t('Comisión DivingSlot')}</span><span>{php(r.commission)}</span></div>}
             <div className="row between"><span className="muted">{t('Cancelaciones')}</span><span>{r.cancelled === 1 ? t('1 reserva') : t('{n} reservas', { n: r.cancelled })} · {t('{n} plazas', { n: r.cancelledSeats })}</span></div>
             {r.refunds > 0 && <div className="row between"><span className="muted">{t('Reembolsos')}</span><span>{php(r.refunds)}</span></div>}
             {r.weather > 0 && <div className="row between"><span className="muted">{t('Salidas canceladas por meteo')}</span><span>{r.weather}</span></div>}
+          </div>
+
+          <h2>{t('Comisión DivingSlot')}</h2>
+          <div className="card stack small">
+            <div className="row between"><span>{t('Buceadores que te trajo DivingSlot')}</span><span>{r.fee.market} × ₱250 = <b>{php(r.commission)}</b></span></div>
+            <div className="row between"><span>{t('Por tu enlace de reservas')}</span><span>{t('{n} plazas', { n: r.fee.direct })} · <b>₱0</b></span></div>
+            <div className="row between"><span>{t('Reservas manuales (WhatsApp, en el centro…)')}</span><span>{t('{n} plazas', { n: r.fee.manual })} · <b>₱0</b></span></div>
+            <span className="muted">{t('Se factura a mes vencido; no se cobra nada automáticamente. Las salidas canceladas por el mar no pagan comisión.')} <Link to="/centro/ajustes">{t('Tu enlace de reservas')}</Link></span>
           </div>
 
           <h2>{t('Dinero recibido en el periodo')}</h2>

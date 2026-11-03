@@ -13,6 +13,7 @@ import AdminBar, { AdminCenterPicker } from './lib/AdminBar'
 import ErrorBoundary from './lib/ErrorBoundary'
 import { lazyPage, prefetchWhenIdle } from './lib/lazyPage'
 import Icon from './lib/Icon'
+import { setVia } from './lib/extras'
 import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText } from 'lucide-react'
 
 // Explorar, Salida y Login van en el paquete principal (son la entrada habitual); el resto se carga al abrirlo
@@ -34,6 +35,8 @@ const Puntos = lazyPage(() => import('./pages/Puntos'))
 const Valorar = lazyPage(() => import('./pages/Valorar'))
 const CentroVerificacion = lazyPage(() => import('./pages/CentroVerificacion'))
 const Admin = lazyPage(() => import('./pages/Admin'))
+const Pagar = lazyPage(() => import('./pages/Pagar'))
+const Importar = lazyPage(() => import('./pages/Importar'))
 
 // Pantallas privadas. Sin sesión: título y frase de lo que hay detrás, y el login debajo.
 // back: ruta a la que volver después de entrar (también la usa el email de confirmación)
@@ -100,6 +103,12 @@ function VerifyBanner() {
   )
 }
 
+// Enlace de reservas propio del centro (divingslot.com/r/<id>): guarda el canal 7 días y abre la ficha del centro
+function Via({ id }) {
+  useEffect(() => { setVia(id); go('/c/' + id) }, [id])
+  return <p className="muted center">{t('Cargando…')}</p>
+}
+
 // Aviso de una sola vez guardado antes de cambiar de pantalla (p. ej. tras eliminar la cuenta)
 function Flash() {
   const [text, setText] = useState(() => {
@@ -135,8 +144,11 @@ export default function App() {
   let page
   if (session && needsMfa) page = <DosPasosReto />
   else if (recovering) page = <NuevaClave />
+  else if (seg[0] === 'r' && seg[1]) page = <Via id={seg[1]} />
+  else if (seg[0] === 'pagar' && seg[1]) page = <Pagar token={seg[1]} />
   else if (seg[0] === 'salida' && seg[1]) page = <Salida id={seg[1]} />
   else if (seg[0] === 'reservas') page = <NeedLogin title={t('Reservas')} intro={t('Aquí verás tus salidas reservadas y los pagos pendientes. Entra o crea una cuenta para verlas.')} back="/reservas"><Reservas /></NeedLogin>
+  else if (seg[0] === 'bitacora' && seg[1] === 'importar') page = <NeedLogin><Importar /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1]) page = <NeedLogin><Inmersion id={seg[1]} /></NeedLogin>
   else if (seg[0] === 'bitacora') page = <NeedLogin title={t('Bitácora')} intro={t('Guarda cada inmersión con profundidad, tiempo, fauna y fotos. Entra o crea una cuenta para empezar.')} back="/bitacora"><Bitacora /></NeedLogin>
   else if (seg[0] === 'valorar' && seg[1] && BUDDY_RATINGS) page = <NeedLogin><Valorar tripId={seg[1]} /></NeedLogin>

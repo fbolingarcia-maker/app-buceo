@@ -7,6 +7,16 @@ import { seatsSummary, hashParam, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
 import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
 import { ManifestSheet, manifestCsv } from '../lib/manifest'
+import { SeaChip } from '../lib/extras'
+
+// Sin cobertura en el barco: la agenda de cada día se guarda en el móvil y los check-in se encolan hasta que vuelva la red
+const cacheKey = (center, day) => 'ds_agenda:' + center + ':' + day
+const QUEUE = 'ds_checkin_queue'
+const store = {
+  get: (k, d = null) => { try { return JSON.parse(localStorage.getItem(k) || 'null') ?? d } catch (e) { return d } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) { /* lleno o sin almacenamiento */ } },
+}
+const isNetErr = (error) => !navigator.onLine || /fetch|network|conexi|Load failed/i.test(error?.message || '')
 
 export default function CentroAgenda() {
   const { center, verified } = useAuth()
@@ -15,17 +25,59 @@ export default function CentroAgenda() {
   const [trips, setTrips] = useState(null)
   const [msg, setMsg] = useState(null)
   const [busy, setBusy] = useState(null) // id de la acción en curso (evita dobles toques)
+  const [offline, setOffline] = useState(null) // hora de la copia guardada que se está viendo sin red
   const timer = useRef(null)
 
-  const load = useCallback(async () => {
-    const [from, to] = dayRange(day)
-    const { data, error } = await supabase.from('trips').select(TRIP_SELECT)
+  const fetchDay = useCallback(async (d) => {
+    const [from, to] = dayRange(d)
+    const r = await supabase.from('trips').select(TRIP_SELECT)
       .eq('center_id', center.id).gte('departs_at', from).lt('departs_at', to).order('departs_at')
-    if (error) { setMsg({ ok: false, text: errMsg(error) }); setTrips(false); return }
-    setTrips(data || [])
-  }, [center.id, day])
+    if (!r.error) store.set(cacheKey(center.id, d), { at: new Date().toISOString(), trips: r.data || [] })
+    return r
+  }, [center.id])
+  const load = useCallback(async () => {
+    const { data, error } = await fetchDay(day)
+    if (error) {
+      const c = store.get(cacheKey(center.id, day))
+      if (c && isNetErr(error)) { setTrips(applyQueue(c.trips)); setOffline(c.at); return }
+      setMsg({ ok: false, text: errMsg(error) }); setTrips(false); return
+    }
+    setOffline(null)
+    setTrips(applyQueue(data || []))
+    // Hoy: guarda también mañana y pasado para tener el manifiesto aunque no haya cobertura en el puerto
+    if (day === today) for (const n of [1, 2]) fetchDay(addDays(today, n)).catch(() => {})
+  }, [center.id, day, fetchDay, today])
   useEffect(() => { setTrips(null); load() }, [load])
   useEffect(() => () => clearTimeout(timer.current), [])
+  // Al volver la red: envía los check-in pendientes
+  useEffect(() => {
+    async function flush() {
+      const q = store.get(QUEUE, [])
+      if (!q.length) return
+      const left = []
+      for (const x of q) {
+        const { error } = await supabase.rpc('set_checkin', { p_booking: x.id, p_in: x.on })
+        if (error && isNetErr(error)) left.push(x)
+      }
+      store.set(QUEUE, left)
+      if (left.length < q.length) { toast({ ok: true, text: t('Check-in sin conexión enviados') }); load() }
+    }
+    flush()
+    window.addEventListener('online', flush)
+    return () => window.removeEventListener('online', flush)
+  }, [load])
+
+  function offlineCheckin(b, on) {
+    const q = store.get(QUEUE, []).filter((x) => x.id !== b.id)
+    store.set(QUEUE, [...q, { id: b.id, on }])
+    setTrips((ts) => {
+      const next = applyQueue(ts)
+      const c = store.get(cacheKey(center.id, day))
+      if (c) store.set(cacheKey(center.id, day), { ...c, trips: next })
+      return next
+    })
+    toast({ ok: true, text: on ? t('Check-in guardado sin conexión: se enviará al volver la red') : t('Check-in deshecho sin conexión') })
+  }
 
   // Aviso flotante abajo: se ve aunque estés a mitad del manifiesto
   function toast(m) {
@@ -57,10 +109,11 @@ export default function CentroAgenda() {
         ))}
       </div>
       <p className="muted small" style={{ marginTop: -4 }}>{dayLabel(day, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+      {offline && <div className="banner" role="status"><span>{t('Sin conexión: ves la copia guardada a las {hora}. Los check-in se guardan y se envían al volver la red.', { hora: time(offline) })}</span></div>}
       {trips === null && <p className="muted">{t('Cargando…')}</p>}
       {trips === false && <div className="msg err" role="alert">{t('No se pudo cargar la agenda.')} <button type="button" className="linkish" onClick={() => { setTrips(null); load() }}>{t('Reintentar')}</button></div>}
       {trips?.length === 0 && <div className="card muted center">{t('No hay salidas este día.')} <Link to="/centro/nueva">{t('Crear una')}</Link></div>}
-      {trips && trips.map((tr) => <TripCard key={tr.id} t={tr} center={center} verified={verified} run={run} busy={busy} defaultOpen={trips.length === 1} />)}
+      {trips && trips.map((tr) => <TripCard key={tr.id} t={tr} center={center} verified={verified} run={run} busy={busy} defaultOpen={trips.length === 1} offline={!!offline} offlineCheckin={offlineCheckin} />)}
       {msg && (
         <div className={msg.ok ? 'toast' : 'toast err'} role={msg.ok ? 'status' : 'alert'} aria-live="polite">
           <span>{msg.text}</span>
@@ -71,7 +124,40 @@ export default function CentroAgenda() {
   )
 }
 
-function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
+// Check-in encolados (sin red) aplicados sobre los datos
+function applyQueue(trips) {
+  const q = Object.fromEntries(store.get(QUEUE, []).map((x) => [x.id, x.on]))
+  if (!Object.keys(q).length) return trips
+  return trips.map((tr) => ({ ...tr, bookings: (tr.bookings || []).map((b) => (b.id in q ? { ...b, checked_in_at: q[b.id] ? (b.checked_in_at || new Date().toISOString()) : null, _queued: true } : b)) }))
+}
+
+// Plazas de última hora: descuento opcional y aviso a buceadores que siguen el destino (salidas de las próximas 48 h)
+function LastMinute({ trip, run, busy, free }) {
+  const [pct, setPct] = useState(trip.last_minute_pct || 0)
+  const [notify, setNotify] = useState(!trip.last_minute_notified_at)
+  const h = (new Date(trip.departs_at) - Date.now()) / 36e5
+  if (trip.status !== 'published' || h <= 1 || h > 48 || free < 1) return null
+  return (
+    <div className="lastmin-box">
+      <b className="small">{free === 1 ? t('Última plaza libre') : t('Últimas {n} plazas libres', { n: free })}</b>
+      <div className="row wrap" style={{ gap: 8, marginTop: 6, alignItems: 'center' }}>
+        <label className="small row" style={{ gap: 6 }}>{t('Descuento')}
+          <select value={pct} onChange={(e) => setPct(+e.target.value)} style={{ width: 'auto' }}>
+            {[0, 10, 15, 20, 25, 30, 40, 50].map((n) => <option key={n} value={n}>{n ? '−' + n + ' %' : t('Sin descuento')}</option>)}
+          </select>
+        </label>
+        <label className="check small"><input type="checkbox" checked={notify} disabled={!!trip.last_minute_notified_at} onChange={(e) => setNotify(e.target.checked)} /> {trip.last_minute_notified_at ? t('Aviso ya enviado') : t('Avisar a buceadores que siguen este destino')}</label>
+        <button type="button" className="btn small" disabled={busy === 'lm' + trip.id} onClick={async () => {
+          const r = await supabase.rpc('set_last_minute', { p_trip: trip.id, p_pct: pct, p_notify: notify && !trip.last_minute_notified_at })
+          const n = r.data?.notified || 0
+          run(Promise.resolve({ error: r.error }), n ? t('Guardado. Avisados {n} buceadores.', { n }) : pct ? t('Descuento de última hora aplicado') : t('Plazas de última hora guardadas'), 'lm' + trip.id)
+        }}>{t('Aplicar')}</button>
+      </div>
+    </div>
+  )
+}
+
+function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, offlineCheckin }) {
   const [open, setOpen] = useState(defaultOpen)
   const [printing, setPrinting] = useState(false)
   const donePrint = useCallback(() => setPrinting(false), [])
@@ -92,6 +178,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
 
   function checkin(b) {
     const on = !b.checked_in_at
+    if (offline || !navigator.onLine) return offlineCheckin(b, on)
     run(supabase.rpc('set_checkin', { p_booking: b.id, p_in: on }), on ? t('Check-in hecho') : t('Check-in deshecho'), 'ci' + b.id,
       () => run(supabase.rpc('set_checkin', { p_booking: b.id, p_in: !on }), on ? t('Check-in deshecho') : t('Check-in hecho'), 'ci' + b.id))
   }
@@ -109,7 +196,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
           <div className="big">{time(trip.departs_at)} · {trip.boats?.name}</div>
           <div className="small muted">{t('{n} inm.', { n: trip.num_dives })} · {t('mín. {level}', { level: levelName(trip.min_level) })} · {php(trip.price_php)} · {sites.join(', ') || t('sin puntos')}</div>
         </div>
-        <span className="row" style={{ gap: 6 }}><span className={statusCls}>{TRIP_STATUS[trip.status]}</span><span className="small muted" aria-hidden>{open ? '▲' : '▼'}</span></span>
+        <span className="row wrap" style={{ gap: 6, justifyContent: 'flex-end' }}>{!started && !offline && <SeaChip tripId={trip.id} />}{trip.last_minute_pct > 0 && !started && <span className="pill lastmin">−{trip.last_minute_pct} %</span>}<span className={statusCls}>{TRIP_STATUS[trip.status]}</span><span className="small muted" aria-hidden>{open ? '▲' : '▼'}</span></span>
       </button>
       <div className="bar" style={{ marginTop: 10 }}><div style={{ width: `${s.operative ? Math.min(100, (s.booked / s.operative) * 100) : 0}%` }} /></div>
       <div className="row wrap small" style={{ marginTop: 6, gap: 14 }}>
@@ -141,10 +228,11 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
                 <div style={{ minWidth: 0 }}>
                   <b>{b.divers?.full_name || b.guest_name}</b>{b.seats > 1 ? ' ×' + b.seats : ''}
                   <div className="small muted">
-                    {sourceName(b.source)} · {BOOKING_STATUS[b.status]}{b.with_gear ? ' · ' + t('equipo') : ''}
+                    {sourceName(b.source)}{b.channel === 'direct' ? ' · ' + t('tu enlace') : ''} · {BOOKING_STATUS[b.status]}{b.with_gear ? ' · ' + t('equipo') : ''}{b._queued ? ' · ' + t('pendiente de enviar') : ''}
                     {b.divers?.logged_dives ? ' · ' + t('{n} inm.', { n: b.divers.logged_dives }) : ''}
                   </div>
                   {b.divers && <DiverReady d={b.divers} gear={b.with_gear} />}
+                  {b.booking_extras?.length > 0 && <div className="small muted">{t('Extras')}: {b.booking_extras.map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')).join(', ')}</div>}
                   {b.divers?.certifications?.map((c) => (
                     <div key={c.id} className="small row wrap" style={{ gap: 6 }}>
                       <span>{c.agency} {levelName(c.level)} {c.verified_at ? '✓' : ''}</span>
@@ -160,6 +248,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
                   <div className={b.paid_php >= b.amount_php ? 'small muted' : 'small'} style={b.paid_php >= b.amount_php ? undefined : { color: 'var(--warn)' }}>
                     {b.paid_php >= b.amount_php ? t('Pagado') : t('Falta {amount}', { amount: php(b.amount_php - b.paid_php) })}
                   </div>
+                  {b.paid_php < b.amount_php && b.pay_on_site && <div className="small muted">{t('pagará en efectivo')}</div>}
                 </div>
               </div>
               <div className="row" style={{ gap: 8, marginTop: 8 }}>
@@ -176,6 +265,8 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
               </div>
             </div>
           ))}
+
+          {!offline && <LastMinute trip={trip} run={run} busy={busy} free={s.appFree} />}
 
           {trip.status === 'published' && !started && (
             <form style={{ marginTop: 12 }} onSubmit={async (e) => {
@@ -240,6 +331,7 @@ function DiverReady({ d, gear }) {
       {days != null && days > 365 && <span className="pill warn">{t('Sin bucear desde hace más de 12 meses')}</span>}
       {days != null && days <= 365 && <span className="muted">{t('Última inmersión hace {n} días', { n: days })}</span>}
       {d.nitrox && <span className="muted">{t('Nitrox')}</span>}
+      {d.allergies && <span className="pill warn">{t('Alergias: {a}', { a: d.allergies })}</span>}
       {gear && (sizes.length ? <span className="muted">{sizes.join(' · ')}</span> : <span className="muted">{t('Sin tallas')}</span>)}
     </div>
   )

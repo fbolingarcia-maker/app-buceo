@@ -11,6 +11,7 @@ import Icon from '../lib/Icon'
 import FavButton from '../lib/FavButton'
 import { useFavs } from '../lib/favs'
 import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves, Heart } from 'lucide-react'
+import { unitPrice, GreenFinsBadge } from '../lib/extras'
 
 const DAYS = 14
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
@@ -99,14 +100,15 @@ export default function Explorar() {
   else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
   // Salidas del día agrupadas por centro (como los clubs de Playtomic: primero el centro, luego su disponibilidad)
   const groups = Object.values(shown.reduce((m, tr) => {
-    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, langs: tr.center_languages || [], agencies: tr.center_agencies || [], trips: [] })
+    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, langs: tr.center_languages || [], agencies: tr.center_agencies || [], gf: tr.center_green_fins, gfv: tr.center_green_fins_verified, trips: [] })
     g.trips.push(tr)
     return m
   }, {})).map((g) => {
     g.trips.sort((a, b) => a.departs_at.localeCompare(b.departs_at))
     g.seats = g.trips.reduce((n, x) => n + Math.max(0, x.available_seats), 0)
     g.booked = g.trips.reduce((n, x) => n + (x.booked_seats || 0), 0)
-    g.min = Math.min(...g.trips.map((x) => x.price_php))
+    g.min = Math.min(...g.trips.map((x) => unitPrice(x)))
+    g.lastMin = g.trips.some((x) => x.last_minute_pct > 0 && x.available_seats > 0)
     return g
   })
   if (sort === 'price') groups.sort((a, b) => a.min - b.min)
@@ -263,6 +265,7 @@ export default function Explorar() {
                 {ratings[g.id] && <> · <span className="rating">{ratings[g.id].rating}</span></>}
                 {g.agencies.length > 0 && <> · <span className="agency-text">{[...new Set(g.agencies.map((a) => a.toUpperCase()))].join(' · ')}</span></>}
               </span>
+              {(g.gf || g.lastMin) && <span className="row wrap" style={{ gap: 4, marginTop: 4 }}>{g.lastMin && <span className="pill lastmin small">{t('Última hora')}</span>}<GreenFinsBadge level={g.gf} verified={g.gfv} small /></span>}
             </span>
             <span className="from small muted">{t('desde')}<b className="data">{php(g.min)}</b></span>
           </Link>
@@ -272,7 +275,7 @@ export default function Explorar() {
             {g.trips.map((tr) => {
               const free = Math.max(0, tr.available_seats)
               const cap = Math.min(8, Math.max(free + (tr.booked_seats || 0), 1))
-              const label = free === 0 ? t('Completa') : free === 1 ? t('Última plaza') : t('{n} libres', { n: free })
+              const label = (free === 0 ? t('Completa') : free === 1 ? t('Última plaza') : t('{n} libres', { n: free })) + (free > 0 && tr.last_minute_pct ? ' · −' + tr.last_minute_pct + ' %' : '')
               return (
                 <Link key={tr.id} to={'/salida/' + tr.id} className={'slot' + (free === 0 ? ' full' : free === 1 ? ' low' : '')}
                   aria-label={t('{hora}, {plazas}, nivel mínimo {nivel}', { hora: time(tr.departs_at), plazas: label, nivel: levelName(tr.min_level) })}>

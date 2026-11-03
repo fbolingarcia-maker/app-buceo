@@ -11,7 +11,8 @@ import CambiarClave from './CambiarClave'
 import { VIEWS } from '../lib/AdminBar'
 import { CENTER_LANGS, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
-import { ShieldCheck, Star } from 'lucide-react'
+import { ShieldCheck, Star, X } from 'lucide-react'
+import DestinoSelect from '../lib/DestinoSelect'
 import { BuddyBreakdown, BUDDY_RATINGS, MIN_RATINGS, WINDOW_DAYS } from '../lib/buddy'
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
@@ -33,6 +34,7 @@ export default function Perfil() {
       country: diver.country || '', bio: diver.bio || '', show_on_trips: diver.show_on_trips ?? true,
       wetsuit_size: diver.wetsuit_size || '', bcd_size: diver.bcd_size || '', fin_size: diver.fin_size || '',
       last_dive_date: diver.last_dive_date || '', nitrox: !!diver.nitrox,
+      allergies: diver.allergies || '', alert_destinations: diver.alert_destinations || [],
     })
   }, [diver])
 
@@ -59,6 +61,7 @@ export default function Perfil() {
       ...(isCenter ? {} : {
         wetsuit_size: form.wetsuit_size || null, bcd_size: form.bcd_size || null, fin_size: form.fin_size.trim() || null,
         last_dive_date: form.last_dive_date || null, nitrox: form.nitrox,
+        allergies: form.allergies.trim() || null, alert_destinations: form.alert_destinations,
       }),
     }).eq('id', diver.id)
     error ? note('p', false, errMsg(error)) : (note('p', true, t('Perfil guardado')), refresh())
@@ -175,6 +178,21 @@ export default function Perfil() {
               <div className="field"><label htmlFor="perfil-ld">{t('Última inmersión')}</label><input id="perfil-ld" type="date" max={manilaDate()} value={form.last_dive_date} onChange={(e) => setForm({ ...form, last_dive_date: e.target.value })} /></div>
               <label className="check field" style={{ alignSelf: 'end' }}><input type="checkbox" checked={form.nitrox} onChange={(e) => setForm({ ...form, nitrox: e.target.checked })} /> {t('Tengo certificación nitrox')}</label>
             </div>
+            <div className="field">
+              <label htmlFor="perfil-al">{t('Alergias (opcional)')}</label>
+              <input id="perfil-al" maxLength={300} placeholder={t('p. ej. penicilina, marisco, picaduras de abeja')} value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} />
+              <span className="small muted">{t('Solo la ve el centro de las salidas que reserves, en el manifiesto del barco. Puedes borrarla cuando quieras.')}</span>
+            </div>
+          </fieldset>
+          <fieldset className="subform">
+            <legend><b>{t('Avisos de última hora')}</b><span className="small muted">{t('Te escribimos cuando un centro de estos destinos tenga plazas libres para mañana o pasado (a veces con descuento).')}</span></legend>
+            <div className="row wrap" style={{ gap: 6, marginBottom: 6 }}>
+              {form.alert_destinations.map((d) => (
+                <span key={d} className="pill">{d} <button type="button" className="linkish" aria-label={t('Quitar {d}', { d })} onClick={() => setForm({ ...form, alert_destinations: form.alert_destinations.filter((x) => x !== d) })}><Icon icon={X} size={12} /></button></span>
+              ))}
+              {form.alert_destinations.length === 0 && <span className="small muted">{t('Ningún destino')}</span>}
+            </div>
+            {form.alert_destinations.length < 5 && <DestinoSelect value="" onChange={(name) => name && !form.alert_destinations.includes(name) && setForm({ ...form, alert_destinations: [...form.alert_destinations, name] })} />}
           </fieldset>
           <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
           <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />

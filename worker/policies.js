@@ -75,6 +75,17 @@ export const POLICIES = {
     select: (c, a) => or(and(P(`${a}.share_with_center = 1 AND ${a}.center_id IS NOT NULL`), staffIn(c, `${a}.center_id`)), myDiver(c, `${a}.diver_id`)),
     write: (c, a) => myDiver(c, `${a}.diver_id`), check: (c, a) => myDiver(c, `${a}.diver_id`) },
   buddy_ratings: { select: (c, a) => myDiver(c, `${a}.rater_id`) },
+  // Extras del centro: los activos son públicos; el equipo los gestiona
+  center_extras: { ops: ['insert', 'update', 'delete'],
+    select: (c, a) => or(P(`${a}.active = 1`), staffIn(c, `${a}.center_id`), admin(c)),
+    write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },
+  // Extras de una reserva y partes de un pago dividido: los ve quien ve la reserva (se crean solo con RPC)
+  booking_extras: {
+    select: (c, a) => or(admin(c),
+      c.staff.length ? P(`${a}.booking_id IN (SELECT b.id FROM bookings b JOIN trips t ON t.id = b.trip_id WHERE t.center_id IN (${c.staff.map(() => '?').join(',')}))`, ...c.staff) : NO,
+      c.diverId ? P(`${a}.booking_id IN (SELECT id FROM bookings WHERE diver_id = ?)`, c.diverId) : NO) },
+  payment_shares: {
+    select: (c, a) => or(admin(c), c.diverId ? P(`${a}.booking_id IN (SELECT id FROM bookings WHERE diver_id = ?)`, c.diverId) : NO) },
   dive_log_photos: { ops: ['insert', 'update', 'delete'],
     select: (c, a) => (c.diverId ? P(`${a}.log_id IN (SELECT id FROM dive_logs WHERE diver_id = ?)`, c.diverId) : NO),
     write: (c, a) => (c.diverId ? P(`${a}.log_id IN (SELECT id FROM dive_logs WHERE diver_id = ?)`, c.diverId) : NO),
@@ -84,6 +95,6 @@ export const POLICIES = {
 // Columnas que no se leen nunca por REST (solo con RPC): datos privados del centro
 export const HIDDEN = { centers: ['gcash_number', 'notes', 'review_note'] }
 // Columnas que solo cambian las RPC de la plataforma (port de protect_center_columns)
-export const PROTECTED = { centers: ['verification_status', 'verified_at', 'claims_center_id', 'listing_status', 'review_note'] }
+export const PROTECTED = { centers: ['verification_status', 'verified_at', 'claims_center_id', 'listing_status', 'review_note', 'green_fins_verified'] }
 
 export { NO, YES, or, and, P }

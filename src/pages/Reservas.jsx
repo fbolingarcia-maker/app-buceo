@@ -6,7 +6,7 @@ import { BOOKING_STATUS, dateTime, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
-import { CalendarPlus, Check, Lock, Share2, X } from 'lucide-react'
+import { CalendarPlus, Check, Copy, Lock, Share2, Users, X } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
 
 const HOLD_MIN = 15
@@ -116,6 +116,105 @@ function PayBox({ b, mode, onDone }) {
   )
 }
 
+// Pago dividido: cada buddy paga su parte desde un enlace (GCash o tarjeta; sin cuenta)
+export const shareUrl = (token) => appUrl() + '#/pagar/' + token
+function SplitBox({ b, onDone }) {
+  const due = b.amount_php - b.paid_php
+  const shares = (b.payment_shares || []).slice().sort((x, y) => (x.paid_at ? 0 : 1) - (y.paid_at ? 0 : 1))
+  const open = shares.filter((s) => !s.paid_at)
+  const [editing, setEditing] = useState(false)
+  const [parts, setParts] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [copied, setCopied] = useState('')
+  function start(n) {
+    const each = Math.floor(due / n)
+    setParts(Array.from({ length: n }, (_, i) => ({ label: i === 0 ? t('Yo') : t('Buddy {n}', { n: i }), amount: i === n - 1 ? due - each * (n - 1) : each })))
+    setEditing(true)
+  }
+  const sum = parts.reduce((s, x) => s + (+x.amount || 0), 0)
+  async function create() {
+    setBusy(true); setError('')
+    const { error } = await supabase.rpc('create_payment_shares', { p_booking: b.id, p_parts: parts.map((x) => ({ label: x.label, amount: +x.amount })) })
+    setBusy(false)
+    if (error) return setError(errMsg(error))
+    setEditing(false); onDone()
+  }
+  async function cancelLinks() {
+    if (!window.confirm(t('¿Anular los enlaces sin pagar?'))) return
+    const { error } = await supabase.rpc('cancel_payment_shares', { p_booking: b.id })
+    if (error) setError(errMsg(error)); else onDone()
+  }
+  async function send(s) {
+    const url = shareUrl(s.token)
+    const text = t('Tu parte de la salida de buceo con {centro} ({fecha}): {amount}. Págala aquí:', { centro: b.trips?.centers?.name || '', fecha: dateTime(b.trips?.departs_at), amount: php(s.amount_php) })
+    try {
+      if (navigator.share) await navigator.share({ title: 'DivingSlot', text, url })
+      else { await navigator.clipboard.writeText(text + ' ' + url); setCopied(s.id) }
+    } catch {}
+  }
+  if (!editing && !shares.length) {
+    return (
+      <details className="small how-pay" style={{ marginTop: 8 }}>
+        <summary><Icon icon={Users} size={14} /> {t('Dividir el pago con tus buddies')}</summary>
+        <p className="muted" style={{ margin: '6px 0' }}>{t('Cada uno paga su parte con GCash o tarjeta desde un enlace, sin crear cuenta.')}</p>
+        <div className="row wrap" style={{ gap: 6 }}>
+          {[2, 3, 4, 5, 6].filter((n) => due / n >= 100).map((n) => <button key={n} type="button" className="btn small ghost" onClick={() => start(n)}>{t('Entre {n}', { n })}</button>)}
+        </div>
+      </details>
+    )
+  }
+  return (
+    <div className="split" style={{ marginTop: 10 }}>
+      <b className="small"><Icon icon={Users} size={14} /> {t('Pago dividido')}</b>
+      {editing ? (
+        <>
+          {parts.map((x, i) => (
+            <div key={i} className="row" style={{ gap: 6, marginTop: 6 }}>
+              <input aria-label={t('Nombre')} value={x.label} maxLength={60} onChange={(e) => setParts(parts.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))} />
+              <input aria-label={t('Importe')} type="number" inputMode="numeric" min="100" style={{ width: 110 }} value={x.amount} onChange={(e) => setParts(parts.map((y, j) => (j === i ? { ...y, amount: e.target.value } : y)))} />
+            </div>
+          ))}
+          <p className="small muted" style={{ margin: '6px 0' }}>{sum === due ? t('Suma {amount}: correcto', { amount: php(sum) }) : t('Las partes tienen que sumar {amount} (ahora {sum})', { amount: php(due), sum: php(sum) })}</p>
+          {b.status === 'pending_payment' && <p className="small muted" style={{ margin: '0 0 6px' }}>{t('Guardamos tu plaza 2 h para que paguen. Con la primera parte que cubra la señal, la reserva queda confirmada.')}</p>}
+          <div className="row" style={{ gap: 6 }}>
+            <button type="button" className="btn small" disabled={busy || sum !== due} onClick={create}>{t('Crear enlaces')}</button>
+            <button type="button" className="btn small ghost" onClick={() => setEditing(false)}>{t('Cancelar')}</button>
+          </div>
+        </>
+      ) : (
+        <>
+          {shares.map((s) => (
+            <div key={s.id} className="row between wrap" style={{ gap: 6, marginTop: 6 }}>
+              <span>{s.label} · <b>{php(s.amount_php)}</b></span>
+              {s.paid_at ? <span className="pill ok">{t('Pagada')}</span> : (
+                <span className="row" style={{ gap: 4 }}>
+                  <a className="btn small ghost" href={'https://wa.me/?text=' + encodeURIComponent(t('Tu parte de la salida de buceo: {amount}. Págala aquí:', { amount: php(s.amount_php) }) + ' ' + shareUrl(s.token))} target="_blank" rel="noreferrer">WhatsApp</a>
+                  <button type="button" className="btn small ghost" onClick={() => send(s)} aria-label={t('Compartir enlace')}><Icon icon={copied === s.id ? Check : Copy} size={14} /></button>
+                </span>
+              )}
+            </div>
+          ))}
+          {open.length > 0 && <button type="button" className="linkish small" style={{ marginTop: 6 }} onClick={cancelLinks}>{t('Anular los enlaces sin pagar')}</button>}
+        </>
+      )}
+      {error && <div className="msg err" role="alert">{error}</div>}
+    </div>
+  )
+}
+
+// El resto, en efectivo en el centro: sin recordatorio de pago online
+function PayOnSite({ b, onDone }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <label className="check small" style={{ marginTop: 8 }}>
+      <input type="checkbox" checked={!!b.pay_on_site} disabled={busy} onChange={async (e) => {
+        setBusy(true); await supabase.rpc('set_pay_on_site', { p_booking: b.id, p_on: e.target.checked }); setBusy(false); onDone()
+      }} /> {t('Pagaré el resto en efectivo en el centro')}
+    </label>
+  )
+}
+
 export default function Reservas() {
   const { diver } = useAuth()
   const [list, setList] = useState(null)
@@ -129,7 +228,7 @@ export default function Reservas() {
   const load = useCallback(async () => {
     if (!diver) return
     const { data, error } = await supabase.from('bookings')
-      .select('*, trips(departs_at, num_dives, status, centers(name, phone, destination, locality, lat, lng), boats(name, show_to_divers))')
+      .select('*, trips(departs_at, num_dives, status, centers(name, phone, destination, locality, lat, lng), boats(name, show_to_divers)), booking_extras(name, qty, price_php), payment_shares(id, label, amount_php, token, paid_at)')
       .eq('diver_id', diver.id).order('created_at', { ascending: false })
     if (error) setError(errMsg(error))
     setList(data || [])
@@ -203,6 +302,13 @@ export default function Reservas() {
           <span>{b.seats > 1 ? t('{n} plazas', { n: b.seats }) : t('{n} plaza', { n: b.seats })}{b.with_gear ? ' · ' + t('con equipo') : ''}</span>
           <b>{php(b.amount_php)}</b>
         </div>
+        {(b.fees_php > 0 || b.booking_extras?.length > 0 || b.discount_php > 0) && (
+          <div className="small muted" style={{ marginTop: 2 }}>
+            {[b.fees_php > 0 && t('Tasas de santuarios incluidas ({amount})', { amount: php(b.fees_php) }),
+              ...(b.booking_extras || []).map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')),
+              b.discount_php > 0 && t('Descuento de última hora −{amount}', { amount: php(b.discount_php) })].filter(Boolean).join(' · ')}
+          </div>
+        )}
         {b.paid_php > 0 && (
           <div className="small" style={{ marginTop: 4 }}>
             {t('Pagado {amount}', { amount: php(b.paid_php) })}{balance > 0 && active ? <> · <b>{t('pendiente {amount}', { amount: php(balance) })}</b></> : ' · ' + t('todo pagado')}
@@ -219,12 +325,14 @@ export default function Reservas() {
           <p className="small muted">{t('Plaza retenida {n} min más. Paga al menos la señal del 50 % ({amount}) para confirmarla.', { n: minsLeft, amount: php(b.deposit_php) })}</p>
         )}
         {b.status === 'confirmed' && balance > 0 && future && (
-          <p className="small muted">{t('Paga el resto ahora en la app o en efectivo en el centro el día de la salida.')}</p>
+          <p className="small muted">{b.pay_on_site ? t('Pagarás el resto ({amount}) en efectivo en el centro.', { amount: php(balance) }) : t('Paga el resto ahora en la app o en efectivo en el centro. 24 h antes te mandamos el enlace de pago.')}</p>
         )}
+        {b.status === 'confirmed' && balance > 0 && future && <PayOnSite b={b} onDone={load} />}
         {b.status === 'confirmed' && future && (
           <button className="btn small ghost" style={{ marginTop: 8, marginRight: 8 }} onClick={() => addToCalendar(b)}><Icon icon={CalendarPlus} /> {t('Añadir al calendario')}</button>
         )}
-        {active && future && balance > 0 && <PayBox b={b} mode={mode} onDone={(m, paidId) => { setInfo(m || ''); if (paidId) setJustPaid(paidId); load() }} />}
+        {active && future && balance > 0 && !b.pay_on_site && <PayBox b={b} mode={mode} onDone={(m, paidId) => { setInfo(m || ''); if (paidId) setJustPaid(paidId); load() }} />}
+        {active && future && balance >= 200 && <SplitBox b={b} onDone={load} />}
         {active && future && (
           <button className="btn small ghost" style={{ marginTop: 8 }} onClick={() => {
             const h = (new Date(b.trips.departs_at) - now) / 3600000

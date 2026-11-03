@@ -1,7 +1,7 @@
 import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs'
 const plan = {
-  anon: ['/', '/centros', '/c/4ec918c7-1b17-477e-acb7-2c33276224ac', '/d/Panglao', '/puntos', '/salida/t1-1', '/login', '/reservas', '/admin'],
-  diver: ['/', '/salida/t1-1', '/salida/t2-1', '/reservas', '/valorar/t1-1', '/perfil', '/bitacora', '/login', '/admin'],
+  anon: ['/', '/pagar/' + 'b'.repeat(32), '/centros', '/c/4ec918c7-1b17-477e-acb7-2c33276224ac', '/d/Panglao', '/puntos', '/salida/t1-1', '/login', '/reservas', '/admin'],
+  diver: ['/', '/salida/t1-1', '/salida/t2-1', '/reservas', '/valorar/t1-1', '/perfil', '/bitacora', '/bitacora/importar', '/pagar/' + 'b'.repeat(32), '/login', '/admin'],
   center: ['/', '/perfil', '/centro', '/centro/agenda', '/centro/salidas', '/centro/nueva', '/centro/ajustes', '/centro/informes', '/centro/verificacion'],
   centerv: ['/centro', '/perfil', '/centro/agenda', '/centro/salidas', '/centro/verificacion'],
   centerr: ['/centro/verificacion', '/centro'],

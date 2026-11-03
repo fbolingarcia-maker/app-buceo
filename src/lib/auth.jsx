@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 const AuthCtx = createContext(null)
 
 // Columnas públicas de centers (gcash_number, review_note y notes solo con center_private())
-export const CENTER_COLS = 'id, name, area, phone, default_divers_per_guide, created_at, locality, website, source_url, lat, lng, location_precision, listing_status, destination, province, languages, course_languages, verification_status, claims_center_id, verified_at, agencies, agency_detail, directory_check, checked_at'
+export const CENTER_COLS = 'id, name, area, phone, default_divers_per_guide, created_at, locality, website, source_url, lat, lng, location_precision, listing_status, destination, province, languages, course_languages, verification_status, claims_center_id, verified_at, agencies, agency_detail, directory_check, checked_at, green_fins, green_fins_verified, eco'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined) // undefined = cargando

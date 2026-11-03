@@ -14,7 +14,7 @@ export default function NuevaSalida({ id }) {
   const [f, setF] = useState({
     boat_id: '', date: addDays(manilaDate(), 1), hour: '07:30', num_dives: 3, min_level: 'open_water',
     price_php: 5500, gear_rental_php: 800, guides: 2, divers_per_guide: center?.default_divers_per_guide || 4,
-    seat_override: '', blocked_seats: 0, sites: ['', '', ''], publish: true,
+    seat_override: '', blocked_seats: 0, sites: ['', '', ''], publish: true, include_fees: false, fees_per_diver: '',
   })
 
   useEffect(() => {
@@ -39,6 +39,7 @@ export default function NuevaSalida({ id }) {
         seat_override: data.seat_override ?? '', blocked_seats: data.blocked_seats,
         sites: Array.from({ length: data.num_dives }, (_, i) => ts.find((x) => x.position === i + 1)?.site_id || ''),
         publish: data.status !== 'draft', status: data.status,
+        include_fees: !!data.include_fees, fees_per_diver: data.fees_per_diver ?? '',
       })
       setHasBookings((data.bookings || []).some((b) => ['pending_payment', 'confirmed'].includes(b.status)))
       setLoaded(true)
@@ -68,6 +69,7 @@ export default function NuevaSalida({ id }) {
       boat_id: f.boat_id, departs_at, num_dives: f.num_dives, min_level: f.min_level,
       price_php: f.price_php, gear_rental_php: f.gear_rental_php || 0, guides: f.guides, divers_per_guide: f.divers_per_guide,
       seat_override: f.seat_override === '' ? null : f.seat_override, blocked_seats: f.blocked_seats || 0,
+      include_fees: !!f.include_fees, fees_per_diver: f.include_fees && f.fees_per_diver !== '' ? +f.fees_per_diver : null,
     }
     if (!id || ['draft', 'published'].includes(f.status)) fields.status = f.publish && verified ? 'published' : 'draft'
     const { data: trip, error } = id
@@ -125,6 +127,20 @@ export default function NuevaSalida({ id }) {
               </select>
             </div>
           ))}
+
+          <div className="field" style={{ marginTop: 10 }}>
+            <label className="check"><input type="checkbox" checked={f.include_fees} onChange={(e) => setF({ ...f, include_fees: e.target.checked })} /> {t('Incluir en el pago las tasas de santuarios y parques marinos')}</label>
+            {f.include_fees && (() => {
+              const auto = f.sites.slice(0, f.num_dives).reduce((n, sid) => n + (sites.find((x) => x.id === sid)?.sanctuary_fee_php || 0), 0)
+              return (
+                <div className="row wrap" style={{ gap: 8, marginTop: 6, alignItems: 'center' }}>
+                  <label className="small" htmlFor="nuevasalida-fees">{t('Tasas por buceador (₱)')}</label>
+                  <input id="nuevasalida-fees" type="number" inputMode="numeric" min="0" max="20000" style={{ width: 110 }} placeholder={String(auto)} value={f.fees_per_diver} onChange={set('fees_per_diver', true)} />
+                  <span className="small muted">{t('El buceador las paga con la reserva y se le muestran aparte (p. ej. Balicasag, Pescador, Apo Island).')}</span>
+                </div>
+              )
+            })()}
+          </div>
 
           <p className="small muted">{t('Plazas operativas:')} <b>{operative}</b> · {t('en la app:')} <b>{Math.max(0, operative - (f.blocked_seats || 0))}</b> · {t('precio {price}', { price: php(f.price_php) })}</p>
           {verified

@@ -7,6 +7,7 @@
 //   POST /api/functions/crear-pago, POST /api/webhooks/paymongo                         → payments.js
 //   POST /api/hit, GET /api/stats, POST /api/notify (visitas y avisos de uso)            → stats.js
 //   POST /api/import, GET /api/import/status (copia de datos desde Supabase, una vez)    → import.js
+//   GET  /api/sea?trip=<id> (previsión de viento y olas y visibilidad de la bitácora)      → sea.js
 //   GET  /api/health[?check=1] (estado y, con check=1, qué falta configurar)             → health.js
 import { json, errorResponse, fail, sessionCookie } from './lib/util.js'
 import { loadCtx, handleAuth, rateLimit } from './auth.js'
@@ -14,7 +15,8 @@ import { handleRest } from './rest.js'
 import { handleRpc } from './rpc.js'
 import { handleStorage } from './storage.js'
 import { crearPago, paymongoWebhook } from './payments.js'
-import { cleanup } from './cron.js'
+import { cleanup, balanceReminders, expireUnpaidWithMoney } from './cron.js'
+import { handleSea } from './sea.js'
 import { handleImport } from './import.js'
 import { handleHealth } from './health.js'
 import { withSecrets } from './lib/secrets.js'
@@ -41,6 +43,7 @@ export async function handleApi(req, env, ectx) {
     // Visitas (sendBeacon no puede poner cabeceras: se comprueba el Origin dentro) y avisos desde Supabase (clave propia)
     if (path === 'hit' && req.method === 'POST') return await handleHit(req, env, url)
     if (path === 'notify' && req.method === 'POST') return await handleNotify(req, env)
+    if (path === 'sea' && req.method === 'GET') return await handleSea(req, env, url, ectx)
     if (!csrfOk(req, url)) return json({ error: { message: 'FORBIDDEN: origen no permitido', code: 'CSRF' } }, 403)
     if (!env.DB) fail('NOT_CONFIGURED', 'falta la base de datos D1', 503)
     const ctx = await loadCtx(req, env)
@@ -88,6 +91,9 @@ export default {
   async fetch(req, env, ectx) {
     const url = new URL(req.url)
     if (url.pathname.startsWith('/api/')) return handleApi(req, env, ectx)
+    // Enlace de reservas propio del centro (web, Instagram, Google): divingslot.com/r/<id> → la ficha del centro, sin comisión
+    const ref = /^\/r\/([0-9a-f-]{36})\/?$/.exec(url.pathname)
+    if (ref) return Response.redirect(url.origin + '/app/#/r/' + ref[1], 302)
     // Verificación de Google Search Console: se sirve tal cual (Static Assets redirigiría *.html a la ruta sin .html)
     if (url.pathname === '/google3f09e05f2c350262.html') return new Response('google-site-verification: google3f09e05f2c350262.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
     return env.ASSETS.fetch(req)
@@ -98,5 +104,7 @@ export default {
     ectx.waitUntil(cleanup(env).catch(onFail('limpieza')))
     ectx.waitUntil(pruneVisits(env).catch(onFail('visitas')))
     ectx.waitUntil(dailyDigest(env).catch(onFail('resumen diario')))
+    ectx.waitUntil(balanceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('recordatorios de pago')))
+    ectx.waitUntil(expireUnpaidWithMoney(env).catch(onFail('reservas caducadas con pagos')))
   },
 }

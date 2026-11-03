@@ -14,8 +14,8 @@
     "binding": "ASSETS",
     // Router por hash: cualquier ruta desconocida devuelve index.html…
     "not_found_handling": "single-page-application",
-    // …salvo la API, que siempre va al Worker (también los enlaces de los emails, que se abren navegando)
-    "run_worker_first": ["/api/*", "/google3f09e05f2c350262.html"]
+    // …salvo la API, que siempre va al Worker (también los enlaces de los emails, que se abren navegando), y /r/<centro> (enlace de reservas del centro)
+    "run_worker_first": ["/api/*", "/google3f09e05f2c350262.html", "/r/*"]
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "diveslot", "database_id": "73f322b7-43c2-4234-a313-5f7e2e78c928" }

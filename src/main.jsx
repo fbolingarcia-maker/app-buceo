@@ -12,6 +12,11 @@ import '@fontsource/figtree/800.css'
 import '@fontsource/barlow-condensed/600.css'
 import './styles.css'
 
+// Sin cobertura (barco, puerto): el service worker guarda la app para abrirla sin red. Solo en producción.
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.location.pathname.startsWith('/app')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(() => {}))
+}
+
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>

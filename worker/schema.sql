@@ -94,7 +94,10 @@ CREATE TABLE IF NOT EXISTS centers (
   agencies TEXT NOT NULL DEFAULT '[]',
   agency_detail TEXT,
   directory_check TEXT,
-  checked_at TEXT
+  checked_at TEXT,
+  green_fins TEXT CHECK (green_fins IN ('member', 'certified', 'digital')),
+  green_fins_verified INTEGER NOT NULL DEFAULT 0,
+  eco TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS center_staff (
@@ -143,7 +146,12 @@ CREATE TABLE IF NOT EXISTS trips (
   seat_override INTEGER CHECK (seat_override >= 0),
   blocked_seats INTEGER NOT NULL DEFAULT 0 CHECK (blocked_seats >= 0),
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'cancelled_weather', 'completed')),
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  include_fees INTEGER NOT NULL DEFAULT 0,
+  fees_per_diver INTEGER CHECK (fees_per_diver BETWEEN 0 AND 20000),
+  last_minute_pct INTEGER NOT NULL DEFAULT 0 CHECK (last_minute_pct BETWEEN 0 AND 50),
+  last_minute_at TEXT,
+  last_minute_notified_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS trip_sites (
@@ -175,7 +183,9 @@ CREATE TABLE IF NOT EXISTS divers (
   nitrox INTEGER NOT NULL DEFAULT 0,
   medical_done_at TEXT,
   medical_result TEXT CHECK (medical_result IN ('all_no', 'physician_ok')),
-  buddy_ratings_enabled INTEGER NOT NULL DEFAULT 0
+  buddy_ratings_enabled INTEGER NOT NULL DEFAULT 0,
+  allergies TEXT CHECK (length(allergies) <= 300),
+  alert_destinations TEXT NOT NULL DEFAULT '[]'
 );
 
 CREATE TABLE IF NOT EXISTS certifications (
@@ -210,6 +220,12 @@ CREATE TABLE IF NOT EXISTS bookings (
   hold_until TEXT,
   balance_paid_at TEXT,
   checked_in_at TEXT,
+  channel TEXT CHECK (channel IN ('marketplace', 'direct')),
+  fees_php INTEGER NOT NULL DEFAULT 0 CHECK (fees_php >= 0),
+  extras_php INTEGER NOT NULL DEFAULT 0 CHECK (extras_php >= 0),
+  discount_php INTEGER NOT NULL DEFAULT 0 CHECK (discount_php >= 0),
+  pay_on_site INTEGER NOT NULL DEFAULT 0,
+  balance_reminded_at TEXT,
   CHECK ((source = 'app' AND diver_id IS NOT NULL) OR (source <> 'app' AND guest_name IS NOT NULL)),
   CHECK (source = 'app' OR commission_php = 0)
 );
@@ -226,7 +242,41 @@ CREATE TABLE IF NOT EXISTS payments (
   checkout_url TEXT,
   recorded_by TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  paid_at TEXT
+  paid_at TEXT,
+  share_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS payment_shares (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',1+(abs(random())%4),1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))),
+  booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  label TEXT CHECK (length(label) <= 60),
+  amount_php INTEGER NOT NULL CHECK (amount_php > 0),
+  token TEXT NOT NULL UNIQUE,
+  paid_at TEXT,
+  payment_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS center_extras (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',1+(abs(random())%4),1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))),
+  center_id TEXT NOT NULL REFERENCES centers(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL DEFAULT 'other' CHECK (kind IN ('insurance', 'course', 'photo', 'video', 'nitrox', 'other')),
+  name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 80),
+  description TEXT CHECK (length(description) <= 200),
+  price_php INTEGER NOT NULL CHECK (price_php BETWEEN 0 AND 200000),
+  per_seat INTEGER NOT NULL DEFAULT 1,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS booking_extras (
+  booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  extra_id TEXT NOT NULL REFERENCES center_extras(id),
+  kind TEXT NOT NULL,
+  name TEXT NOT NULL,
+  qty INTEGER NOT NULL DEFAULT 1 CHECK (qty BETWEEN 1 AND 20),
+  price_php INTEGER NOT NULL CHECK (price_php >= 0),
+  PRIMARY KEY (booking_id, extra_id)
 );
 
 CREATE TABLE IF NOT EXISTS dive_logs (
@@ -342,7 +392,10 @@ SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t
   (CASE WHEN t.status <> 'published' THEN 0 ELSE max(0, max(0, min((SELECT capacity FROM boats WHERE id = t.boat_id), t.guides * t.divers_per_guide, coalesce(t.seat_override, 32767))) - max(t.blocked_seats, (SELECT coalesce(sum(b.seats), 0) FROM bookings b WHERE b.trip_id = t.id AND b.source <> 'app' AND (b.status = 'confirmed' OR (b.status = 'pending_payment' AND max(strftime('%Y-%m-%dT%H:%M:%fZ', b.created_at, '+15 minutes'), coalesce(b.hold_until, '')) > (strftime('%Y-%m-%dT%H:%M:%fZ','now')))))) - (SELECT coalesce(sum(b.seats), 0) FROM bookings b WHERE b.trip_id = t.id AND b.source = 'app' AND (b.status = 'confirmed' OR (b.status = 'pending_payment' AND max(strftime('%Y-%m-%dT%H:%M:%fZ', b.created_at, '+15 minutes'), coalesce(b.hold_until, '')) > (strftime('%Y-%m-%dT%H:%M:%fZ','now')))))) END) AS available_seats,
   c.area AS center_area, c.locality AS center_locality, c.lat AS center_lat, c.lng AS center_lng,
   (SELECT coalesce(sum(b.seats), 0) FROM bookings b WHERE b.trip_id = t.id AND 1 AND (b.status = 'confirmed' OR (b.status = 'pending_payment' AND max(strftime('%Y-%m-%dT%H:%M:%fZ', b.created_at, '+15 minutes'), coalesce(b.hold_until, '')) > (strftime('%Y-%m-%dT%H:%M:%fZ','now'))))) AS booked_seats,
-  c.destination AS center_destination, c.province AS center_province, c.languages AS center_languages, c.agencies AS center_agencies, c.course_languages AS center_course_languages
+  c.destination AS center_destination, c.province AS center_province, c.languages AS center_languages, c.agencies AS center_agencies, c.course_languages AS center_course_languages,
+  t.include_fees, (CASE WHEN t.include_fees THEN coalesce(t.fees_per_diver, (SELECT coalesce(sum(ds.sanctuary_fee_php), 0) FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = t.id)) ELSE 0 END) AS fees_php,
+  CASE WHEN (t.last_minute_pct > 0 AND t.departs_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+48 hours')) THEN t.last_minute_pct ELSE 0 END AS last_minute_pct,
+  c.green_fins AS center_green_fins, c.green_fins_verified AS center_green_fins_verified
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified';
 
@@ -388,4 +441,10 @@ CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id);
 
 CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at);
 
-INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50');
+CREATE INDEX IF NOT EXISTS shares_booking ON payment_shares(booking_id);
+
+CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id);
+
+CREATE INDEX IF NOT EXISTS payments_share ON payments(share_id);
+
+INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250');

@@ -6,7 +6,7 @@ import { medicalValid, daysSinceDive } from './medical'
 import { downloadCsv } from './csv'
 
 // Manifiesto de la salida para imprimir o descargar (lo que piden el capitán, el guía y la Coast Guard antes de zarpar):
-// buceadores, certificación, médico, última inmersión, tallas si alquila equipo, pago y huecos para check-in y firma.
+// buceadores, certificación, médico, última inmersión, tallas si alquila equipo, alergias, extras, pago y huecos para check-in y firma.
 // Contacto de emergencia y nacionalidad se rellenan a mano si no los tenemos.
 export function manifestRows(active) {
   return active.map((b, i) => {
@@ -24,14 +24,16 @@ export function manifestRows(active) {
       last: days == null ? '' : t('hace {n} días', { n: days }),
       nitrox: d?.nitrox ? t('Sí') : '',
       gear: b.with_gear ? (sizes || t('Sí, sin tallas')) : t('No'),
-      pay: b.paid_php >= b.amount_php ? t('Pagado') : t('Falta {amount}', { amount: php(b.amount_php - b.paid_php) }),
+      allergies: d?.allergies || '',
+      extras: (b.booking_extras || []).map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')).join(', '),
+      pay: b.paid_php >= b.amount_php ? t('Pagado') : t('Falta {amount}', { amount: php(b.amount_php - b.paid_php) }) + (b.pay_on_site ? ' · ' + t('efectivo') : ''),
       onboard: b.checked_in_at ? t('Sí') : '',
     }
   })
 }
 
 const COLS = () => [['n', t('N.º')], ['name', t('Nombre')], ['seats', t('Plazas')], ['cert', t('Certificación')], ['dives', t('Inmersiones')], ['medical', t('Médico')],
-  ['last', t('Última inmersión')], ['nitrox', t('Nitrox')], ['gear', t('Equipo de alquiler')], ['pay', t('Pago')], ['onboard', t('A bordo')]]
+  ['last', t('Última inmersión')], ['nitrox', t('Nitrox')], ['gear', t('Equipo de alquiler')], ['allergies', t('Alergias')], ['extras', t('Extras')], ['pay', t('Pago')], ['onboard', t('A bordo')]]
 
 export function manifestCsv(trip, active) {
   const cols = COLS()

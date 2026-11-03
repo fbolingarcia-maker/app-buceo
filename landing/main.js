@@ -63,7 +63,7 @@ const ES = {
   dest_title: 'Dónde bucear',
   dest_all: 'Todas las zonas',
   c_title: '¿Tienes un centro de buceo?',
-  c_p: 'Publica tus salidas, llena tus barcos y cobra la señal online. Reservas, el manifiesto del día y los cobros en un solo sitio.',
+  c_p: 'Publica tus salidas, llena tus barcos y cobra la señal online. 0 % de comisión con tu propio enlace de reservas para tu web, Instagram y Google; solo ₱250 por buceador que te traemos nosotros. Manifiesto sin cobertura, cobro del resto 24 h antes y plazas de última hora.',
   c_cta: 'Dar de alta mi centro',
   faq_title: 'Preguntas',
   q1: '¿Dónde puedo reservar?',

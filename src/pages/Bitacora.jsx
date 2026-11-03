@@ -113,6 +113,7 @@ export default function Bitacora() {
         <h1 style={{ margin: 0 }}>{t('Mi bitácora')}</h1>
         <div className="row" style={{ gap: 6 }}>
           {logs.length > 0 && <button className="btn small ghost" onClick={() => exportCsv(logs)}>{t('Exportar CSV')}</button>}
+          <Link to="/bitacora/importar" className="btn small ghost">{t('Importar')}</Link>
           <Link to="/bitacora/nueva" className="btn small">{t('+ Inmersión')}</Link>
         </div>
       </div>
@@ -137,6 +138,7 @@ export default function Bitacora() {
         <div className="card center muted">
           <p style={{ marginTop: 0 }}>{t('Aún no has registrado inmersiones. Pulsa «+ Inmersión» para añadir la primera.')}</p>
           <Link to="/bitacora/nueva" className="btn">{t('+ Inmersión')}</Link>
+          <p className="small" style={{ marginBottom: 0 }}><Link to="/bitacora/importar">{t('¿Tienes ordenador de buceo? Importa tus inmersiones (Garmin, Shearwater, Suunto…)')}</Link></p>
         </div>
       )}
 

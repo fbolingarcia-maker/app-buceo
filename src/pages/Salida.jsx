@@ -10,6 +10,7 @@ import Icon from '../lib/Icon'
 import { ArrowLeft, Check, MapPin, MessageCircle, Waves } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
 import { MedicalCheck, medicalValid, daysSinceDive } from '../lib/medical'
+import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard } from '../lib/extras'
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
@@ -73,6 +74,8 @@ export default function Salida({ id }) {
   const [certs, setCerts] = useState([])
   const [seats, setSeats] = useState(1)
   const [gear, setGear] = useState(false)
+  const [extras, setExtras] = useState([])
+  const [chosen, setChosen] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -81,7 +84,8 @@ export default function Salida({ id }) {
       if (error) setError(errMsg(error))
       setTrip(data || false)
       if (data) {
-        supabase.from('centers').select('name, phone, locality, website, destination, province, languages, course_languages').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
+        supabase.from('centers').select('name, phone, locality, website, destination, province, languages, course_languages, green_fins, green_fins_verified').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
+        supabase.from('center_extras').select('id, kind, name, description, price_php, per_seat').eq('center_id', data.center_id).eq('active', true).order('price_php').then(({ data }) => setExtras(data || []))
         if (data.sites?.length) supabase.from('dive_sites').select('name, min_depth_m, max_depth_m, highlight, highlight_es, recommended_min').in('name', data.sites).then(({ data }) => setSiteInfo(data || []))
       }
     })
@@ -109,7 +113,10 @@ export default function Salida({ id }) {
   const medical = medicalValid(diver)
   const sinceDive = daysSinceDive(diver)
   const hasSizes = !!(diver?.wetsuit_size || diver?.bcd_size || diver?.fin_size)
-  const total = seats * trip.price_php + (gear ? seats * trip.gear_rental_php : 0)
+  const unit = unitPrice(trip)
+  const fees = trip.fees_php || 0
+  const extrasAmt = extrasTotal(extras, chosen, seats)
+  const total = seats * (unit + fees) + (gear ? seats * trip.gear_rental_php : 0) + extrasAmt
 
   async function share() {
     const url = window.location.href
@@ -122,7 +129,7 @@ export default function Salida({ id }) {
 
   async function book() {
     setBusy(true); setError('')
-    const { error } = await supabase.rpc('book_trip', { p_trip: trip.id, p_seats: seats, p_with_gear: gear, p_medical_signed: medical })
+    const { error } = await supabase.rpc('book_trip', { p_trip: trip.id, p_seats: seats, p_with_gear: gear, p_medical_signed: medical, p_ref: viaFor(trip.center_id), p_extras: chosen })
     setBusy(false)
     if (error) return setError(errMsg(error))
     try { sessionStorage.setItem('justBooked', '1') } catch (e) { /* sin almacenamiento */ }
@@ -135,7 +142,7 @@ export default function Salida({ id }) {
       <h1 style={{ marginTop: 8 }}>{trip.center_name}</h1>
       {trip.available_seats > 0 && !isCenter && (
         <div className="row between" style={{ gap: 8, marginBottom: 12 }}>
-          <span className="muted small">{t('{n} plazas', { n: trip.available_seats })} · <b>{php(trip.price_php)}</b></span>
+          <span className="muted small">{t('{n} plazas', { n: trip.available_seats })} · <PriceTag trip={trip} /> <LastMinuteTag trip={trip} /></span>
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
         </div>
       )}
@@ -144,10 +151,13 @@ export default function Salida({ id }) {
         {trip.boat_name && <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>}
         <div className="row between"><span className="muted">{t('Inmersiones')}</span><span>{trip.num_dives}</span></div>
         <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill lvl"><i style={{ background: levelColor(trip.min_level) }} />{levelName(trip.min_level)}</span></div>
-        <div className="row between"><span className="muted">{t('Precio por buceador')}</span><b>{php(trip.price_php)}</b></div>
-        <div className="row between"><span className="muted">{t('Alquiler de equipo')}</span><span>{trip.gear_rental_php ? php(trip.gear_rental_php) : '—'}</span></div>
+        <div className="row between"><span className="muted">{t('Precio por buceador')}</span><span><LastMinuteTag trip={trip} /> <PriceTag trip={trip} /></span></div>
+        {fees > 0 && <div className="row between"><span className="muted">{t('Tasas de santuarios y parques marinos')}</span><span>{php(fees)} · {t('incluidas en el pago')}</span></div>}
+        <div className="row between"><span className="muted">{t('Con tu equipo / alquilando')}</span><span>{trip.gear_rental_php ? <>{php(unit + fees)} / {php(unit + fees + trip.gear_rental_php)}</> : t('Equipo incluido o no disponible')}</span></div>
         <div className="row between"><span className="muted">{t('Plazas libres')}</span><b>{trip.available_seats}</b></div>
       </div>
+
+      <SeaCard tripId={trip.id} />
 
       {trip.sites?.length > 0 && (() => {
         // Regla de 0 a 40 m, o hasta el máximo de la salida redondeado a 10 si algún punto pasa de 40 m
@@ -176,7 +186,7 @@ export default function Salida({ id }) {
       <div className="card">
         <div className="row between wrap" style={{ gap: 8 }}>
           <div>
-            <Link to={'/c/' + trip.center_id}><b>{trip.center_name}</b></Link> <Flags codes={center?.languages} />
+            <Link to={'/c/' + trip.center_id}><b>{trip.center_name}</b></Link> <Flags codes={center?.languages} /> <GreenFinsBadge level={center?.green_fins} verified={center?.green_fins_verified} small />
             <div className="small muted"><Icon icon={MapPin} size={14} /> {[center?.locality, center?.destination || trip.center_destination, center?.province || trip.center_province].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')}
               {(center?.destination || trip.center_destination) && <> · <Link to={'/d/' + encodeURIComponent(center?.destination || trip.center_destination)}>{t('Guía del destino')}</Link></>}
             </div>
@@ -194,7 +204,7 @@ export default function Salida({ id }) {
 
       {ctaVisible && trip.available_seats > 0 && !isCenter && (
         <div className="sticky-cta">
-          <span><b>{php(trip.price_php)}</b> <span className="small muted">· {t('{n} plazas', { n: trip.available_seats })}</span></span>
+          <span><PriceTag trip={trip} /> <span className="small muted">· {t('{n} plazas', { n: trip.available_seats })}</span></span>
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
         </div>
       )}
@@ -226,6 +236,17 @@ export default function Salida({ id }) {
           {trip.gear_rental_php > 0 && (
             <label className="check field"><input type="checkbox" checked={gear} onChange={(e) => setGear(e.target.checked)} /> {t('Alquilar equipo completo (+{precio} por persona)', { precio: php(trip.gear_rental_php) })}</label>
           )}
+          {extras.length > 0 && (
+            <fieldset className="field extras-pick">
+              <legend>{t('Extras del centro')}</legend>
+              {extras.map((e) => (
+                <label key={e.id} className="check">
+                  <input type="checkbox" checked={chosen.includes(e.id)} onChange={() => setChosen((c) => (c.includes(e.id) ? c.filter((x) => x !== e.id) : [...c, e.id]))} />
+                  <span><b>{e.name}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ''} <span className="muted small">({extraKind(e.kind)})</span>{e.description && <><br /><span className="small muted">{e.description}</span></>}</span>
+                </label>
+              ))}
+            </fieldset>
+          )}
           {gear && !hasSizes && (
             <p className="small muted" style={{ marginTop: -4 }}>{t('Añade tus tallas en el perfil para que el centro te prepare el equipo.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>
           )}
@@ -234,6 +255,15 @@ export default function Salida({ id }) {
           )}
           {sinceDive == null && <p className="small muted">{t('Añade en tu perfil la fecha de tu última inmersión: el centro la tiene en cuenta.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>}
           {diver && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
+          {(fees > 0 || extrasAmt > 0 || unit < trip.price_php) && (
+            <div className="small muted stack" style={{ marginTop: 8, gap: 2 }}>
+              <div className="row between"><span>{t('Salida')} × {seats}</span><span>{php(seats * unit)}</span></div>
+              {gear && <div className="row between"><span>{t('Alquiler de equipo')} × {seats}</span><span>{php(seats * trip.gear_rental_php)}</span></div>}
+              {fees > 0 && <div className="row between"><span>{t('Tasas de santuarios y parques marinos')} × {seats}</span><span>{php(seats * fees)}</span></div>}
+              {extrasAmt > 0 && <div className="row between"><span>{t('Extras')}</span><span>{php(extrasAmt)}</span></div>}
+              {unit < trip.price_php && <div className="row between"><span>{t('Descuento de última hora')}</span><span>−{php(seats * (trip.price_php - unit))}</span></div>}
+            </div>
+          )}
           <div className="row between" style={{ margin: '12px 0 4px' }}><span>{t('Total')}</span><span className="big">{php(total)}</span></div>
           <div className="row between small" style={{ marginBottom: 8 }}>
             <span className="muted">{t('Para reservar pagas como mínimo el 50 %')}</span><b>{php(Math.ceil(total / 2))}</b>
@@ -242,7 +272,8 @@ export default function Salida({ id }) {
             <summary>{t('¿Cómo funciona el pago?')}</summary>
             <ul>
               <li>{t('Ahora pagas la señal (50 %) con GCash o tarjeta. Tu plaza queda guardada 15 minutos mientras pagas.')}</li>
-              <li>{t('El resto lo pagas en la app o en efectivo en el centro el día de la salida.')}</li>
+              <li>{t('El resto lo pagas en la app o en efectivo en el centro el día de la salida. Te mandamos el enlace de pago 24 h antes.')}</li>
+              <li>{t('¿Vais varios? Divide el pago: cada buddy paga su parte con GCash desde un enlace.')}</li>
               <li>{t('Si cancelas con 24 h o más, te devolvemos todo. Si el centro cancela por el mar, también.')}</li>
             </ul>
           </details>
