@@ -6,6 +6,7 @@ import { SOURCES, sourceName, levelName, TRIP_STATUS, BOOKING_STATUS, manilaDate
 import { seatsSummary, hashParam, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
 import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
+import { ManifestSheet, manifestCsv } from '../lib/manifest'
 
 export default function CentroAgenda() {
   const { center, verified } = useAuth()
@@ -72,6 +73,8 @@ export default function CentroAgenda() {
 
 function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen)
+  const [printing, setPrinting] = useState(false)
+  const donePrint = useCallback(() => setPrinting(false), [])
   const [manual, setManual] = useState({ guest: '', seats: 1, gear: false, source: 'whatsapp' })
   const s = seatsSummary(trip)
   const sites = (trip.trip_sites || []).sort((a, b) => a.position - b.position).map((x) => x.dive_sites?.name)
@@ -124,6 +127,13 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen }) {
             <b>{t('Manifiesto')}</b>
             {active.length > 0 && <button type="button" className="btn small ghost" onClick={copyList}>{t('Copiar lista')}</button>}
           </div>
+          {active.length > 0 && (
+            <div className="row wrap" style={{ gap: 8, margin: '6px 0 4px' }}>
+              <button type="button" className="btn small ghost" onClick={() => (printing ? window.print() : setPrinting(true))}>{t('Imprimir manifiesto')}</button>
+              <button type="button" className="btn small ghost" onClick={() => manifestCsv(trip, active)}>{t('Descargar CSV')}</button>
+            </div>
+          )}
+          {printing && <ManifestSheet trip={trip} active={active} centerName={center.name} sites={sites} onDone={donePrint} />}
           {active.length === 0 && <p className="muted small">{t('Sin reservas.')}</p>}
           {active.map((b) => (
             <div key={b.id} className="doc-row" style={{ display: 'block' }}>

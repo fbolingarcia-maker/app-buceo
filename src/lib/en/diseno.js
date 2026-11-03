@@ -10,7 +10,7 @@ export default {
   'Última plaza': 'Last spot',
   '{hora}, {plazas}, nivel mínimo {nivel}': '{hora}, {plazas}, minimum level {nivel}',
   // Salidas: semana sin salidas
-  'No hay salidas publicadas esta semana': 'No trips published this week',
+  'No hay salidas publicadas en las próximas dos semanas': 'No trips published in the next two weeks',
   'Los centros de buceo están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de cada zona.': 'Dive centres are just starting to publish their trips. In the meantime, have a look at the dive sites and centres in each area.',
   'Toda Filipinas por zonas: profundidad, nivel y qué se ve': 'All of the Philippines by area: depth, level and what you’ll see',
   // Puntos de buceo de toda Filipinas (#/puntos)

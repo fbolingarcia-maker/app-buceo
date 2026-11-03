@@ -1,36 +1,39 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useAuth } from './lib/auth'
 import { trackView } from './lib/track'
 import { useRoute, Link, go } from './lib/router'
 import { t } from './lib/i18n'
 import Explorar from './pages/Explorar'
 import Salida from './pages/Salida'
-import Reservas from './pages/Reservas'
-import Perfil from './pages/Perfil'
 import Login from './pages/Login'
-import NuevaSalida from './pages/NuevaSalida'
-import Centros from './pages/Centros'
 import NuevaClave from './pages/NuevaClave'
-import Bitacora from './pages/Bitacora'
-import Inmersion from './pages/Inmersion'
-import CentroPanel from './pages/CentroPanel'
-import CentroAgenda from './pages/CentroAgenda'
-import CentroSalidas from './pages/CentroSalidas'
-import CentroInformes from './pages/CentroInformes'
-import CentroAjustes from './pages/CentroAjustes'
-import RegistrarCentro from './pages/RegistrarCentro'
-import CentroInfo from './pages/CentroInfo'
-import Destino from './pages/Destino'
-import Puntos from './pages/Puntos'
-import Valorar from './pages/Valorar'
 import { BUDDY_RATINGS } from './lib/buddy'
-import CentroVerificacion from './pages/CentroVerificacion'
-import Admin from './pages/Admin'
 import { DosPasosReto } from './pages/DosPasos'
 import AdminBar, { AdminCenterPicker } from './lib/AdminBar'
 import ErrorBoundary from './lib/ErrorBoundary'
+import { lazyPage, prefetchWhenIdle } from './lib/lazyPage'
 import Icon from './lib/Icon'
 import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText } from 'lucide-react'
+
+// Explorar, Salida y Login van en el paquete principal (son la entrada habitual); el resto se carga al abrirlo
+const Reservas = lazyPage(() => import('./pages/Reservas'))
+const Perfil = lazyPage(() => import('./pages/Perfil'))
+const NuevaSalida = lazyPage(() => import('./pages/NuevaSalida'))
+const Centros = lazyPage(() => import('./pages/Centros'))
+const Bitacora = lazyPage(() => import('./pages/Bitacora'))
+const Inmersion = lazyPage(() => import('./pages/Inmersion'))
+const CentroPanel = lazyPage(() => import('./pages/CentroPanel'))
+const CentroAgenda = lazyPage(() => import('./pages/CentroAgenda'))
+const CentroSalidas = lazyPage(() => import('./pages/CentroSalidas'))
+const CentroInformes = lazyPage(() => import('./pages/CentroInformes'))
+const CentroAjustes = lazyPage(() => import('./pages/CentroAjustes'))
+const RegistrarCentro = lazyPage(() => import('./pages/RegistrarCentro'))
+const CentroInfo = lazyPage(() => import('./pages/CentroInfo'))
+const Destino = lazyPage(() => import('./pages/Destino'))
+const Puntos = lazyPage(() => import('./pages/Puntos'))
+const Valorar = lazyPage(() => import('./pages/Valorar'))
+const CentroVerificacion = lazyPage(() => import('./pages/CentroVerificacion'))
+const Admin = lazyPage(() => import('./pages/Admin'))
 
 // Pantallas privadas. Sin sesión: título y frase de lo que hay detrás, y el login debajo.
 // back: ruta a la que volver después de entrar (también la usa el email de confirmación)
@@ -121,6 +124,13 @@ export default function App() {
   const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, signOut } = useAuth()
   const seg = path.split('/').filter(Boolean)
   useEffect(() => { trackView(path) }, [path])
+  // Pestañas de su perfil, descargadas en segundo plano para que el cambio de pestaña sea inmediato
+  const role = !session ? 'anon' : adminView === 'admin' ? 'admin' : isCenter ? 'center' : 'diver'
+  useEffect(() => prefetchWhenIdle(
+    role === 'admin' ? [Admin, Perfil]
+      : role === 'center' ? [CentroPanel, CentroAgenda, CentroSalidas, NuevaSalida, CentroInformes, CentroAjustes, Perfil]
+        : role === 'diver' ? [Reservas, Bitacora, Perfil, Centros, Inmersion]
+          : [Centros, Puntos, CentroInfo]), [role])
 
   let page
   if (session && needsMfa) page = <DosPasosReto />
@@ -175,7 +185,7 @@ export default function App() {
         </div>
       </header>
       {isAdmin && !needsMfa && <AdminBar />}
-      <main><ErrorBoundary resetKey={path}>{page}</ErrorBoundary></main>
+      <main><ErrorBoundary resetKey={path}><Suspense fallback={<p className="muted center">{t('Cargando…')}</p>}>{page}</Suspense></ErrorBoundary></main>
       <Flash key={session ? 'in' : 'out'} />
       <nav className="tabs" aria-label={t('Navegación principal')}>
         {session && adminView === 'admin' ? (

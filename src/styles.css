@@ -380,6 +380,15 @@ a.card.trip.full { opacity: .6; }
 .filters::-webkit-scrollbar { display: none; }
 .filters select { flex: none; width: auto; min-height: 38px; height: 38px; padding: 0 30px 0 12px; border-radius: 99px; font: 600 14px var(--font-ui); background-position: right 10px center; }
 .filters select.on { box-shadow: inset 0 0 0 2px var(--oceano); color: var(--oceano); }
+.filter-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border-radius: 99px; border: 0; box-shadow: inset 0 0 0 1px var(--field); background: var(--surface); color: var(--ink); font: 600 14px var(--font-ui); cursor: pointer; }
+.filter-btn.on { box-shadow: inset 0 0 0 2px var(--oceano); color: var(--oceano); }
+/* Mis centros: corazón junto a la cabecera del centro (fuera del enlace) */
+.centre-top { display: flex; align-items: center; }
+.centre-top .centre-head { flex: 1; min-width: 0; padding-right: 4px; }
+.fav-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--ink-3); cursor: pointer; }
+.fav-btn:not(.btn) { flex: none; width: 44px; height: 44px; margin-right: 6px; border: 0; border-radius: 99px; background: none; }
+.fav-btn:not(.btn):hover { background: var(--bg); }
+.fav-btn.on { color: var(--oceano); }
 .ok-ic { color: var(--ok); vertical-align: -3px; } .warn-ic { color: var(--warn); vertical-align: -3px; }
 .btn.xs { min-height: 34px; padding: 0 12px; font-size: 13.5px; border-radius: 10px; }
 .chips.wrapc { flex-wrap: wrap; margin: 0; padding: 0; overflow: visible; }
@@ -399,3 +408,19 @@ a.card.trip.full { opacity: .6; }
 .or-sep::before, .or-sep::after { content: ''; flex: 1; height: 1px; background: var(--field); }
 .profile-head { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
 .profile-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; background: var(--field); }
+
+/* Manifiesto imprimible (src/lib/manifest.jsx): solo existe al imprimir; el resto de la página se oculta */
+.print-sheet { display: none; }
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body.printing { background: #fff; }
+  body.printing > *:not(.print-sheet) { display: none !important; }
+  body.printing .print-sheet { display: block; color: #000; font: 11px/1.35 var(--font-ui); }
+  .print-sheet h1 { font-size: 18px; margin: 0 0 6px; color: #000; }
+  .print-sheet p { margin: 0 0 8px; }
+  .print-sheet table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+  .print-sheet th, .print-sheet td { border: 1px solid #888; padding: 5px 6px; text-align: left; vertical-align: top; }
+  .print-sheet th { background: #eee; font-weight: 700; }
+  .print-sheet td:nth-last-child(-n+3) { min-width: 80px; }
+  .print-sheet tr { break-inside: avoid; }
+}

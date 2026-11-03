@@ -7,6 +7,7 @@ import { loadRatings } from '../lib/places'
 import { Flags, langName } from '../lib/langs'
 import { Agencies } from '../lib/agencies'
 import Icon from '../lib/Icon'
+import FavButton from '../lib/FavButton'
 import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
@@ -58,6 +59,7 @@ export default function CentroInfo({ id }) {
       )}
 
       <div className="card row wrap" style={{ gap: 8 }}>
+        <FavButton id={c.id} name={c.name} />
         {c.phone && <a className="btn small ghost" href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
         {c.website && <a className="btn small ghost" href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a>}
         {!c.website && c.source_url && <a className="btn small ghost" href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}

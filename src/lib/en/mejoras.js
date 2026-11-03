@@ -1,0 +1,42 @@
+// Inglés: subida 11 (mis centros, calendario con recordatorios)
+export default {
+  // FavButton.jsx / Explorar.jsx
+  'Quitar {centro} de mis centros': 'Remove {centro} from my centres',
+  'Guardar {centro} en mis centros': 'Save {centro} to my centres',
+  'En mis centros': 'In my centres',
+  'Guardar centro': 'Save centre',
+  'Mis centros': 'My centres',
+  'Tus centros no tienen salidas este día.': 'Your centres have no trips this day.',
+
+  // ics.js
+  'Teléfono del centro: {tel}': 'Centre phone: {tel}',
+  'Lleva tu certificación y el seguro de buceo.': 'Bring your certification card and dive insurance.',
+  'Después de bucear, espera al menos 18 h antes de volar (12 h tras una sola inmersión sin descompresión).': 'After diving, wait at least 18 h before flying (12 h after a single no-decompression dive).',
+  'Tu reserva: {url}': 'Your booking: {url}',
+  // manifest.jsx / CentroAgenda.jsx
+  'Imprimir manifiesto': 'Print manifest',
+  'Descargar CSV': 'Download CSV',
+  'Manifiesto de buceo': 'Dive manifest',
+  'N.º': 'No.',
+  'Certificación': 'Certification',
+  'Médico': 'Medical',
+  'Equipo de alquiler': 'Rental gear',
+  'Pago': 'Payment',
+  'Nacionalidad': 'Nationality',
+  'Contacto de emergencia': 'Emergency contact',
+  'Firma': 'Signature',
+  'verificada': 'verified',
+  'Con autorización médica': 'With medical clearance',
+  'Al día': 'Up to date',
+  'Falta': 'Missing',
+  'hace {n} días': '{n} days ago',
+  'Sí, sin tallas': 'Yes, no sizes',
+  'Puntos': 'Sites',
+  '{n} guía': '{n} guide',
+  '{n} guías': '{n} guides',
+  'Capitán': 'Captain',
+  'Guía': 'Guide',
+  'Hora de salida': 'Departure time',
+  'Hora de vuelta': 'Return time',
+  'Generado con DivingSlot': 'Generated with DivingSlot',
+}

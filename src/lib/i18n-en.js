@@ -10,5 +10,6 @@ import mfa from './en/mfa'
 import diseno from './en/diseno'
 import buddy from './en/buddy'
 import perfil from './en/perfil'
+import mejoras from './en/mejoras'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras }

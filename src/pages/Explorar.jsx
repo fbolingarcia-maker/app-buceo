@@ -8,9 +8,11 @@ import { loadDestinations, suggestPlaces, inPlace, placeLabel, loadRatings, load
 import { useAuth } from '../lib/auth'
 import { langName } from '../lib/langs'
 import Icon from '../lib/Icon'
-import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves } from 'lucide-react'
+import FavButton from '../lib/FavButton'
+import { useFavs } from '../lib/favs'
+import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves, Heart } from 'lucide-react'
 
-const DAYS = 8
+const DAYS = 14
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
 
 export default function Explorar() {
@@ -21,6 +23,8 @@ export default function Explorar() {
   const [level, setLevel] = useState(() => ss('level') || 'all')
   const [agency, setAgency] = useState(() => ss('agency') || '')
   const [lang, setLang] = useState(() => ss('lang') || '')
+  const [onlyFav, setOnlyFav] = useState(() => ss('fav') === '1')
+  const favs = useFavs()
   const [trips, setTrips] = useState(null)
   const [dests, setDests] = useState([])
   const [siteAreas, setSiteAreas] = useState([])
@@ -35,11 +39,11 @@ export default function Explorar() {
   const [geoErr, setGeoErr] = useState('')
 
   useEffect(() => {
-    ssSet('q', q); ssSet('day', day); ssSet('sort', sort); ssSet('level', level); ssSet('agency', agency); ssSet('lang', lang)
+    ssSet('q', q); ssSet('day', day); ssSet('sort', sort); ssSet('level', level); ssSet('agency', agency); ssSet('lang', lang); ssSet('fav', onlyFav ? '1' : '')
     ssSet('place', place ? JSON.stringify(place) : ''); ssSet('here', here ? JSON.stringify(here) : '')
-  }, [q, day, sort, place, here, level, agency, lang])
+  }, [q, day, sort, place, here, level, agency, lang, onlyFav])
 
-  // Todas las salidas de los próximos 8 días en una sola consulta
+  // Todas las salidas de las próximas dos semanas en una sola consulta (para quien planea el viaje con antelación)
   useEffect(() => {
     loadDestinations().then(setDests)
     loadSiteAreas().then(setSiteAreas)
@@ -76,6 +80,7 @@ export default function Explorar() {
     .filter((tr) => level === 'all' || levelRank(tr.min_level) <= levelRank(level))
     .filter((tr) => !agency || (tr.center_agencies || []).some((a) => a.toUpperCase() === agency.toUpperCase()))
     .filter((tr) => !lang || (tr.center_languages || []).includes(lang) || (tr.center_course_languages || []).includes(lang))
+    .filter((tr) => !onlyFav || favs.includes(tr.center_id))
     .filter((tr) => inPlace({ destination: destOf(tr), province: tr.center_province }, place, dests))
     .filter((tr) => {
       if (!words.length) return true
@@ -85,7 +90,7 @@ export default function Explorar() {
     })
     .map((tr) => ({ ...tr, km: here && tr.center_lat != null ? distKm(here, { lat: tr.center_lat, lng: tr.center_lng }) : null })),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [trips, level, agency, lang, place, q, here, dests])
+  [trips, level, agency, lang, place, q, here, dests, onlyFav, favs])
 
   const perDay = {}
   for (const tr of filtered) { const d = manilaDate(new Date(tr.departs_at)); perDay[d] = (perDay[d] || 0) + 1 }
@@ -107,6 +112,8 @@ export default function Explorar() {
   if (sort === 'price') groups.sort((a, b) => a.min - b.min)
   else if (sort === 'near' && here) groups.sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9))
   else groups.sort((a, b) => a.trips[0].departs_at.localeCompare(b.trips[0].departs_at))
+  // Mis centros, primero (como los clubs favoritos de Playtomic), salvo si se ordena por precio o distancia
+  if (sort === 'time') groups.sort((a, b) => Number(favs.includes(b.id)) - Number(favs.includes(a.id)))
 
   // Primera visita: abre el primer día que tenga salidas (hoy si aún quedan)
   const [autoDay, setAutoDay] = useState(!savedDay)
@@ -116,8 +123,8 @@ export default function Explorar() {
     if (!perDay[day]) { const first = days.find((d) => perDay[d]); if (first) setDay(first) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trips, autoDay])
-  // Semana entera sin salidas (y sin búsqueda): en vez de «prueba otro día», dar un siguiente paso
-  const weekEmpty = trips && Object.keys(perDay).length === 0 && !place && !q
+  // Dos semanas sin salidas (y sin búsqueda): en vez de «prueba otro día», dar un siguiente paso
+  const weekEmpty = trips && Object.keys(perDay).length === 0 && !place && !q && !onlyFav
   const nextDay = days.find((d) => d > day && perDay[d]) || days.find((d) => perDay[d])
   const nearest = here ? Math.min(...filtered.map((tr) => tr.km ?? 1e9)) : null
 
@@ -185,6 +192,11 @@ export default function Explorar() {
 
       {/* Filtros en una sola fila que se desliza: en el móvil no ocupan media pantalla */}
       <div className="filters">
+        {(favs.length > 0 || onlyFav) && (
+          <button type="button" className={onlyFav ? 'filter-btn on' : 'filter-btn'} aria-pressed={onlyFav} onClick={() => setOnlyFav(!onlyFav)}>
+            <Icon icon={Heart} size={16} fill={onlyFav ? 'currentColor' : 'none'} />{t('Mis centros')}
+          </button>
+        )}
         <select className={level !== 'all' ? 'on' : ''} value={level} onChange={(e) => { setLevel(e.target.value); ssSet('levelSet', '1') }} aria-label={t('Tu nivel')}>
           <option value="all">{t('Cualquier nivel')}</option>
           {LEVELS.slice(0, 4).map(([k, n]) => <option key={k} value={k}>{t('Soy {nivel}', { nivel: n })}</option>)}
@@ -213,7 +225,7 @@ export default function Explorar() {
       {weekEmpty && (
         <div className="empty">
           <span className="empty-glyph" aria-hidden="true"><CalendarDays size={26} strokeWidth={1.75} /></span>
-          <h2>{t('No hay salidas publicadas esta semana')}</h2>
+          <h2>{t('No hay salidas publicadas en las próximas dos semanas')}</h2>
           <p className="muted">{t('Los centros de buceo están empezando a publicar sus salidas. Mientras tanto, consulta los puntos de buceo y los centros de cada zona.')}</p>
           <div className="list">
             <Link to="/puntos" className="li"><span className="tile"><Waves size={20} /></span><span className="grow"><b>{t('Puntos de buceo')}</b><small>{t('Toda Filipinas por zonas: profundidad, nivel y qué se ve')}</small></span><ChevronRight size={18} /></Link>
@@ -223,14 +235,14 @@ export default function Explorar() {
       )}
       {trips && !weekEmpty && shown.length === 0 && (
         <div className="card center muted">
-          {place || q ? t('No hay salidas que coincidan con tu búsqueda este día.') : t('No hay salidas para este día. Prueba otro día.')}
+          {onlyFav && !place && !q ? t('Tus centros no tienen salidas este día.') : place || q ? t('No hay salidas que coincidan con tu búsqueda este día.') : t('No hay salidas para este día. Prueba otro día.')}
           <div className="row wrap" style={{ justifyContent: 'center', gap: 8, marginTop: 10 }}>
             {nextDay && nextDay !== day && (
               <button className="btn small" onClick={() => setDay(nextDay)}>
                 {t('Ver el {dia} ({n})', { dia: dayLabel(nextDay, { weekday: 'long', day: 'numeric' }), n: perDay[nextDay] })}
               </button>
             )}
-            {(place || q || level !== 'all' || agency || lang) && <button className="btn small ghost" onClick={() => { setQ(''); setPlace(null); setLevel('all'); setAgency(''); setLang('') }}>{t('Quitar filtros')}</button>}
+            {(place || q || level !== 'all' || agency || lang || onlyFav) && <button className="btn small ghost" onClick={() => { setQ(''); setPlace(null); setLevel('all'); setAgency(''); setLang(''); setOnlyFav(false) }}>{t('Quitar filtros')}</button>}
           </div>
         </div>
       )}
@@ -241,6 +253,7 @@ export default function Explorar() {
       )}
       {groups.map((g) => (
         <section key={g.id} className="card centre-card" aria-label={g.name}>
+          <div className="centre-top">
           <Link to={'/c/' + g.id} className="centre-head">
             <span className="centre-avatar" aria-hidden="true">{initials(g.name)}</span>
             <span className="grow" style={{ minWidth: 0 }}>
@@ -253,6 +266,8 @@ export default function Explorar() {
             </span>
             <span className="from small muted">{t('desde')}<b className="data">{php(g.min)}</b></span>
           </Link>
+          <FavButton id={g.id} name={g.name} compact />
+          </div>
           <div className="slots">
             {g.trips.map((tr) => {
               const free = Math.max(0, tr.available_seats)

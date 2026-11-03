@@ -5,25 +5,15 @@ import { Link } from '../lib/router'
 import { BOOKING_STATUS, dateTime, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
+import { calendarFile } from '../lib/ics'
 import { CalendarPlus, Check, Lock, Share2, X } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
 
 const HOLD_MIN = 15
 
-// Descarga un .ics para añadir la salida al calendario del móvil
 function addToCalendar(b) {
-  const start = new Date(b.trips.departs_at)
-  const end = new Date(start.getTime() + Math.max(3, (b.trips.num_dives || 2) * 1.5) * 3600000)
-  const f = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-  const ics = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DivingSlot//ES', 'BEGIN:VEVENT',
-    'UID:' + b.id + '@divingslot.com', 'DTSTAMP:' + f(new Date()), 'DTSTART:' + f(start), 'DTEND:' + f(end),
-    'SUMMARY:' + t('Buceo con {centro}', { centro: b.trips.centers?.name || '' }),
-    'DESCRIPTION:' + t('{n} inmersiones', { n: b.trips.num_dives }) + (b.trips.boats?.show_to_divers ? ' · ' + b.trips.boats.name : ''),
-    'END:VEVENT', 'END:VCALENDAR',
-  ].join('\r\n')
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
+  a.href = URL.createObjectURL(new Blob([calendarFile(b)], { type: 'text/calendar;charset=utf-8' }))
   a.download = 'divingslot-' + b.id.slice(0, 8) + '.ics'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
@@ -139,7 +129,7 @@ export default function Reservas() {
   const load = useCallback(async () => {
     if (!diver) return
     const { data, error } = await supabase.from('bookings')
-      .select('*, trips(departs_at, num_dives, status, centers(name, phone, destination), boats(name, show_to_divers))')
+      .select('*, trips(departs_at, num_dives, status, centers(name, phone, destination, locality, lat, lng), boats(name, show_to_divers))')
       .eq('diver_id', diver.id).order('created_at', { ascending: false })
     if (error) setError(errMsg(error))
     setList(data || [])
