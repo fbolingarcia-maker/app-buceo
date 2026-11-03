@@ -59,7 +59,7 @@ const ES = {
   f3_t: 'Mira quién va',
   f3_p: 'Antes de reservar, sabes quién va en el barco: nivel, número de inmersiones e idiomas.',
   f4_t: 'Directorio de centros',
-  f4_p: 'Más de 190 centros con sus agencias, idiomas y contacto, de Batangas a Mindanao.',
+  f4_p: 'Más de 170 centros con sus agencias, idiomas y contacto, de Batangas a Mindanao.',
   dest_title: 'Dónde bucear',
   dest_all: 'Todas las zonas',
   c_title: '¿Tienes un centro de buceo?',

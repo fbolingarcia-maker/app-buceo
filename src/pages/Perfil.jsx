@@ -244,9 +244,9 @@ export default function Perfil() {
           <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
           <LangSwitch />
         </div>
-        <a className="li" href={siteUrl() + 'legal/privacy.html'}><span className="grow"><b>{t('Privacidad')}</b></span></a>
-        <a className="li" href={siteUrl() + 'legal/terms.html'}><span className="grow"><b>{t('Términos de uso')}</b></span></a>
-        <a className="li" href={siteUrl() + 'legal/cancellation.html'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
+        <a className="li" href={siteUrl() + 'legal/privacy'}><span className="grow"><b>{t('Privacidad')}</b></span></a>
+        <a className="li" href={siteUrl() + 'legal/terms'}><span className="grow"><b>{t('Términos de uso')}</b></span></a>
+        <a className="li" href={siteUrl() + 'legal/cancellation'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
         <a className="li" href="mailto:divingslot@gmail.com"><span className="grow"><b>{t('Contacto')}</b><small>divingslot@gmail.com</small></span></a>
       </div>
 

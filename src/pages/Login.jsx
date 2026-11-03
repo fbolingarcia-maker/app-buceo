@@ -68,7 +68,7 @@ export default function Login({ embedded }) {
     <div className="field">
       <GoogleButton label={mode === 'signup' ? 'Crear cuenta con Google' : 'Continuar con Google'} />
       <p className="small muted" style={{ margin: '8px 0 0' }}>
-        {mode === 'signup' ? t('Tu nombre, email y foto se rellenan solos desde Google.') : <>{t('Si aún no tienes cuenta, se crea al continuar con Google y aceptas los')} <a href={siteUrl() + 'legal/terms.html'} target="_blank" rel="noreferrer">{t('términos de uso')}</a> {t('y la')} <a href={siteUrl() + 'legal/privacy.html'} target="_blank" rel="noreferrer">{t('política de privacidad')}</a>.</>}
+        {mode === 'signup' ? t('Tu nombre, email y foto se rellenan solos desde Google.') : <>{t('Si aún no tienes cuenta, se crea al continuar con Google y aceptas los')} <a href={siteUrl() + 'legal/terms'} target="_blank" rel="noreferrer">{t('términos de uso')}</a> {t('y la')} <a href={siteUrl() + 'legal/privacy'} target="_blank" rel="noreferrer">{t('política de privacidad')}</a>.</>}
       </p>
       <div className="or-sep" role="separator"><span>{t('o con tu email')}</span></div>
     </div>
@@ -119,7 +119,7 @@ export default function Login({ embedded }) {
         )}
         {mode === 'signup' && (
           <p className="small muted" style={{ marginTop: 0 }}>
-            {t('Al crear tu cuenta aceptas los')} <a href={siteUrl() + 'legal/terms.html'} target="_blank" rel="noreferrer">{t('términos de uso')}</a> {t('y la')} <a href={siteUrl() + 'legal/privacy.html'} target="_blank" rel="noreferrer">{t('política de privacidad')}</a>.
+            {t('Al crear tu cuenta aceptas los')} <a href={siteUrl() + 'legal/terms'} target="_blank" rel="noreferrer">{t('términos de uso')}</a> {t('y la')} <a href={siteUrl() + 'legal/privacy'} target="_blank" rel="noreferrer">{t('política de privacidad')}</a>.
           </p>
         )}
         <button className="btn block" disabled={busy}>

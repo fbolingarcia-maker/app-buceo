@@ -2,9 +2,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url><loc>https://divingslot.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://divingslot.com/app/</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://divingslot.com/legal/privacy.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://divingslot.com/legal/terms.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://divingslot.com/legal/cancellation.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://divingslot.com/legal/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://divingslot.com/legal/terms</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://divingslot.com/legal/cancellation</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://divingslot.com/dive/</loc><xhtml:link rel="alternate" hreflang="en" href="https://divingslot.com/dive/"/><xhtml:link rel="alternate" hreflang="es" href="https://divingslot.com/es/buceo/"/><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://divingslot.com/es/buceo/</loc><xhtml:link rel="alternate" hreflang="en" href="https://divingslot.com/dive/"/><xhtml:link rel="alternate" hreflang="es" href="https://divingslot.com/es/buceo/"/><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://divingslot.com/dive/anilao</loc><xhtml:link rel="alternate" hreflang="en" href="https://divingslot.com/dive/anilao"/><xhtml:link rel="alternate" hreflang="es" href="https://divingslot.com/es/buceo/anilao"/><changefreq>weekly</changefreq><priority>0.7</priority></url>

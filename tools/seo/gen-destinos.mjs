@@ -138,7 +138,7 @@ ${body}
 </main>
 <footer class="foot"><div class="wrap foot-in">
 <span>© 2026 DivingSlot</span>
-<nav aria-label="Footer"><a href="${T.base}">${T.destinations}</a><a href="/app/">${T.openApp}</a><a href="/legal/privacy.html">${T.privacy}</a><a href="/legal/terms.html">${T.terms}</a><a href="mailto:divingslot@gmail.com">${T.contact}</a></nav>
+<nav aria-label="Footer"><a href="${T.base}">${T.destinations}</a><a href="/app/">${T.openApp}</a><a href="/legal/privacy">${T.privacy}</a><a href="/legal/terms">${T.terms}</a><a href="mailto:divingslot@gmail.com">${T.contact}</a></nav>
 </div></footer>
 </body>
 </html>
@@ -219,7 +219,7 @@ for (const [l, dir] of Object.entries(outs)) {
 // sitemap.xml con las versiones en los dos idiomas
 const fixed = [
   ['/', 'weekly', '1.0'], ['/app/', 'daily', '0.8'],
-  ['/legal/privacy.html', 'yearly', '0.2'], ['/legal/terms.html', 'yearly', '0.2'], ['/legal/cancellation.html', 'yearly', '0.2'],
+  ['/legal/privacy', 'yearly', '0.2'], ['/legal/terms', 'yearly', '0.2'], ['/legal/cancellation', 'yearly', '0.2'],
 ]
 const pair = (d) => [pageUrl('en', d), pageUrl('es', d)]
 const alts = (en, es) => `<xhtml:link rel="alternate" hreflang="en" href="${en}"/><xhtml:link rel="alternate" hreflang="es" href="${es}"/>`
