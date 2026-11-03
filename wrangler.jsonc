@@ -28,7 +28,9 @@
   // ],
   // Valores públicos (los secretos van en el panel: GOOGLE_CLIENT_SECRET y, si se usa, SMTP_*/RESEND_API_KEY)
   "vars": {
-    "GOOGLE_CLIENT_ID": "607421255103-95p23bfnoe8v6beaehct5n41dbeahijl.apps.googleusercontent.com"
+    "GOOGLE_CLIENT_ID": "607421255103-95p23bfnoe8v6beaehct5n41dbeahijl.apps.googleusercontent.com",
+    // A quién llegan los avisos al administrador (altas, reservas, centros por validar) y el resumen diario
+    "NOTIFY_TO": "divingslot@gmail.com"
   },
   // Emails sin claves con Cloudflare Email Service (Workers Paid contratado el 3 nov 2026). Envía desde
   // EMAIL_FROM o no-reply@divingslot.com: divingslot.com tiene que estar dado de alta en Email Service → Email Sending.
