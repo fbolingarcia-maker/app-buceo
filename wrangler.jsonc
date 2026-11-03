@@ -30,9 +30,9 @@
   "vars": {
     "GOOGLE_CLIENT_ID": "607421255103-95p23bfnoe8v6beaehct5n41dbeahijl.apps.googleusercontent.com"
   },
-  // Emails sin claves con Cloudflare Email Service: contrata Workers Paid, da de alta divingslot.com en
-  // Email Service → Email Sending y quita los comentarios:
-  // "send_email": [{ "name": "EMAIL" }],
+  // Emails sin claves con Cloudflare Email Service (Workers Paid contratado el 3 nov 2026). Envía desde
+  // EMAIL_FROM o no-reply@divingslot.com: divingslot.com tiene que estar dado de alta en Email Service → Email Sending.
+  "send_email": [{ "name": "EMAIL" }],
   // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados, cierre de la importación)
   "triggers": { "crons": ["17 * * * *"] },
   "observability": { "enabled": true }
