@@ -151,7 +151,7 @@ const RPC = {
     return { divers, others: total - divers.reduce((s, d) => s + d.seats, 0) }
   },
 
-  // p_ref: centro del enlace propio por el que llegó el buceador (canal directo, sin comisión) · p_extras: ids de center_extras
+  // p_ref: centro del enlace propio por el que llegó el buceador (solo para saber el origen: la comisión es la misma) · p_extras: ids de center_extras
   async book_trip(ctx, { p_trip, p_seats, p_with_gear, p_medical_signed, p_ref = null, p_extras = [] }) {
     mfa(ctx)
     if (!ctx.diverId) fail('NO_PROFILE', 'crea tu perfil de buceador')
@@ -186,7 +186,7 @@ const RPC = {
         AND t.departs_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+${RULES.min_lead_minutes} minutes')
         AND ${APP_AVAILABLE('t')} >= ?3
         AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.trip_id = t.id AND b.diver_id = ?2 AND ${HOLDS('b')})`,
-    id, ctx.diverId, seats, gear, amount, direct ? 0 : seats * fee, pct, now, t.id, direct ? 'direct' : 'marketplace', fees, extrasAmt, discount)
+    id, ctx.diverId, seats, gear, amount, seats * fee, pct, now, t.id, direct ? 'direct' : 'marketplace', fees, extrasAmt, discount)
     if (!changes(r)) {
       const dup = await first(ctx.db, `SELECT 1 AS x FROM bookings b WHERE b.trip_id = ? AND b.diver_id = ? AND ${HOLDS('b')}`, t.id, ctx.diverId)
       if (dup) fail('DUPLICATE', 'ya tienes una reserva en esta salida')
@@ -626,7 +626,7 @@ async function notifyCentreBooking(ctx, t, seats, id, direct = false) {
   const local = new Date(Date.parse(t.departs_at) + 8 * 36e5).toISOString()
   const title = `Nueva reserva: ${seats} ${seats === 1 ? 'plaza' : 'plazas'} en ${c.name}`
   const lines = [`Salida: ${local.slice(8, 10)}/${local.slice(5, 7)}/${local.slice(0, 4)} ${local.slice(11, 16)}`, `Buceador: ${who?.full_name || '—'}`,
-    `Importe: ₱${(b?.amount_php || 0).toLocaleString('en-US')}`, direct ? 'Origen: tu enlace de reservas (sin comisión)' : 'Origen: app']
+    `Importe: ₱${(b?.amount_php || 0).toLocaleString('en-US')}`, direct ? 'Origen: tu enlace de reservas' : 'Origen: app']
   const link = `${ctx.origin || 'https://divingslot.com'}/app/#/centro/agenda?dia=${local.slice(0, 10)}`
   for (const s of staff) await sendEmail(ctx.env, s.email, centreEmail(title, lines, link)).catch((e) => console.error('aviso centro', e.message))
   // Aviso al administrador (como el trigger notify_booking de la migración 030)

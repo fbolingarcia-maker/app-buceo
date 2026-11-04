@@ -1,5 +1,5 @@
 // Pruebas de las mejoras de noviembre (sin red): node --no-warnings worker/test/mejoras.mjs
-// Canal propio sin comisión, extras, tasas de santuario, última hora, pagar en el centro,
+// Enlace propio del centro, extras, tasas de santuario, última hora, pagar en el centro,
 // recordatorio del resto 24 h antes, condiciones del mar, Green Fins y alergias en el manifiesto.
 import { D1 } from './shim.mjs'
 import worker, { handleApi } from '../index.js'
@@ -90,16 +90,16 @@ section('ficha pública: tasas y última hora')
 r = await anon.rest({ table: 'published_trips', select: 'fees_php, include_fees, last_minute_pct', filters: [['id', 'eq', T]], single: 'single' })
 ok(r.data?.fees_php === 350 && r.data.include_fees === true && r.data.last_minute_pct === 0, 'tasas por plaza 300 + 50', r)
 
-section('reserva por el canal del centro (sin comisión) con extras y tasas')
+section('reserva por el enlace del centro con extras y tasas')
 r = await A.rpc('book_trip', { p_trip: T, p_seats: 2, p_with_gear: true, p_medical_signed: true, p_ref: 'c1', p_extras: [INS, VID] })
 const BA = r.data
 // 2 × 3000 + 2 × 500 + 2 × 350 + 2 × 400 + 1500 = 10000
-ok(BA?.amount_php === 10000 && BA.fees_php === 700 && BA.extras_php === 2300 && BA.channel === 'direct' && BA.commission_php === 0 && BA.deposit_php === 5000, 'importe con tasas y extras; canal directo sin comisión', r)
+ok(BA?.amount_php === 10000 && BA.fees_php === 700 && BA.extras_php === 2300 && BA.channel === 'direct' && BA.commission_php === 500 && BA.deposit_php === 5000, 'importe con tasas y extras; por el enlace propio también paga comisión', r)
 r = await A.rest({ table: 'booking_extras', select: 'name, qty, price_php', filters: [['booking_id', 'eq', BA.id]] })
 ok(r.data?.length === 2 && r.data.some((x) => x.qty === 2), 'extras guardados en la reserva', r)
 ok(code(await B.rpc('book_trip', { p_trip: T, p_seats: 1, p_with_gear: false, p_medical_signed: true, p_extras: [OFF] })) === 'BAD_EXTRA', 'un extra inactivo no se puede añadir')
 r = await B.rpc('book_trip', { p_trip: T, p_seats: 1, p_with_gear: false, p_medical_signed: true, p_ref: 'c2' })
-ok(r.data?.channel === 'marketplace' && r.data.commission_php === 250 && r.data.amount_php === 3350, 'el enlace de otro centro no cuenta: marketplace, ₱250', r)
+ok(r.data?.channel === 'marketplace' && r.data.commission_php === 250 && r.data.amount_php === 3350, 'el enlace de otro centro no cuenta como suyo: marketplace, ₱250', r)
 const BB = r.data
 
 section('pago de la reserva')

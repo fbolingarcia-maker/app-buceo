@@ -160,8 +160,8 @@ function Resumen({ onPick }) {
 
           <h2>{t('Comisión DivingSlot')}</h2>
           <div className="card stack small">
-            <div className="row between"><span>{t('Buceadores que te trajo DivingSlot')}</span><span>{r.fee.market} × ₱250 = <b>{php(r.commission)}</b></span></div>
-            <div className="row between"><span>{t('Por tu enlace de reservas')}</span><span>{t('{n} plazas', { n: r.fee.direct })} · <b>₱0</b></span></div>
+            <div className="row between"><span>{t('Buceadores con reserva por la app')}</span><span>{r.fee.market} × ₱250 = <b>{php(r.commission)}</b></span></div>
+            {r.fee.direct > 0 && <div className="row between muted"><span>{t('De ellos, por tu enlace de reservas')}</span><span>{t('{n} plazas', { n: r.fee.direct })}</span></div>}
             <div className="row between"><span>{t('Reservas manuales (WhatsApp, en el centro…)')}</span><span>{t('{n} plazas', { n: r.fee.manual })} · <b>₱0</b></span></div>
             <span className="muted">{t('Se factura a mes vencido; no se cobra nada automáticamente. Las salidas canceladas por el mar no pagan comisión.')} <Link to="/centro/ajustes">{t('Tu enlace de reservas')}</Link></span>
           </div>

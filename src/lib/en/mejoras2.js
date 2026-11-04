@@ -44,7 +44,7 @@ export default {
   // centroExtras.jsx / CentroAjustes.jsx
   'Copiado': 'Copied',
   'Reserva tu inmersión': 'Book your dive',
-  'Las reservas que entran por tu enlace no pagan comisión. Solo pagas ₱250 por buceador cuando el cliente te llega a través de DivingSlot.': 'Bookings through your own link pay no commission. You only pay ₱250 per diver when the customer comes to you through DivingSlot.',
+  'Comparte tu enlace para que tus clientes vean tus salidas y reserven en la app. Las reservas por la app tienen una comisión de ₱250 por buceador; las reservas que apuntas tú (WhatsApp, en el centro) no.': 'Share your link so your customers can see your trips and book in the app. App bookings carry a ₱250 commission per diver; bookings you add yourself (WhatsApp, walk-ins) don\'t.',
   'Tu enlace de reservas': 'Your booking link',
   'Copiar enlace': 'Copy link',
   'Copiar botón para tu web': 'Copy button for your website',
@@ -53,7 +53,7 @@ export default {
   'pon el enlace en la bio y en el botón «Reservar» del perfil; úsalo también en las historias con la pegatina de enlace.': 'put the link in your bio and on the profile "Book" button; use it in stories with the link sticker too.',
   'en tu Perfil de Empresa de Google → Editar perfil → Reservas, añade el enlace como «enlace de reserva».': 'in your Google Business Profile → Edit profile → Bookings, add it as your booking link.',
   'mándalo como respuesta rápida a quien te pregunte por plazas.': 'send it as a quick reply to anyone asking about spots.',
-  'Cuenta como tuyo si el buceador reserva en tu centro en los 7 días siguientes a abrir el enlace.': 'It counts as yours if the diver books with your centre within 7 days of opening the link.',
+  'En Informes verás cuántas reservas llegan por tu enlace (si el buceador reserva en los 7 días siguientes a abrirlo).': 'Reports show how many bookings come through your link (if the diver books within 7 days of opening it).',
   'Seguro de buceo (1 día)': 'Dive insurance (1 day)',
   'Curso Advanced Open Water': 'Advanced Open Water course',
   'Fotos de la salida': 'Trip photos',
@@ -75,7 +75,6 @@ export default {
   'No participamos': 'We don\'t take part',
   'Lo revisamos con la lista pública de Green Fins; mientras, se muestra como declarado por el centro.': 'We check it against the public Green Fins list; until then it shows as declared by the centre.',
   'Prácticas ecológicas': 'Eco practices',
-  'Tu enlace de reservas · 0 % de comisión': 'Your booking link · 0% commission',
   'Extras al reservar': 'Extras at booking',
   'Green Fins y prácticas ecológicas': 'Green Fins and eco practices',
   'Ocultar': 'Hide',
@@ -121,8 +120,8 @@ export default {
   'efectivo': 'cash',
 
   // CentroInformes.jsx
-  'Buceadores que te trajo DivingSlot': 'Divers DivingSlot brought you',
-  'Por tu enlace de reservas': 'Through your booking link',
+  'Buceadores con reserva por la app': 'Divers who booked in the app',
+  'De ellos, por tu enlace de reservas': 'Of which through your booking link',
   'Reservas manuales (WhatsApp, en el centro…)': 'Manual bookings (WhatsApp, walk-ins…)',
   'Se factura a mes vencido; no se cobra nada automáticamente. Las salidas canceladas por el mar no pagan comisión.': 'Invoiced monthly in arrears; nothing is charged automatically. Trips cancelled because of the sea pay no commission.',
 

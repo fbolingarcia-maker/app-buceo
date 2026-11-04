@@ -15,7 +15,7 @@ export default function CentroAjustes() {
   return (
     <>
       <h1>{t('Mi centro')}</h1>
-      <h2>{t('Tu enlace de reservas · 0 % de comisión')}</h2>
+      <h2>{t('Tu enlace de reservas')}</h2>
       <CanalPropio center={center} />
       <h2>{t('Extras al reservar')}</h2>
       <Extras center={center} readOnly={readOnly} />

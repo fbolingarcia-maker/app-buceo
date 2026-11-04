@@ -1,4 +1,4 @@
-// Ajustes del centro: enlace de reservas propio (0 % de comisión), extras que vende y Green Fins
+// Ajustes del centro: enlace de reservas propio, extras que vende y Green Fins
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, errMsg } from './supabase'
 import { t } from './i18n'
@@ -16,13 +16,13 @@ function CopyBtn({ text, label }) {
   )
 }
 
-// Enlace propio: las reservas que llegan por él no pagan comisión
+// Enlace propio: lleva al buceador a tu ficha y tus salidas (la comisión es la misma que en cualquier reserva por la app)
 export function CanalPropio({ center }) {
   const link = bookingLink(center.id)
   const html = `<a href="${link}" target="_blank" rel="noopener" style="display:inline-block;background:#0b5e8a;color:#fff;padding:12px 20px;border-radius:10px;font:600 16px sans-serif;text-decoration:none">${t('Reserva tu inmersión')}</a>`
   return (
     <div className="card stack">
-      <p style={{ margin: 0 }}>{t('Las reservas que entran por tu enlace no pagan comisión. Solo pagas ₱250 por buceador cuando el cliente te llega a través de DivingSlot.')}</p>
+      <p style={{ margin: 0 }}>{t('Comparte tu enlace para que tus clientes vean tus salidas y reserven en la app. Las reservas por la app tienen una comisión de ₱250 por buceador; las reservas que apuntas tú (WhatsApp, en el centro) no.')}</p>
       <div className="code-box" aria-label={t('Tu enlace de reservas')}>{link}</div>
       <div className="row wrap" style={{ gap: 6 }}>
         <CopyBtn text={link} label={t('Copiar enlace')} />
@@ -35,7 +35,7 @@ export function CanalPropio({ center }) {
         <li><b>Google</b>: {t('en tu Perfil de Empresa de Google → Editar perfil → Reservas, añade el enlace como «enlace de reserva».')}</li>
         <li><b>WhatsApp</b>: {t('mándalo como respuesta rápida a quien te pregunte por plazas.')}</li>
       </ul>
-      <p className="small muted" style={{ margin: 0 }}>{t('Cuenta como tuyo si el buceador reserva en tu centro en los 7 días siguientes a abrir el enlace.')}</p>
+      <p className="small muted" style={{ margin: 0 }}>{t('En Informes verás cuántas reservas llegan por tu enlace (si el buceador reserva en los 7 días siguientes a abrirlo).')}</p>
     </div>
   )
 }
