@@ -157,7 +157,7 @@ ok(r.forecast?.level === 'rough' && r.forecast.wave_m === 1.7 && r.forecast.wind
 ok(seaCalls[0]?.includes('latitude=9.55&longitude=123.77'), 'usa la ubicación del centro', seaCalls[0])
 const T2 = (await staff.rest({ table: 'trips', op: 'insert', values: { center_id: 'c1', boat_id: 'b1', departs_at: dep(24 * 10), price_php: 3000, divers_per_guide: 4, status: 'published' }, returning: true, select: 'id' })).data[0].id
 r = await anon.call('GET', '/api/sea?trip=' + T2)
-ok(r.forecast === null && r.reason === 'too_far', 'más de 7 días: sin previsión', r)
+ok(r.forecast === null && r.reason === 'too_far' && r.at?.lat === 9.55, 'más de 7 días: sin previsión, pero con el punto para Windy', r)
 
 section('Green Fins')
 r = await staff.rest({ table: 'centers', op: 'update', values: { green_fins: 'member', eco: { reef_safe: true, mooring: true } }, filters: [['id', 'eq', 'c1']], returning: true, select: 'green_fins, eco' })

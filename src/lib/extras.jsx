@@ -87,15 +87,20 @@ export function SeaChip({ tripId }) {
   const f = d?.forecast
   if (!f) return null
   const [cls, label] = LEVEL[f.level] || LEVEL.good
-  return <span className={cls} title={seaLine(f)}><Icon icon={Wind} size={14} /> {t(label)}</span>
+  const chip = <><Icon icon={Wind} size={14} /> {t(label)}</>
+  return d.at
+    ? <a className={cls} title={seaLine(f) + ' · ' + t('Ver en Windy')} href={windyUrl(d.at)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>{chip}</a>
+    : <span className={cls} title={seaLine(f)}>{chip}</span>
 }
 const seaLine = (f) => [
   f.wave_m != null && t('Olas {n} m', { n: f.wave_m }),
   f.wind_kmh != null && t('Viento {n} km/h', { n: f.wind_kmh }) + (f.gust_kmh != null ? ' (' + t('rachas {n}', { n: f.gust_kmh }) + ')' : ''),
 ].filter(Boolean).join(' · ')
+// Mapa de olas de Windy en ese punto (enlace externo: Windy no permite incrustarlo en apps comerciales)
+export const windyUrl = ({ lat, lng }) => `https://www.windy.com/?waves,${lat},${lng},10`
 export function SeaCard({ tripId }) {
   const d = useSea(tripId)
-  if (!d || (!d.forecast && !d.visibility)) return null
+  if (!d || (!d.forecast && !d.visibility && !d.at)) return null
   const f = d.forecast
   const [cls, label] = f ? LEVEL[f.level] || LEVEL.good : []
   return (
@@ -111,7 +116,11 @@ export function SeaCard({ tripId }) {
         {f.level === 'rough' && <div className="msg warn" role="status" style={{ margin: 0 }}>{t('Con este mar algunos centros cancelan. Si el centro cancela por el mar, se devuelve todo lo pagado.')}</div>}
       </>}
       {d.visibility && <div className="row between"><span className="muted">{t('Visibilidad reciente')}</span><span>~{d.visibility.avg_m} m · {t('{n} inmersiones en la bitácora', { n: d.visibility.n })}</span></div>}
-      <span className="muted" style={{ fontSize: 12 }}>{t('Previsión de Open-Meteo para la hora de la salida. Es orientativa: el centro decide si sale.')}</span>
+      {!f && d.reason === 'too_far' && <span className="muted">{t('La previsión sale 7 días antes de la salida.')}</span>}
+      <div className="row between wrap" style={{ gap: 8, alignItems: 'center' }}>
+        <span className="muted" style={{ fontSize: 12, flex: '1 1 200px' }}>{t('Previsión de Open-Meteo para la hora de la salida. Es orientativa: el centro decide si sale.')}</span>
+        {d.at && <a className="btn small ghost" href={windyUrl(d.at)} target="_blank" rel="noopener noreferrer">{t('Ver en Windy')}</a>}
+      </div>
     </div>
   )
 }

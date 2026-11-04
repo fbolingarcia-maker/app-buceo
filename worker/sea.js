@@ -81,5 +81,6 @@ export async function handleSea(req, env, url) {
       forecast.level = seaLevel(forecast)
     }
   }
-  return json({ forecast, reason, visibility, source: 'Open-Meteo' }, 200, { 'Cache-Control': 'public, max-age=1800' })
+  const at = lat != null && lng != null ? { lat: Math.round(lat * 100) / 100, lng: Math.round(lng * 100) / 100 } : null
+  return json({ forecast, reason, visibility, at, source: 'Open-Meteo' }, 200, { 'Cache-Control': 'public, max-age=1800' })
 }

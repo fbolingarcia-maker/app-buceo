@@ -36,6 +36,8 @@ export default {
   'Probabilidad de lluvia': 'Chance of rain',
   'Con este mar algunos centros cancelan. Si el centro cancela por el mar, se devuelve todo lo pagado.': 'Some centres cancel in these conditions. If the centre cancels because of the sea, everything you paid is refunded.',
   'Visibilidad reciente': 'Recent visibility',
+  'Ver en Windy': 'View on Windy',
+  'La previsión sale 7 días antes de la salida.': 'The forecast appears 7 days before the trip.',
   '{n} inmersiones en la bitácora': '{n} logged dives',
   'Previsión de Open-Meteo para la hora de la salida. Es orientativa: el centro decide si sale.': 'Open-Meteo forecast for the trip time. It is a guide only: the centre decides whether the boat goes out.',
 
