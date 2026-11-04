@@ -242,19 +242,7 @@ CREATE TABLE IF NOT EXISTS payments (
   checkout_url TEXT,
   recorded_by TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  paid_at TEXT,
-  share_id TEXT
-);
-
-CREATE TABLE IF NOT EXISTS payment_shares (
-  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',1+(abs(random())%4),1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))),
-  booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-  label TEXT CHECK (length(label) <= 60),
-  amount_php INTEGER NOT NULL CHECK (amount_php > 0),
-  token TEXT NOT NULL UNIQUE,
-  paid_at TEXT,
-  payment_id TEXT,
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  paid_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS center_extras (
@@ -441,10 +429,6 @@ CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id);
 
 CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at);
 
-CREATE INDEX IF NOT EXISTS shares_booking ON payment_shares(booking_id);
-
 CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id);
-
-CREATE INDEX IF NOT EXISTS payments_share ON payments(share_id);
 
 INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250');

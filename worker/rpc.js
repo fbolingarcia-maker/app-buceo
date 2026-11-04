@@ -31,9 +31,6 @@ function paymentAmount(b, kind) {
 export function settleStatements(db, paymentId, bookingId, amount, now = nowIso()) {
   const live = "status NOT IN ('cancelled_by_diver', 'cancelled_by_center')"
   return [
-    // Parte de un pago dividido: queda pagada a la vez que el pago
-    db.prepare(`UPDATE payment_shares SET paid_at = ?1, payment_id = ?2
-      WHERE id = (SELECT share_id FROM payments WHERE id = ?2 AND status <> 'paid') AND paid_at IS NULL`).bind(now, paymentId),
     db.prepare(`UPDATE bookings SET
         paid_php = paid_php + ?1,
         refund_php = CASE WHEN ${live} THEN refund_php ELSE refund_php + ?1 END,
@@ -75,34 +72,6 @@ export async function startOnlinePayment(ctx, bookingId, kind, method) {
   if (b.status === 'pending_payment') stmts.push(ctx.db.prepare('UPDATE bookings SET hold_until = ? WHERE id = ?').bind(new Date(Date.now() + 30 * 60000).toISOString(), b.id))
   await ctx.db.batch(stmts)
   return { id: pid, booking_id: b.id, amount_php: amt, kind, method }
-}
-
-// Partes de un pago dividido (token de 32 hex en el enlace)
-export async function shareByToken(db, token) {
-  if (!/^[0-9a-f]{32}$/.test(String(token || ''))) return null
-  return first(db, `SELECT s.*, b.status, b.created_at AS b_created_at, b.hold_until, b.amount_php AS b_amount, b.paid_php, b.deposit_php, b.seats, b.trip_id,
-      t.departs_at, t.num_dives, c.name AS center_name, d.full_name
-    FROM payment_shares s JOIN bookings b ON b.id = s.booking_id JOIN trips t ON t.id = b.trip_id JOIN centers c ON c.id = t.center_id
-    LEFT JOIN divers d ON d.id = b.diver_id WHERE s.token = ?`, token)
-}
-const shareHolds = (s) => holdsSeat({ status: s.status, created_at: s.b_created_at, hold_until: s.hold_until })
-export async function openShare(db, token) {
-  const s = await shareByToken(db, token)
-  if (!s) fail('NOT_FOUND', 'enlace de pago no válido', 404)
-  if (s.paid_at) fail('BAD_STATE', 'esta parte ya está pagada')
-  if (!['pending_payment', 'confirmed'].includes(s.status)) fail('BAD_STATE', 'la reserva ya no está activa')
-  if (s.status === 'pending_payment' && !shareHolds(s)) fail('HOLD_EXPIRED', 'la reserva ha caducado')
-  if (Date.parse(s.departs_at) <= Date.now()) fail('STARTED', 'la salida ya ha empezado')
-  if (s.amount_php > s.b_amount - s.paid_php) fail('BAD_AMOUNT', 'el importe pendiente ha cambiado: pide un enlace nuevo')
-  return s
-}
-// Alta del pago de una parte (y, si settle, cobro inmediato: modo demo). Solo entra si la parte sigue sin pagar.
-export function shareStatements(db, s, pid, method, provider, settle) {
-  const kind = s.status === 'pending_payment' ? 'deposit' : 'balance'
-  const ins = db.prepare(`INSERT INTO payments (id, booking_id, kind, method, amount_php, provider, share_id)
-    SELECT ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM payment_shares WHERE id = ? AND paid_at IS NULL)`)
-    .bind(pid, s.booking_id, kind, method, s.amount_php, provider, s.id, s.id)
-  return settle ? [ins, ...settleStatements(db, pid, s.booking_id, s.amount_php)] : [ins]
 }
 
 // Valoraciones entre buddies: plazo de 14 días, media visible desde 3, cuentan si son mutuas o al cerrar el plazo
@@ -244,61 +213,6 @@ const RPC = {
     if (b.status !== 'confirmed') fail('BAD_STATE', 'paga primero la señal')
     await run(ctx.db, 'UPDATE bookings SET pay_on_site = ? WHERE id = ?', p_on ? 1 : 0, b.id)
     return booking(ctx.db, b.id)
-  },
-
-  // Pago dividido entre buddies: reparte lo pendiente en partes con un enlace cada una (las partes sin pagar se rehacen)
-  async create_payment_shares(ctx, { p_booking, p_parts }) {
-    mfa(ctx)
-    const b = await booking(ctx.db, p_booking)
-    if (!b || !ctx.diverId || b.diver_id !== ctx.diverId) fail('NOT_FOUND')
-    if (!['pending_payment', 'confirmed'].includes(b.status)) fail('BAD_STATE', 'la reserva no está activa')
-    if (b.status === 'pending_payment' && !holdsSeat(b)) fail('HOLD_EXPIRED', 'la reserva ha caducado, vuelve a reservar')
-    const t = await first(ctx.db, 'SELECT departs_at FROM trips WHERE id = ?', b.trip_id)
-    if (Date.parse(t.departs_at) <= Date.now()) fail('STARTED', 'la salida ya ha empezado')
-    const parts = (Array.isArray(p_parts) ? p_parts : []).slice(0, 10).map((x, i) => ({
-      label: String(x?.label ?? '').trim().slice(0, 60) || `Parte ${i + 1}`, amount: +x?.amount }))
-    const due = b.amount_php - b.paid_php
-    if (parts.length < 2) fail('BAD_PARTS', 'divide el pago en 2 partes o más')
-    if (parts.some((x) => !Number.isInteger(x.amount) || x.amount < 100)) fail('BAD_AMOUNT', 'cada parte tiene que ser de ₱100 o más')
-    if (parts.reduce((s, x) => s + x.amount, 0) !== due) fail('BAD_AMOUNT', `las partes tienen que sumar ₱${due}`)
-    const stmts = [ctx.db.prepare('DELETE FROM payment_shares WHERE booking_id = ? AND paid_at IS NULL').bind(b.id)]
-    for (const x of parts) {
-      const tok = Array.from(crypto.getRandomValues(new Uint8Array(16)), (v) => v.toString(16).padStart(2, '0')).join('')
-      stmts.push(ctx.db.prepare('INSERT INTO payment_shares (id, booking_id, label, amount_php, token) VALUES (?, ?, ?, ?, ?)').bind(uuid(), b.id, x.label, x.amount, tok))
-    }
-    // Sin pagar aún la señal: la plaza se guarda 2 h (como mucho hasta 1 h antes de salir) para que paguen los buddies
-    if (b.status === 'pending_payment') {
-      const until = Math.min(Date.now() + 2 * 36e5, Date.parse(t.departs_at) - 36e5)
-      stmts.push(ctx.db.prepare('UPDATE bookings SET hold_until = max(coalesce(hold_until, \'\'), ?) WHERE id = ?').bind(new Date(until).toISOString(), b.id))
-    }
-    await ctx.db.batch(stmts)
-    return all(ctx.db, 'SELECT id, label, amount_php, token, paid_at FROM payment_shares WHERE booking_id = ? ORDER BY paid_at IS NULL, created_at', b.id)
-  },
-
-  async cancel_payment_shares(ctx, { p_booking }) {
-    mfa(ctx)
-    const b = await booking(ctx.db, p_booking)
-    if (!b || !ctx.diverId || b.diver_id !== ctx.diverId) fail('NOT_FOUND')
-    await run(ctx.db, 'DELETE FROM payment_shares WHERE booking_id = ? AND paid_at IS NULL', b.id)
-    return null
-  },
-
-  // Página pública de una parte del pago (#/pagar/<token>): sin cuenta
-  async get_share(ctx, { p_token }) {
-    const s = await shareByToken(ctx.db, p_token)
-    if (!s) fail('NOT_FOUND', 'enlace de pago no válido', 404)
-    const mode = (await config(ctx.db, 'payments_mode')) || 'demo'
-    const open = !s.paid_at && ['pending_payment', 'confirmed'].includes(s.status) && (s.status === 'confirmed' || shareHolds(s)) && Date.parse(s.departs_at) > Date.now()
-    return { label: s.label, amount_php: s.amount_php, paid: !!s.paid_at, open, mode, center_name: s.center_name, departs_at: s.departs_at,
-      seats: s.seats, organiser: shortName(s.full_name), num_dives: s.num_dives }
-  },
-
-  async pay_share_demo(ctx, { p_token }) {
-    if ((await config(ctx.db, 'payments_mode')) !== 'demo') fail('FORBIDDEN', 'el modo demo está desactivado', 403)
-    const s = await openShare(ctx.db, p_token)
-    const pid = uuid()
-    await ctx.db.batch(shareStatements(ctx.db, s, pid, 'demo', 'demo', true))
-    return { paid: !!(await first(ctx.db, 'SELECT paid_at FROM payment_shares WHERE id = ?', s.id))?.paid_at }
   },
 
   // Plazas de última hora: descuento opcional (0-50 %) y aviso a buceadores del destino que lo han pedido

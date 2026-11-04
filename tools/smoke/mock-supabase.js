@@ -45,7 +45,7 @@ const T = {
   trips: myTrips,
   bookings: role === 'diver' ? [
     { ...booking('bk9', 'pending_payment', 0, null), trip_id: 't1-1', hold_until: iso(now + 10 * 60e3), trips: { departs_at: iso(day0 + D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: false } } },
-    { ...booking('bk8', 'confirmed', 2900, null), fees_php: 300, booking_extras: [{ name: 'Seguro de buceo 1 día', qty: 1, price_php: 400 }], payment_shares: [{ id: 'ps1', label: 'Yo', amount_php: 1450, token: 'a'.repeat(32), paid_at: iso(now - H) }, { id: 'ps2', label: 'Marta', amount_php: 1450, token: 'b'.repeat(32), paid_at: null }], trip_id: 't1-3', trips: { departs_at: iso(day0 + 3 * D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: true } } },
+    { ...booking('bk8', 'confirmed', 2900, null), fees_php: 300, booking_extras: [{ name: 'Seguro de buceo 1 día', qty: 1, price_php: 400 }], trip_id: 't1-3', trips: { departs_at: iso(day0 + 3 * D + 7.5 * H), num_dives: 3, status: 'published', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: { name: 'Banca', show_to_divers: true } } },
     { ...booking('bk6', 'confirmed', 5800, null), trip_id: 't1-x', trips: { departs_at: iso(day0 - 2 * D + 7.5 * H), num_dives: 2, status: 'completed', centers: { name: 'Demo · Centro Alona', phone: '+63 912', destination: 'Panglao' }, boats: null } },
     { ...booking('bk7', 'cancelled_by_center', 2900, null), trip_id: 't2-4', refund_php: 2900, trips: { departs_at: iso(day0 + 4 * D + 13.5 * H), num_dives: 2, status: 'cancelled_weather', centers: { name: 'Demo · Centro Danao', phone: '+63 913', destination: 'Panglao' }, boats: null } },
   ] : [],
@@ -103,7 +103,6 @@ const RPC = {
     { diver_id: 'd3', name: 'Marco R.', level: 'open_water', dives: 12, rated: false },
   ] },
   rate_buddy: { ok: true },
-  get_share: { label: 'Marta', amount_php: 1450, paid: false, open: true, mode: 'demo', center_name: 'Demo · Centro Alona', departs_at: iso(day0 + 3 * D + 7.5 * H), seats: 2, organiser: 'Fernando B.', num_dives: 3 },
 }
 function builder(table) {
   let rows = T[table] ? [...T[table]] : []

@@ -1,5 +1,5 @@
 // Pruebas de las mejoras de noviembre (sin red): node --no-warnings worker/test/mejoras.mjs
-// Canal propio sin comisión, extras, tasas de santuario, última hora, pago dividido, pagar en el centro,
+// Canal propio sin comisión, extras, tasas de santuario, última hora, pagar en el centro,
 // recordatorio del resto 24 h antes, condiciones del mar, Green Fins y alergias en el manifiesto.
 import { D1 } from './shim.mjs'
 import worker, { handleApi } from '../index.js'
@@ -102,41 +102,10 @@ r = await B.rpc('book_trip', { p_trip: T, p_seats: 1, p_with_gear: false, p_medi
 ok(r.data?.channel === 'marketplace' && r.data.commission_php === 250 && r.data.amount_php === 3350, 'el enlace de otro centro no cuenta: marketplace, ₱250', r)
 const BB = r.data
 
-section('pago dividido entre buddies')
-r = await A.rpc('create_payment_shares', { p_booking: BA.id, p_parts: [{ label: 'Yo', amount: 5000 }, { label: 'Marta', amount: 4000 }] })
-ok(code(r) === 'BAD_AMOUNT', 'las partes tienen que sumar lo pendiente', r)
-r = await A.rpc('create_payment_shares', { p_booking: BA.id, p_parts: [{ label: 'Yo', amount: 5000 }, { label: 'Marta', amount: 5000 }] })
-ok(r.data?.length === 2 && /^[0-9a-f]{32}$/.test(r.data[0].token), 'crea 2 partes con enlace', r)
-const [S1, S2] = r.data
-ok((await db.prepare('SELECT hold_until FROM bookings WHERE id = ?').bind(BA.id).first()).hold_until > dep(1.5), 'la plaza se guarda 2 h mientras pagan')
-ok(code(await B.rpc('create_payment_shares', { p_booking: BA.id, p_parts: [{ amount: 5000 }, { amount: 5000 }] })) === 'NOT_FOUND', 'otro buceador no divide una reserva ajena')
-r = await anon.rpc('get_share', { p_token: S2.token })
-ok(r.data?.amount_php === 5000 && r.data.open === true && r.data.organiser === 'A P.' && r.data.center_name === 'Azul Divers', 'la página del enlace sin cuenta', r)
-ok((await anon.rpc('get_share', { p_token: 'f'.repeat(32) })).status === 404, 'enlace inventado: 404')
-r = await anon.rest({ table: 'payment_shares', select: 'token' })
-ok((r.data || []).length === 0, 'los enlaces no se leen sin ser el dueño', r)
-r = await anon.rpc('pay_share_demo', { p_token: S2.token })
-ok(r.data?.paid === true, 'Marta paga su parte en modo demo', r)
-let b = await db.prepare('SELECT status, paid_php FROM bookings WHERE id = ?').bind(BA.id).first()
-ok(b.status === 'confirmed' && b.paid_php === 5000, 'su parte cubre la señal: reserva confirmada', b)
-ok(code(await anon.rpc('pay_share_demo', { p_token: S2.token })) === 'BAD_STATE', 'no se paga dos veces la misma parte')
-// pago online de la otra parte con PayMongo
-await db.prepare("INSERT OR REPLACE INTO app_config (key, value) VALUES ('payments_mode', 'live')").run()
-r = await anon.call('POST', '/api/functions/crear-pago', { share_token: S1.token, method: 'gcash' })
-ok(r.checkout_url?.startsWith('https://checkout.paymongo.com/') && pm.get('cs_0')?.data?.attributes?.line_items?.[0]?.amount === 500000, 'pago de una parte por GCash sin cuenta', r)
-const p = await db.prepare('SELECT * FROM payments WHERE id = ?').bind(r.payment_id).first()
-ok(p.share_id === S1.id && p.kind === 'balance' && p.status === 'pending', 'pago pendiente ligado a la parte', p)
-// webhook firmado
-const { hmacHex } = await import('../lib/crypto.js')
-const evt = JSON.stringify({ data: { attributes: { type: 'checkout_session.payment.paid', livemode: false, data: { id: 'cs_0' } } } })
-const ts = Math.floor(Date.now() / 1000)
-globalThis.fetch = ((orig) => async (url, opt) => (String(url).includes('/checkout_sessions/cs_0') ? new Response(JSON.stringify({ data: { attributes: { payments: [{ attributes: { status: 'paid' } }] } } })) : orig(url, opt)))(globalThis.fetch)
-const wh = await handleApi(new Request(ORIGIN + '/api/webhooks/paymongo', { method: 'POST', body: evt, headers: { 'paymongo-signature': `t=${ts},te=${await hmacHex('whsk_x', ts + '.' + evt)}` } }), env, {})
-ok(wh.status === 200, 'webhook de PayMongo', await wh.text())
-b = await db.prepare('SELECT paid_php, balance_paid_at FROM bookings WHERE id = ?').bind(BA.id).first()
-const s1 = await db.prepare('SELECT paid_at, payment_id FROM payment_shares WHERE id = ?').bind(S1.id).first()
-ok(b.paid_php === 10000 && !!b.balance_paid_at && !!s1.paid_at && s1.payment_id === p.id, 'todo pagado y la parte marcada', { b, s1 })
-await db.prepare("UPDATE app_config SET value = 'demo' WHERE key = 'payments_mode'").run()
+section('pago de la reserva')
+r = await A.rpc('confirm_payment_demo', { p_booking: BA.id, p_kind: 'full' })
+ok(r.data?.paid_php === 10000 && r.data.status === 'confirmed', 'A paga todo (demo)', r)
+ok((await anon.rpc('get_share', { p_token: 'f'.repeat(32) })).status === 404, 'el pago dividido ya no existe')
 
 section('pagar el resto en el centro y recordatorio 24 h antes')
 await B.rpc('confirm_payment_demo', { p_booking: BB.id, p_kind: 'deposit' })
@@ -205,15 +174,12 @@ ok(r.data?.bookings?.some((x) => x.divers?.allergies === 'Penicilina'), 'el cent
 r = await B.rest({ table: 'divers', select: 'allergies', filters: [['id', 'eq', dA2]] })
 ok((r.data || []).length === 0, 'otro buceador no las ve', r)
 
-section('reserva caducada con una parte pagada')
+section('reserva caducada con algo pagado')
 const T3 = (await staff.rest({ table: 'trips', op: 'insert', values: { center_id: 'c1', boat_id: 'b1', departs_at: dep(72), price_php: 2000, divers_per_guide: 4, status: 'published' }, returning: true, select: 'id' })).data[0].id
 const b3 = (await B.rpc('book_trip', { p_trip: T3, p_seats: 2, p_with_gear: false, p_medical_signed: true })).data
-const sh = (await B.rpc('create_payment_shares', { p_booking: b3.id, p_parts: [{ amount: 3000 }, { amount: 1000 }] })).data
-await anon.rpc('pay_share_demo', { p_token: sh[1].token })
-await db.prepare("UPDATE bookings SET created_at = '2020-01-01T00:00:00.000Z', hold_until = '2020-01-01T00:00:00.000Z' WHERE id = ?").bind(b3.id).run()
-ok(code(await anon.rpc('pay_share_demo', { p_token: sh[0].token })) === 'HOLD_EXPIRED', 'una parte de una reserva caducada no se paga')
+await db.prepare("UPDATE bookings SET paid_php = 1000, created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").bind(b3.id).run()
 ok((await expireUnpaidWithMoney(env)) === 1, 'el cron la cancela')
-b = await db.prepare('SELECT status, refund_php FROM bookings WHERE id = ?').bind(b3.id).first()
+let b = await db.prepare('SELECT status, refund_php FROM bookings WHERE id = ?').bind(b3.id).first()
 ok(b.status === 'cancelled_by_diver' && b.refund_php === 1000, 'con reembolso de lo pagado', b)
 
 section('tasas que pone el centro')

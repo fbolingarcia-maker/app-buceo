@@ -1,4 +1,4 @@
-// Inglés: mejoras de noviembre (canal propio, extras, tasas, última hora, pago dividido, condiciones del mar,
+// Inglés: mejoras de noviembre (canal propio, extras, tasas, última hora, condiciones del mar,
 // Green Fins, alergias, manifiesto sin cobertura e importación del ordenador de buceo)
 export default {
   // extras.jsx
@@ -88,36 +88,13 @@ export default {
   'Extras': 'Extras',
   'Descuento de última hora': 'Last-minute discount',
   'El resto lo pagas en la app o en efectivo en el centro el día de la salida. Te mandamos el enlace de pago 24 h antes.': 'You pay the rest in the app or in cash at the centre on the day. We send you the payment link 24 h before.',
-  '¿Vais varios? Divide el pago: cada buddy paga su parte con GCash desde un enlace.': 'Going as a group? Split the payment: each buddy pays their share by GCash from a link.',
 
-  // Reservas.jsx / Pagar.jsx
-  'Yo': 'Me',
-  'Buddy {n}': 'Buddy {n}',
-  '¿Anular los enlaces sin pagar?': 'Cancel the unpaid links?',
-  'Tu parte de la salida de buceo con {centro} ({fecha}): {amount}. Págala aquí:': 'Your share of the dive trip with {centro} ({fecha}): {amount}. Pay it here:',
-  'Tu parte de la salida de buceo: {amount}. Págala aquí:': 'Your share of the dive trip: {amount}. Pay it here:',
-  'Dividir el pago con tus buddies': 'Split the payment with your buddies',
-  'Cada uno paga su parte con GCash o tarjeta desde un enlace, sin crear cuenta.': 'Each person pays their share by GCash or card from a link, no account needed.',
-  'Entre {n}': 'Between {n}',
-  'Pago dividido': 'Split payment',
-  'Suma {amount}: correcto': 'Total {amount}: correct',
-  'Las partes tienen que sumar {amount} (ahora {sum})': 'The shares must add up to {amount} (now {sum})',
-  'Guardamos tu plaza 2 h para que paguen. Con la primera parte que cubra la señal, la reserva queda confirmada.': 'We hold your spot for 2 h while they pay. As soon as the deposit is covered, the booking is confirmed.',
-  'Crear enlaces': 'Create links',
-  'Pagada': 'Paid',
-  'Compartir enlace': 'Share link',
-  'Anular los enlaces sin pagar': 'Cancel unpaid links',
+  // Reservas.jsx
   'Pagaré el resto en efectivo en el centro': 'I\'ll pay the rest in cash at the centre',
   'Tasas de santuarios incluidas ({amount})': 'Sanctuary fees included ({amount})',
   'Descuento de última hora −{amount}': 'Last-minute discount −{amount}',
   'Pagarás el resto ({amount}) en efectivo en el centro.': 'You\'ll pay the rest ({amount}) in cash at the centre.',
   'Paga el resto ahora en la app o en efectivo en el centro. 24 h antes te mandamos el enlace de pago.': 'Pay the rest now in the app or in cash at the centre. We send you the payment link 24 h before.',
-  'Este enlace de pago no es válido.': 'This payment link is not valid.',
-  'Tu parte del pago': 'Your share of the payment',
-  'Reserva de': 'Booked by',
-  'Parte pagada. ¡Gracias!': 'Share paid. Thank you!',
-  '¿Aún no tienes cuenta? Créala para guardar tus inmersiones en la bitácora.': 'No account yet? Create one to keep your dives in a logbook.',
-  'Este enlace ya no admite pagos: la reserva ha caducado, se ha cancelado o la salida ya empezó.': 'This link no longer takes payments: the booking expired, was cancelled or the trip has started.',
 
   // CentroAgenda.jsx / manifest.jsx
   'Check-in sin conexión enviados': 'Offline check-ins sent',

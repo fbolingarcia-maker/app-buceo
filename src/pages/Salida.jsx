@@ -273,7 +273,6 @@ export default function Salida({ id }) {
             <ul>
               <li>{t('Ahora pagas la señal (50 %) con GCash o tarjeta. Tu plaza queda guardada 15 minutos mientras pagas.')}</li>
               <li>{t('El resto lo pagas en la app o en efectivo en el centro el día de la salida. Te mandamos el enlace de pago 24 h antes.')}</li>
-              <li>{t('¿Vais varios? Divide el pago: cada buddy paga su parte con GCash desde un enlace.')}</li>
               <li>{t('Si cancelas con 24 h o más, te devolvemos todo. Si el centro cancela por el mar, también.')}</li>
             </ul>
           </details>

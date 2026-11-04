@@ -35,7 +35,6 @@ const Puntos = lazyPage(() => import('./pages/Puntos'))
 const Valorar = lazyPage(() => import('./pages/Valorar'))
 const CentroVerificacion = lazyPage(() => import('./pages/CentroVerificacion'))
 const Admin = lazyPage(() => import('./pages/Admin'))
-const Pagar = lazyPage(() => import('./pages/Pagar'))
 const Importar = lazyPage(() => import('./pages/Importar'))
 
 // Pantallas privadas. Sin sesión: título y frase de lo que hay detrás, y el login debajo.
@@ -145,7 +144,6 @@ export default function App() {
   if (session && needsMfa) page = <DosPasosReto />
   else if (recovering) page = <NuevaClave />
   else if (seg[0] === 'r' && seg[1]) page = <Via id={seg[1]} />
-  else if (seg[0] === 'pagar' && seg[1]) page = <Pagar token={seg[1]} />
   else if (seg[0] === 'salida' && seg[1]) page = <Salida id={seg[1]} />
   else if (seg[0] === 'reservas') page = <NeedLogin title={t('Reservas')} intro={t('Aquí verás tus salidas reservadas y los pagos pendientes. Entra o crea una cuenta para verlas.')} back="/reservas"><Reservas /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1] === 'importar') page = <NeedLogin><Importar /></NeedLogin>

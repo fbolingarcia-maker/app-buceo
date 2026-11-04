@@ -79,13 +79,11 @@ export const POLICIES = {
   center_extras: { ops: ['insert', 'update', 'delete'],
     select: (c, a) => or(P(`${a}.active = 1`), staffIn(c, `${a}.center_id`), admin(c)),
     write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },
-  // Extras de una reserva y partes de un pago dividido: los ve quien ve la reserva (se crean solo con RPC)
+  // Extras de una reserva: los ve quien ve la reserva (se crean solo con RPC)
   booking_extras: {
     select: (c, a) => or(admin(c),
       c.staff.length ? P(`${a}.booking_id IN (SELECT b.id FROM bookings b JOIN trips t ON t.id = b.trip_id WHERE t.center_id IN (${c.staff.map(() => '?').join(',')}))`, ...c.staff) : NO,
       c.diverId ? P(`${a}.booking_id IN (SELECT id FROM bookings WHERE diver_id = ?)`, c.diverId) : NO) },
-  payment_shares: {
-    select: (c, a) => or(admin(c), c.diverId ? P(`${a}.booking_id IN (SELECT id FROM bookings WHERE diver_id = ?)`, c.diverId) : NO) },
   dive_log_photos: { ops: ['insert', 'update', 'delete'],
     select: (c, a) => (c.diverId ? P(`${a}.log_id IN (SELECT id FROM dive_logs WHERE diver_id = ?)`, c.diverId) : NO),
     write: (c, a) => (c.diverId ? P(`${a}.log_id IN (SELECT id FROM dive_logs WHERE diver_id = ?)`, c.diverId) : NO),

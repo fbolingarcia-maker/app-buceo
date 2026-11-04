@@ -3,9 +3,7 @@
 // (evento checkout_session.payment.paid). La app nunca toca datos de tarjeta: todo pasa por la página de PayMongo.
 import { json, first, run } from './lib/util.js'
 import { hmacHex, safeEqual } from './lib/crypto.js'
-import { startOnlinePayment, settlePayment, openShare, shareStatements } from './rpc.js'
-import { uuid } from './lib/util.js'
-import { rateLimit } from './auth.js'
+import { startOnlinePayment, settlePayment } from './rpc.js'
 import { notifyAdmin } from './stats.js'
 
 // Cobra el pago y avisa al administrador (como el trigger notify_payment de la migración 030)
@@ -33,8 +31,6 @@ async function sessionPaid(sessionId, key) {
 export async function crearPago(req, env, ctx) {
   const body = await req.json().catch(() => ({}))
   const key = env.PAYMONGO_SECRET_KEY
-  // Parte de un pago dividido (#/pagar/<token>): la paga cualquiera con el enlace, sin cuenta
-  if (body.share_token) return payShare(req, env, ctx, body, key)
   if (!ctx.uid) return json({ error: 'Inicia sesión para pagar' }, 401)
   try {
     if (body.action === 'check') {
@@ -106,51 +102,3 @@ export async function paymongoWebhook(req, env) {
   return new Response('ok')
 }
 
-async function payShare(req, env, ctx, body, key) {
-  try {
-    await rateLimit(env, 'share:' + (req.headers.get('CF-Connecting-IP') || ''), 20, 600)
-    const token = String(body.share_token)
-    if (body.action === 'check') {
-      const p = await first(ctx.db, 'SELECT p.* FROM payments p JOIN payment_shares s ON s.id = p.share_id WHERE p.id = ? AND s.token = ?', String(body.payment_id || ''), token)
-      if (!p) return json({ error: 'Pago no encontrado' }, 404)
-      if (p.status === 'paid') return json({ status: 'paid' })
-      if (key && p.provider_ref && (await sessionPaid(p.provider_ref, key))) { await settleAndNotify(env, ctx.db, p.id); return json({ status: 'paid' }) }
-      return json({ status: p.status })
-    }
-    if (!['card', 'gcash'].includes(body.method)) return json({ error: 'Datos de pago no válidos' }, 400)
-    if (!key) return json({ error: 'Los pagos con tarjeta y GCash aún no están activados' }, 503)
-    let s
-    try { s = await openShare(ctx.db, token) } catch (e) { return json({ error: dbMsg(e.message) }, 400) }
-    const origin = new URL(req.url).origin
-    const pid = uuid()
-    await ctx.db.batch(shareStatements(ctx.db, s, pid, body.method, 'paymongo', false))
-    if (!(await first(ctx.db, 'SELECT 1 AS x FROM payments WHERE id = ?', pid))) return json({ error: 'Esta parte ya está pagada' }, 400)
-    const when = new Date(s.departs_at).toLocaleString('es-ES', { timeZone: 'Asia/Manila', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-    const back = `${origin}/app/#/pagar/${token}`
-    const r = await fetch(`${PM}/checkout_sessions`, {
-      method: 'POST',
-      headers: { Authorization: 'Basic ' + btoa(key + ':'), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: { attributes: {
-        line_items: [{ name: `${s.label || 'Parte'} · ${s.center_name} · ${when}`, amount: s.amount_php * 100, currency: 'PHP', quantity: 1 }],
-        payment_method_types: [body.method],
-        description: `Pago dividido · reserva ${s.booking_id.slice(0, 8)}`,
-        reference_number: pid,
-        success_url: `${back}?pago=${pid}`,
-        cancel_url: `${back}?pago=${pid}&cancelado=1`,
-        show_description: true, show_line_items: true, send_email_receipt: true,
-        metadata: { payment_id: pid, booking_id: s.booking_id, share_id: s.id },
-      } } }),
-    })
-    const j = await r.json().catch(() => ({}))
-    if (!r.ok) {
-      await run(ctx.db, "UPDATE payments SET status = 'failed' WHERE id = ?", pid)
-      return json({ error: `PayMongo: ${j?.errors?.[0]?.detail ?? 'error desconocido'}` }, 502)
-    }
-    await run(ctx.db, 'UPDATE payments SET provider_ref = ?, checkout_url = ? WHERE id = ?', j.data.id, j.data.attributes.checkout_url, pid)
-    return json({ payment_id: pid, checkout_url: j.data.attributes.checkout_url })
-  } catch (e) {
-    if (e?.status === 429 || /RATE/.test(e?.message || '')) return json({ error: 'Demasiados intentos. Espera unos minutos.' }, 429)
-    console.error('pago dividido', e.message)
-    return json({ error: 'No se pudo procesar el pago. Inténtalo de nuevo.' }, 500)
-  }
-}

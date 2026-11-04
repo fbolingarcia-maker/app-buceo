@@ -38,7 +38,7 @@ export async function balanceReminders(env, origin = 'https://divingslot.com') {
   return sent
 }
 
-// Reserva sin señal completa cuya retención caducó pero con algo pagado (p. ej. una parte de un pago dividido):
+// Reserva sin señal completa cuya retención caducó pero con algo pagado (p. ej. un pago online que llegó tarde):
 // se cancela con reembolso de lo pagado y se avisa al administrador para devolverlo.
 export async function expireUnpaidWithMoney(env) {
   const rows = await all(env.DB, `SELECT b.id, b.paid_php FROM bookings b WHERE b.status = 'pending_payment' AND b.paid_php > 0
@@ -47,7 +47,7 @@ export async function expireUnpaidWithMoney(env) {
     const u = await env.DB.prepare(`UPDATE bookings SET status = 'cancelled_by_diver', refund_php = paid_php, commission_php = 0, cancelled_at = ?
       WHERE id = ? AND status = 'pending_payment'`).bind(nowIso(), r.id).run()
     if (u?.meta?.changes) await notifyAdmin(env, { kind: 'reembolso', title: 'Reembolso pendiente: ₱' + r.paid_php.toLocaleString('en-US'),
-      lines: ['Reserva ' + r.id.slice(0, 8) + ' caducó sin completar la señal (pago dividido).', 'Devuelve lo pagado desde PayMongo.'] }).catch(() => {})
+      lines: ['Reserva ' + r.id.slice(0, 8) + ' caducó sin completar la señal.', 'Devuelve lo pagado desde PayMongo.'] }).catch(() => {})
   }
   return rows.length
 }

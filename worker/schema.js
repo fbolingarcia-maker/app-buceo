@@ -245,18 +245,6 @@ export const TABLES = {
     ['recorded_by', 'uuid'],
     ['created_at', 'ts', { nn: true, def: NOW }],
     ['paid_at', 'ts'],
-    ['share_id', 'uuid'],                         // parte de un pago dividido entre buddies (payment_shares)
-  ] },
-  // Pago dividido: cada buddy paga su parte con un enlace (token) sin necesidad de cuenta
-  payment_shares: { cols: [
-    ['id', 'uuid', { pk: true, def: UUID }],
-    ['booking_id', 'uuid', { nn: true, ref: 'bookings(id)', onDelete: 'CASCADE' }],
-    ['label', 'text', { check: 'length(label) <= 60' }],
-    ['amount_php', 'int', { nn: true, check: 'amount_php > 0' }],
-    ['token', 'text', { nn: true, unique: true }],
-    ['paid_at', 'ts'],
-    ['payment_id', 'uuid'],
-    ['created_at', 'ts', { nn: true, def: NOW }],
   ] },
   // Extras que vende el centro (seguro, cursos, fotos o vídeo de la salida…)
   center_extras: { cols: [
@@ -419,9 +407,7 @@ export const INDEXES = [
   'CREATE INDEX IF NOT EXISTS photos_log ON dive_log_photos(log_id)',
   'CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id)',
   'CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at)',
-  'CREATE INDEX IF NOT EXISTS shares_booking ON payment_shares(booking_id)',
   'CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id)',
-  'CREATE INDEX IF NOT EXISTS payments_share ON payments(share_id)',
 ]
 
 // Relaciones para incrustar tablas en un select: tabla.columna → tabla(col)
