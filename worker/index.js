@@ -15,7 +15,7 @@ import { handleRest } from './rest.js'
 import { handleRpc } from './rpc.js'
 import { handleStorage } from './storage.js'
 import { crearPago, paymongoWebhook } from './payments.js'
-import { cleanup, balanceReminders, expireUnpaidWithMoney } from './cron.js'
+import { cleanup, balanceReminders, insuranceReminders, expireUnpaidWithMoney } from './cron.js'
 import { handleSea } from './sea.js'
 import { handleImport } from './import.js'
 import { handleHealth } from './health.js'
@@ -105,6 +105,7 @@ export default {
     ectx.waitUntil(pruneVisits(env).catch(onFail('visitas')))
     ectx.waitUntil(dailyDigest(env).catch(onFail('resumen diario')))
     ectx.waitUntil(balanceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('recordatorios de pago')))
+    ectx.waitUntil(insuranceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('avisos de seguro')))
     ectx.waitUntil(expireUnpaidWithMoney(env).catch(onFail('reservas caducadas con pagos')))
   },
 }

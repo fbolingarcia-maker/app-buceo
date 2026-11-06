@@ -13,6 +13,7 @@ import { CENTER_LANGS, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
 import { ShieldCheck, Star, X } from 'lucide-react'
 import DestinoSelect from '../lib/DestinoSelect'
+import { hashParam } from '../lib/centro'
 import { BuddyBreakdown, BUDDY_RATINGS, MIN_RATINGS, WINDOW_DAYS } from '../lib/buddy'
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
@@ -26,6 +27,16 @@ export default function Perfil() {
   const [centerForm, setCenterForm] = useState({ name: '', phone: '' })
   const [openCenter, setOpenCenter] = useState(false)
   const [msg, setMsg] = useState({})
+  // Secciones del perfil (#/perfil?ver=datos|buceo|cuenta) para no tener una sola página larguísima
+  const [ver, setVer] = useState(() => hashParam('ver') || 'datos')
+  const pick = (v) => { setVer(v); setMsg({}); history.replaceState(null, '', window.location.pathname + '#/perfil?ver=' + v) }
+  useEffect(() => {
+    const on = () => { const v = hashParam('ver'); if (v) setVer(v) }
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
+  // Venía de una salida (para añadir la certificación, tallas…): enlace para volver
+  const [back] = useState(() => { try { return sessionStorage.getItem('afterCert') } catch (e) { return null } })
 
   useEffect(() => {
     if (diver) setForm({
@@ -141,6 +152,7 @@ export default function Perfil() {
     </>
   )
 
+  const tab = isCenter && ver === 'buceo' ? 'datos' : ['datos', 'buceo', 'cuenta'].includes(ver) ? ver : 'datos'
   return (
     <>
       <h1>{t('Tu perfil')}</h1>
@@ -152,64 +164,52 @@ export default function Perfil() {
         <p className="muted small" style={{ margin: 0 }}>{user.email}{diver.auth_provider === 'google' && <><br />{t('Cuenta conectada con Google')}</>}</p>
       </div>
 
-      <form className="card" onSubmit={saveProfile}>
-        <div className="field"><label htmlFor="perfil-1">{t('Nombre')}</label><input id="perfil-1" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
-        <div className="field"><label htmlFor="perfil-3">{t('Inmersiones registradas')}</label><input id="perfil-3" type="number" inputMode="numeric" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} style={{ maxWidth: 160 }} /></div>
-        <div className="field" role="group" aria-labelledby="perfil-2">
-          <label id="perfil-2">{t('Idiomas que hablas')}</label>
-          <div className="chips wrapc">
-            {[...CENTER_LANGS.map((l) => l.code), ...form.languages.filter((x) => !CENTER_LANGS.some((l) => l.code === x))].map((code) => {
-              const on = form.languages.includes(code)
-              return <button key={code} type="button" className={on ? 'on' : ''} aria-pressed={on}
-                onClick={() => setForm({ ...form, languages: on ? form.languages.filter((x) => x !== code) : [...form.languages, code] })}>{langName(code)}</button>
-            })}
-          </div>
-        </div>
-        {!isCenter && <>
-          <div className="field"><label htmlFor="perfil-4">{t('País')}</label><input id="perfil-4" maxLength={60} autoComplete="country-name" placeholder={t('p. ej. España')} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
-          <div className="field"><label htmlFor="perfil-5">{t('Sobre ti')} <span className="muted small" style={{ fontWeight: 400 }}>({form.bio.length}/160)</span></label><textarea id="perfil-5" rows="2" maxLength={160} placeholder={t('p. ej. Me encantan los tiburones ballena y la fotografía submarina')} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
-          </div>
-          <fieldset className="subform">
-            <legend><b>{t('Para el centro')}</b><span className="small muted">{t('Se lo enviamos al centro de cada salida que reserves, para que te prepare el equipo.')}</span></legend>
-            <div className="grid3">
-              <div className="field"><label htmlFor="perfil-ws">{t('Talla de traje')}</label><select id="perfil-ws" value={form.wetsuit_size} onChange={(e) => setForm({ ...form, wetsuit_size: e.target.value })}><option value="">—</option>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></div>
-              <div className="field"><label htmlFor="perfil-bcd">{t('Chaleco (BCD)')}</label><select id="perfil-bcd" value={form.bcd_size} onChange={(e) => setForm({ ...form, bcd_size: e.target.value })}><option value="">—</option>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></div>
-              <div className="field"><label htmlFor="perfil-fin">{t('Aletas')}</label><input id="perfil-fin" maxLength={12} placeholder={t('p. ej. 42')} value={form.fin_size} onChange={(e) => setForm({ ...form, fin_size: e.target.value })} /></div>
-            </div>
-            <div className="grid2">
-              <div className="field"><label htmlFor="perfil-ld">{t('Última inmersión')}</label><input id="perfil-ld" type="date" max={manilaDate()} value={form.last_dive_date} onChange={(e) => setForm({ ...form, last_dive_date: e.target.value })} /></div>
-              <label className="check field" style={{ alignSelf: 'end' }}><input type="checkbox" checked={form.nitrox} onChange={(e) => setForm({ ...form, nitrox: e.target.checked })} /> {t('Tengo certificación nitrox')}</label>
-            </div>
-            <div className="field">
-              <label htmlFor="perfil-al">{t('Alergias (opcional)')}</label>
-              <input id="perfil-al" maxLength={300} placeholder={t('p. ej. penicilina, marisco, picaduras de abeja')} value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} />
-              <span className="small muted">{t('Solo la ve el centro de las salidas que reserves, en el manifiesto del barco. Puedes borrarla cuando quieras.')}</span>
-            </div>
-            <div className="grid2">
-              <div className="field"><label htmlFor="perfil-ins">{t('Seguro de buceo')}</label><input id="perfil-ins" maxLength={60} placeholder={t('p. ej. DAN')} value={form.insurance_provider} onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })} /></div>
-              <div className="field"><label htmlFor="perfil-insx">{t('Válido hasta')}</label><input id="perfil-insx" type="date" value={form.insurance_expiry} onChange={(e) => setForm({ ...form, insurance_expiry: e.target.value })} /></div>
-            </div>
-          </fieldset>
-          <fieldset className="subform">
-            <legend><b>{t('Avisos de última hora')}</b><span className="small muted">{t('Te escribimos cuando un centro de estos destinos tenga plazas libres para mañana o pasado (a veces con descuento).')}</span></legend>
-            <div className="row wrap" style={{ gap: 6, marginBottom: 6 }}>
-              {form.alert_destinations.map((d) => (
-                <span key={d} className="pill">{d} <button type="button" className="linkish" aria-label={t('Quitar {d}', { d })} onClick={() => setForm({ ...form, alert_destinations: form.alert_destinations.filter((x) => x !== d) })}><Icon icon={X} size={12} /></button></span>
-              ))}
-              {form.alert_destinations.length === 0 && <span className="small muted">{t('Ningún destino')}</span>}
-            </div>
-            {form.alert_destinations.length < 5 && <DestinoSelect value="" onChange={(name) => name && !form.alert_destinations.includes(name) && setForm({ ...form, alert_destinations: [...form.alert_destinations, name] })} />}
-          </fieldset>
-          <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
-          <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />
-            <span>{t('Mostrar mi perfil a los demás buceadores de mis salidas')}<br /><span className="small muted">{t('Verán tu nombre y la inicial del apellido, tu nivel, nº de inmersiones, idiomas, país y esta descripción. Nunca tu email ni tu teléfono.')}</span></span>
-          </label>
-        </>}
-        {show('p')}
-        <button className="btn">{t('Guardar')}</button>
-      </form>
+      <div className="seg" role="tablist" aria-label={t('Secciones del perfil')}>
+        {(isCenter ? [['datos', 'Datos'], ['cuenta', 'Cuenta']] : [['datos', 'Datos'], ['buceo', 'Buceo y salud'], ['cuenta', 'Cuenta']]).map(([k, n]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => pick(k)}>{t(n)}</button>
+        ))}
+      </div>
+      {back && <div className="msg ok row between wrap" role="status" style={{ gap: 8 }}><span>{t('Cuando termines, vuelve a la salida para reservar.')}</span><Link to={back} className="btn small" onClick={() => { try { sessionStorage.removeItem('afterCert') } catch (e) { /* sin almacenamiento */ } }}>{t('Volver a la salida')}</Link></div>}
 
-      {!isCenter && <>
+      {tab === 'datos' && (
+        <form className="card" onSubmit={saveProfile}>
+          <div className="field"><label htmlFor="perfil-1">{t('Nombre')}</label><input id="perfil-1" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></div>
+          <div className="field"><label htmlFor="perfil-3">{t('Inmersiones registradas')}</label><input id="perfil-3" type="number" inputMode="numeric" min="0" value={form.logged_dives} onChange={(e) => setForm({ ...form, logged_dives: e.target.value })} style={{ maxWidth: 160 }} /></div>
+          <div className="field" role="group" aria-labelledby="perfil-2">
+            <label id="perfil-2">{t('Idiomas que hablas')}</label>
+            <div className="chips wrapc">
+              {[...CENTER_LANGS.map((l) => l.code), ...form.languages.filter((x) => !CENTER_LANGS.some((l) => l.code === x))].map((code) => {
+                const on = form.languages.includes(code)
+                return <button key={code} type="button" className={on ? 'on' : ''} aria-pressed={on}
+                  onClick={() => setForm({ ...form, languages: on ? form.languages.filter((x) => x !== code) : [...form.languages, code] })}>{langName(code)}</button>
+              })}
+            </div>
+          </div>
+          {!isCenter && <>
+            <div className="field"><label htmlFor="perfil-4">{t('País')}</label><input id="perfil-4" maxLength={60} autoComplete="country-name" placeholder={t('p. ej. España')} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
+            <div className="field"><label htmlFor="perfil-5">{t('Sobre ti')} <span className="muted small" style={{ fontWeight: 400 }}>({form.bio.length}/160)</span></label><textarea id="perfil-5" rows="2" maxLength={160} placeholder={t('p. ej. Me encantan los tiburones ballena y la fotografía submarina')} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+            </div>
+            <fieldset className="subform">
+              <legend><b>{t('Avisos de última hora')}</b><span className="small muted">{t('Te escribimos cuando un centro de estos destinos tenga plazas libres para mañana o pasado (a veces con descuento).')}</span></legend>
+              <div className="row wrap" style={{ gap: 6, marginBottom: 6 }}>
+                {form.alert_destinations.map((d) => (
+                  <span key={d} className="pill">{d} <button type="button" className="linkish" aria-label={t('Quitar {d}', { d })} onClick={() => setForm({ ...form, alert_destinations: form.alert_destinations.filter((x) => x !== d) })}><Icon icon={X} size={12} /></button></span>
+                ))}
+                {form.alert_destinations.length === 0 && <span className="small muted">{t('Ningún destino')}</span>}
+              </div>
+              {form.alert_destinations.length < 5 && <DestinoSelect value="" onChange={(name) => name && !form.alert_destinations.includes(name) && setForm({ ...form, alert_destinations: [...form.alert_destinations, name] })} />}
+            </fieldset>
+            <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
+            <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />
+              <span>{t('Mostrar mi perfil a los demás buceadores de mis salidas')}<br /><span className="small muted">{t('Verán tu nombre y la inicial del apellido, tu nivel, nº de inmersiones, idiomas, país y esta descripción. Nunca tu email ni tu teléfono.')}</span></span>
+            </label>
+          </>}
+          {tab === 'datos' && show('p')}
+          <button className="btn">{t('Guardar')}</button>
+        </form>
+      )}
+
+      {tab === 'buceo' && <>
       <h2>{t('Certificaciones')}</h2>
       <div className="card">
         {certs.length === 0 && <p className="muted">{t('Añade al menos una para poder reservar.')}</p>}
@@ -236,45 +236,73 @@ export default function Perfil() {
       <h2>{t('Salud para bucear')}</h2>
       <div className="card"><MedicalCheck diver={diver} onSaved={refresh} /></div>
 
+      <h2>{t('Tallas, seguro y alergias')}</h2>
+          <form className="card" onSubmit={saveProfile}>
+            <fieldset className="subform" style={{ marginTop: 0 }}>
+              <legend><b>{t('Para el centro')}</b><span className="small muted">{t('Se lo enviamos al centro de cada salida que reserves, para que te prepare el equipo.')}</span></legend>
+              <div className="grid3">
+                <div className="field"><label htmlFor="perfil-ws">{t('Talla de traje')}</label><select id="perfil-ws" value={form.wetsuit_size} onChange={(e) => setForm({ ...form, wetsuit_size: e.target.value })}><option value="">—</option>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></div>
+                <div className="field"><label htmlFor="perfil-bcd">{t('Chaleco (BCD)')}</label><select id="perfil-bcd" value={form.bcd_size} onChange={(e) => setForm({ ...form, bcd_size: e.target.value })}><option value="">—</option>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></div>
+                <div className="field"><label htmlFor="perfil-fin">{t('Aletas')}</label><input id="perfil-fin" maxLength={12} placeholder={t('p. ej. 42')} value={form.fin_size} onChange={(e) => setForm({ ...form, fin_size: e.target.value })} /></div>
+              </div>
+              <div className="grid2">
+                <div className="field"><label htmlFor="perfil-ld">{t('Última inmersión')}</label><input id="perfil-ld" type="date" max={manilaDate()} value={form.last_dive_date} onChange={(e) => setForm({ ...form, last_dive_date: e.target.value })} /></div>
+                <label className="check field" style={{ alignSelf: 'end' }}><input type="checkbox" checked={form.nitrox} onChange={(e) => setForm({ ...form, nitrox: e.target.checked })} /> {t('Tengo certificación nitrox')}</label>
+              </div>
+              <div className="field">
+                <label htmlFor="perfil-al">{t('Alergias (opcional)')}</label>
+                <input id="perfil-al" maxLength={300} placeholder={t('p. ej. penicilina, marisco, picaduras de abeja')} value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} />
+                <span className="small muted">{t('Solo la ve el centro de las salidas que reserves, en el manifiesto del barco. Puedes borrarla cuando quieras.')}</span>
+              </div>
+              <div className="grid2">
+                <div className="field"><label htmlFor="perfil-ins">{t('Seguro de buceo')}</label><input id="perfil-ins" maxLength={60} placeholder={t('p. ej. DAN')} value={form.insurance_provider} onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })} /></div>
+                <div className="field"><label htmlFor="perfil-insx">{t('Válido hasta')}</label><input id="perfil-insx" type="date" value={form.insurance_expiry} onChange={(e) => setForm({ ...form, insurance_expiry: e.target.value })} /></div>
+              </div>
+            </fieldset>
+            {show('p')}
+            <button className="btn">{t('Guardar')}</button>
+          </form>
+
       {BUDDY_RATINGS && <BuddyRatings diver={diver} refresh={refresh} />}
       </>}
 
-      <h2>{t('Centro de buceo')}</h2>
-      {center ? (
-        <div className="card row between"><span>{t('Gestionas')} <b>{center.name}</b></span><Link to="/centro" className="btn small">{t('Ir al panel')}</Link></div>
-      ) : (
-        !openCenter ? (
-          <div className="card row between wrap" style={{ gap: 10 }}>
-            <span className="small muted grow" style={{ minWidth: 180 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</span>
-            <button type="button" className="btn small ghost" onClick={() => setOpenCenter(true)}>{t('Registrar mi centro')}</button>
-          </div>
-        ) :
-        <form className="card" onSubmit={registerCenter}>
-          <p className="small muted" style={{ marginTop: 0 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</p>
-          <div className="grid2">
-            <div className="field"><label htmlFor="perfil-9">{t('Nombre del centro')}</label><input id="perfil-9" required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
-            <div className="field"><label htmlFor="perfil-10">{t('Teléfono / WhatsApp')}</label><input id="perfil-10" type="tel" inputMode="tel" autoComplete="tel" value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
-          </div>
-          {show('ce')}
-          <button className="btn ghost">{t('Registrar mi centro')}</button>
-        </form>
-      )}
+      {tab === 'cuenta' && <>
+        <h2>{t('Centro de buceo')}</h2>
+        {center ? (
+          <div className="card row between"><span>{t('Gestionas')} <b>{center.name}</b></span><Link to="/centro" className="btn small">{t('Ir al panel')}</Link></div>
+        ) : (
+          !openCenter ? (
+            <div className="card row between wrap" style={{ gap: 10 }}>
+              <span className="small muted grow" style={{ minWidth: 180 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</span>
+              <button type="button" className="btn small ghost" onClick={() => setOpenCenter(true)}>{t('Registrar mi centro')}</button>
+            </div>
+          ) :
+          <form className="card" onSubmit={registerCenter}>
+            <p className="small muted" style={{ marginTop: 0 }}>{t('¿Tienes un centro? Regístralo y tu cuenta pasará a ser de centro (panel, agenda, salidas y cobros).')}</p>
+            <div className="grid2">
+              <div className="field"><label htmlFor="perfil-9">{t('Nombre del centro')}</label><input id="perfil-9" required value={centerForm.name} onChange={(e) => setCenterForm({ ...centerForm, name: e.target.value })} /></div>
+              <div className="field"><label htmlFor="perfil-10">{t('Teléfono / WhatsApp')}</label><input id="perfil-10" type="tel" inputMode="tel" autoComplete="tel" value={centerForm.phone} onChange={(e) => setCenterForm({ ...centerForm, phone: e.target.value })} /></div>
+            </div>
+            {show('ce')}
+            <button className="btn ghost">{t('Registrar mi centro')}</button>
+          </form>
+        )}
 
-      {account}
+        {account}
 
-      <h2>{t('Ajustes')}</h2>
-      <div className="list">
-        <div className="li">
-          <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
-          <LangSwitch />
+        <h2>{t('Ajustes')}</h2>
+        <div className="list">
+          <div className="li">
+            <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
+            <LangSwitch />
+          </div>
+          <a className="li" href={siteUrl() + 'legal/privacy'}><span className="grow"><b>{t('Privacidad')}</b></span></a>
+          <a className="li" href={siteUrl() + 'legal/terms'}><span className="grow"><b>{t('Términos de uso')}</b></span></a>
+          <a className="li" href={siteUrl() + 'legal/cancellation'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
+          <a className="li" href="mailto:divingslot@gmail.com"><span className="grow"><b>{t('Contacto')}</b><small>divingslot@gmail.com</small></span></a>
         </div>
-        <a className="li" href={siteUrl() + 'legal/privacy'}><span className="grow"><b>{t('Privacidad')}</b></span></a>
-        <a className="li" href={siteUrl() + 'legal/terms'}><span className="grow"><b>{t('Términos de uso')}</b></span></a>
-        <a className="li" href={siteUrl() + 'legal/cancellation'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
-        <a className="li" href="mailto:divingslot@gmail.com"><span className="grow"><b>{t('Contacto')}</b><small>divingslot@gmail.com</small></span></a>
-      </div>
-
-      <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
+        <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
+      </>}
     </>
   )
 }

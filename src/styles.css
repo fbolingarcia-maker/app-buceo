@@ -438,3 +438,20 @@ a.card.trip.full { opacity: .6; }
 .card.sea .row span:last-child { text-align: right; }
 .dan { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
 .card.dan { margin: 12px 0; }
+
+/* Reserva en pasos numerados (Salida) */
+.book-step { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.book-step.last { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+.book-step h3 { margin: 0 0 10px; font-size: 16px; }
+.step-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--oceano); color: #fff; font: 700 13px var(--font-data); flex: 0 0 auto; }
+.sticky-cta b { font-family: var(--font-data); font-size: 18px; }
+
+/* Pantallas táctiles: zonas de toque de 44 px como mínimo (Apple HIG / WCAG 2.5.5) */
+@media (pointer: coarse) {
+  :root { --h-control-sm: 44px; }
+  .chips button, .seg button, .seg a, .lang-pick label { min-height: 44px; }
+  .linkish, .toast button { min-height: 44px; min-width: 44px; }
+  .top .btn.small { min-height: 44px; }
+  .adminbar .seg button, .adminbar select { min-height: 44px; }
+  label.check { min-height: 44px; }
+}

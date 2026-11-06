@@ -1,16 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, errMsg, appUrl, siteUrl } from '../lib/supabase'
+import { supabase, errMsg, appUrl } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link } from '../lib/router'
-import { BOOKING_STATUS, dateTime, php } from '../lib/format'
+import { BOOKING_STATUS, dateTime, php, manilaDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
-import { CalendarPlus, Check, Lock, Share2, X } from 'lucide-react'
+import { CalendarPlus, Check, Share2, X } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
 import { DanCard } from '../lib/extras'
-
-const HOLD_MIN = 15
+import { PayBox, fnError, holdEnd } from '../lib/pay'
 
 function addToCalendar(b) {
   const a = document.createElement('a')
@@ -18,14 +17,6 @@ function addToCalendar(b) {
   a.download = 'divingslot-' + b.id.slice(0, 8) + '.ics'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-}
-
-// Hasta cuándo se retiene la plaza de una reserva sin pagar
-const holdEnd = (b) => Math.max(new Date(b.created_at).getTime() + HOLD_MIN * 60000, b.hold_until ? new Date(b.hold_until).getTime() : 0)
-
-// Lee el error que devuelve la Edge Function
-async function fnError(error) {
-  try { const j = await error.context.json(); return j.error || error.message } catch { return error.message }
 }
 
 // Tras pagar: resumen de la reserva confirmada y el siguiente paso (calendario, avisar a un buddy, guía del destino)
@@ -68,56 +59,6 @@ function Confirmada({ b, onClose, diver }) {
   )
 }
 
-function PayBox({ b, mode, onDone }) {
-  const pending = b.status === 'pending_payment'
-  const balance = b.amount_php - b.paid_php
-  const [kind, setKind] = useState(pending ? 'deposit' : 'balance')
-  const [method, setMethod] = useState('gcash')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const amount = kind === 'deposit' ? b.deposit_php - b.paid_php : balance
-
-  async function pay() {
-    setBusy(true); setError('')
-    if (mode === 'demo') {
-      const { error } = await supabase.rpc('confirm_payment_demo', { p_booking: b.id, p_kind: kind })
-      setBusy(false)
-      return error ? setError(errMsg(error)) : onDone(null, b.id)
-    }
-    const { data, error } = await supabase.functions.invoke('crear-pago', {
-      body: { booking_id: b.id, kind, method, return_url: siteUrl() },
-    })
-    if (error) { setBusy(false); return setError(await fnError(error)) }
-    window.location.href = data.checkout_url
-  }
-
-  return (
-    <div style={{ marginTop: 10 }}>
-      {pending && <p className="small muted" style={{ margin: '0 0 6px' }}>{t('¿Cuánto quieres pagar ahora?')}</p>}
-      {pending ? (
-        <div className="seg">
-          <button className={kind === 'deposit' ? 'on' : ''} onClick={() => setKind('deposit')}>{t('Señal 50 % · {amount}', { amount: php(b.deposit_php - b.paid_php) })}</button>
-          <button className={kind === 'full' ? 'on' : ''} onClick={() => setKind('full')}>{t('Todo · {amount}', { amount: php(balance) })}</button>
-        </div>
-      ) : null}
-      {mode !== 'demo' && (
-        <div className="seg">
-          <button className={method === 'gcash' ? 'on' : ''} onClick={() => setMethod('gcash')}>GCash</button>
-          <button className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}>{t('Tarjeta')}</button>
-        </div>
-      )}
-      {error && <div className="msg err" role="alert">{error}</div>}
-      <button className="btn block" disabled={busy || amount <= 0} onClick={pay}>
-        {busy ? t('Un momento…')
-          : mode === 'demo' ? t('Pagar {amount} (modo demo)', { amount: php(amount) })
-          : method === 'gcash' ? t('Pagar {amount} con GCash', { amount: php(amount) })
-          : t('Pagar {amount} con tarjeta', { amount: php(amount) })}
-      </button>
-      {mode !== 'demo' && <p className="small muted" style={{ margin: '6px 0 0' }}><Icon icon={Lock} size={14} /> {t('Pago seguro con PayMongo. DivingSlot no guarda los datos de tu tarjeta.')}</p>}
-    </div>
-  )
-}
-
 // El resto, en efectivo en el centro: sin recordatorio de pago online
 function PayOnSite({ b, onDone }) {
   const [busy, setBusy] = useState(false)
@@ -150,7 +91,12 @@ export default function Reservas() {
   }, [diver])
 
   useEffect(() => { load() }, [load])
-  // Recién reservada desde la ficha de la salida
+  // Recién reservada (y pagada) desde la ficha de la salida: #/reservas?pagado=<id>
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.hash.split('?')[1] || '')
+    const id = q.get('pagado')
+    if (id) { history.replaceState(null, '', window.location.pathname + '#/reservas'); setJustPaid(id) }
+  }, [])
   useEffect(() => {
     try {
       if (sessionStorage.getItem('justBooked')) {
@@ -236,6 +182,9 @@ export default function Reservas() {
             <div style={{ marginTop: 6 }}><Link to="/">{t('Buscar otra salida')}</Link></div>
           </div>
         ) : b.refund_php > 0 && <div className="msg ok" role="status">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
+        {active && future && diver?.insurance_provider && diver.insurance_expiry && diver.insurance_expiry < manilaDate(b.trips?.departs_at) && (
+          <div className="msg warn" role="status">{t('Tu seguro de buceo caduca antes de esta salida.')} <a href="#/perfil?ver=buceo">{t('Actualizar')}</a></div>
+        )}
         {b.status === 'pending_payment' && !expired && (
           <p className="small muted">{t('Plaza retenida {n} min más. Paga al menos la señal del 50 % ({amount}) para confirmarla.', { n: minsLeft, amount: php(b.deposit_php) })}</p>
         )}

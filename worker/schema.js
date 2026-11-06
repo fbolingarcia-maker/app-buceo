@@ -192,6 +192,7 @@ export const TABLES = {
     // Seguro de buceo del propio buceador (lo ve el centro en el manifiesto). DivingSlot no vende seguros: enlaza a DAN
     ['insurance_provider', 'text', { check: 'length(insurance_provider) <= 60' }],
     ['insurance_expiry', 'date'],
+    ['insurance_reminded_for', 'date'], // caducidad ya avisada por email (14 días antes)
   ] },
   certifications: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -233,7 +234,7 @@ export const TABLES = {
     ['extras_php', 'int', { nn: true, def: '0', check: 'extras_php >= 0' }],
     ['discount_php', 'int', { nn: true, def: '0', check: 'discount_php >= 0' }],
     ['pay_on_site', 'bool', { nn: true, def: '0' }],
-    ['balance_reminded_at', 'ts'],
+    ['balance_reminded_at', 'ts'], // recordatorio del día antes (hora, lugar, mar y el resto si queda algo)
   ] },
   payments: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],

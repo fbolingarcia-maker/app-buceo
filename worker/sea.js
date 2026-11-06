@@ -39,9 +39,16 @@ export async function handleSea(req, env, url) {
   const id = url.searchParams.get('trip') || ''
   if (!/^[\w-]{1,64}$/.test(id)) return json({ error: 'salida no válida' }, 400)
   await rateLimit(env, 'sea:' + (req.headers.get('CF-Connecting-IP') || ''), 60, 60)
+  const out = await tripSea(env, id)
+  if (!out) return json({ error: 'salida no encontrada' }, 404)
+  return json(out, 200, { 'Cache-Control': 'public, max-age=1800' })
+}
+
+// Previsión y visibilidad de una salida (también la usa el recordatorio del día antes, en cron.js)
+export async function tripSea(env, id) {
   const t = await first(env.DB, `SELECT t.departs_at, t.num_dives, t.status, c.lat, c.lng, d.lat AS dlat, d.lng AS dlng
     FROM trips t JOIN centers c ON c.id = t.center_id LEFT JOIN destinations d ON d.name = c.destination WHERE t.id = ?`, id)
-  if (!t || t.status === 'draft') return json({ error: 'salida no encontrada' }, 404)
+  if (!t || t.status === 'draft') return null
   const sites = await all(env.DB, 'SELECT ds.id, ds.name FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = ?', id)
 
   // Visibilidad anotada en la bitácora (solo la media y cuántas, con 2 o más inmersiones)
@@ -82,5 +89,5 @@ export async function handleSea(req, env, url) {
     }
   }
   const at = lat != null && lng != null ? { lat: Math.round(lat * 100) / 100, lng: Math.round(lng * 100) / 100 } : null
-  return json({ forecast, reason, visibility, at, source: 'Open-Meteo' }, 200, { 'Cache-Control': 'public, max-age=1800' })
+  return { forecast, reason, visibility, at, source: 'Open-Meteo' }
 }

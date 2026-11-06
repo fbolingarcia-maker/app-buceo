@@ -11,6 +11,10 @@ import { ArrowLeft, Check, MapPin, MessageCircle, Waves } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
 import { MedicalCheck, medicalValid, daysSinceDive } from '../lib/medical'
 import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard } from '../lib/extras'
+import { PayBox, holdEnd } from '../lib/pay'
+
+const DRAFT = 'ds_book_draft'
+const toProfile = (back) => { try { sessionStorage.setItem('afterCert', back) } catch (e) { /* sin almacenamiento */ } }
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
@@ -78,6 +82,25 @@ export default function Salida({ id }) {
   const [chosen, setChosen] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Reserva recién creada: el pago se hace aquí mismo, sin cambiar de pantalla
+  const [booked, setBooked] = useState(null)
+  const [mode, setMode] = useState('demo')
+  const [, tick] = useState(0)
+  useEffect(() => {
+    supabase.from('app_config').select('value').eq('key', 'payments_mode').maybeSingle().then(({ data }) => data && setMode(data.value))
+  }, [])
+  useEffect(() => { if (!booked) return; const i = setInterval(() => tick((n) => n + 1), 15000); return () => clearInterval(i) }, [booked])
+  // Lo elegido antes de entrar (plazas, equipo, extras) se recupera al volver a la salida
+  useEffect(() => {
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DRAFT) || 'null')
+      if (d?.trip === id && session) {
+        sessionStorage.removeItem(DRAFT)
+        setSeats(d.seats || 1); setGear(!!d.gear); setChosen(d.chosen || [])
+        setTimeout(() => document.getElementById('reservar')?.scrollIntoView({ block: 'start' }), 300)
+      }
+    } catch (e) { /* sin almacenamiento */ }
+  }, [id, session])
 
   useEffect(() => {
     supabase.from('published_trips').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
@@ -129,11 +152,23 @@ export default function Salida({ id }) {
 
   async function book() {
     setBusy(true); setError('')
-    const { error } = await supabase.rpc('book_trip', { p_trip: trip.id, p_seats: seats, p_with_gear: gear, p_medical_signed: medical, p_ref: viaFor(trip.center_id), p_extras: chosen })
+    const { data, error } = await supabase.rpc('book_trip', { p_trip: trip.id, p_seats: seats, p_with_gear: gear, p_medical_signed: medical, p_ref: viaFor(trip.center_id), p_extras: chosen })
     setBusy(false)
     if (error) return setError(errMsg(error))
-    try { sessionStorage.setItem('justBooked', '1') } catch (e) { /* sin almacenamiento */ }
-    go('/reservas')
+    // Sin los importes en la respuesta (backend antiguo), el pago sigue en Reservas como antes
+    if (!data?.id || data.amount_php == null) {
+      try { sessionStorage.setItem('justBooked', '1') } catch (e) { /* sin almacenamiento */ }
+      return go('/reservas')
+    }
+    setBooked(data)
+    setTimeout(() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
+  function loginToBook() {
+    try {
+      sessionStorage.setItem('afterLogin', '/salida/' + trip.id)
+      sessionStorage.setItem(DRAFT, JSON.stringify({ trip: trip.id, seats, gear, chosen }))
+    } catch (e) { /* sin almacenamiento */ }
+    go('/login')
   }
 
   return (
@@ -202,88 +237,132 @@ export default function Salida({ id }) {
 
       <QuienVa tripId={trip.id} loggedIn={!!session} />
 
-      {ctaVisible && trip.available_seats > 0 && !isCenter && (
+      {ctaVisible && trip.available_seats > 0 && !isCenter && !booked && (
         <div className="sticky-cta">
-          <span><PriceTag trip={trip} /> <span className="small muted">· {t('{n} plazas', { n: trip.available_seats })}</span></span>
+          <span><span className="small muted">{t('Total')}</span> <b>{php(total)}</b> <span className="small muted">· {seats > 1 ? t('{n} plazas', { n: seats }) : t('{n} plaza', { n: 1 })}</span></span>
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
         </div>
       )}
       <h2 id="reservar" style={{ scrollMarginTop: 12 }}>{t('Reservar')}</h2>
-      {!session ? (
-        <div className="card">
-          <p>{t('Para reservar necesitas una cuenta.')}</p>
-          <Link to="/login" className="btn block" onClick={() => { try { sessionStorage.setItem('afterLogin', '/salida/' + trip.id) } catch (e) { /* sin almacenamiento */ } }}>{t('Entrar o crear cuenta')}</Link>
-          <p className="small muted" style={{ marginBottom: 0 }}>{t('Después de entrar volverás a esta salida.')}</p>
-        </div>
+      {booked ? (
+        <PagarAhora b={booked} mode={mode} onPaid={(id) => go('/reservas?pagado=' + id)} />
       ) : isCenter ? (
         <div className="card muted">{t('Estás con una cuenta de centro. Para reservar, usa una cuenta de buceador.')}</div>
       ) : trip.available_seats < 1 ? (
         <div className="card muted">{t('Salida completa.')}</div>
       ) : (
-        <div className="card">
-          {!levelOk && (
-            <div className="msg warn" role="status">
-              {certs.length === 0 ? t('Añade tu certificación en el perfil para poder reservar.') : t('Esta salida requiere {nivel}.', { nivel: levelName(trip.min_level) })}{' '}
-              <Link to="/perfil" onClick={() => { try { sessionStorage.setItem('afterCert', '/salida/' + trip.id) } catch (e) { /* sin almacenamiento */ } }}>{t('Ir al perfil')}</Link>
+        <div className="card book-steps">
+          <Step n={1} title={t('Tu salida')}>
+            <div className="field">
+              <label htmlFor="seats">{t('Plazas')}</label>
+              <select id="seats" value={seats} onChange={(e) => setSeats(+e.target.value)}>
+                {Array.from({ length: Math.min(trip.available_seats, 6) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
+              </select>
             </div>
+            {trip.gear_rental_php > 0 && (
+              <label className="check field"><input type="checkbox" checked={gear} onChange={(e) => setGear(e.target.checked)} /> {t('Alquilar equipo completo (+{precio} por persona)', { precio: php(trip.gear_rental_php) })}</label>
+            )}
+            {extras.length > 0 && (
+              <fieldset className="field extras-pick">
+                <legend>{t('Extras del centro')}</legend>
+                {extras.map((e) => (
+                  <label key={e.id} className="check">
+                    <input type="checkbox" checked={chosen.includes(e.id)} onChange={() => setChosen((c) => (c.includes(e.id) ? c.filter((x) => x !== e.id) : [...c, e.id]))} />
+                    <span><b>{e.name}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ''} <span className="muted small">({extraKind(e.kind)})</span>{e.description && <><br /><span className="small muted">{e.description}</span></>}</span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            {session && gear && !hasSizes && (
+              <p className="small muted" style={{ marginTop: -4 }}>{t('Añade tus tallas en el perfil para que el centro te prepare el equipo.')} <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Ir al perfil')}</Link></p>
+            )}
+          </Step>
+
+          {session && (
+            <Step n={2} title={t('Certificación y salud')}>
+              {!levelOk ? (
+                <div className="msg warn" role="status" style={{ marginTop: 0 }}>
+                  {certs.length === 0 ? t('Añade tu certificación en el perfil para poder reservar.') : t('Esta salida requiere {nivel}.', { nivel: levelName(trip.min_level) })}{' '}
+                  <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Ir al perfil')}</Link>
+                </div>
+              ) : <p className="small row" style={{ gap: 6, margin: '0 0 8px' }}><Icon icon={Check} size={16} className="ok-ink" /> {t('Tu certificación cumple el nivel mínimo')}</p>}
+              {sinceDive != null && sinceDive > 365 && (
+                <div className="msg warn" role="status">{t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.')}</div>
+              )}
+              {sinceDive == null && <p className="small muted">{t('Añade en tu perfil la fecha de tu última inmersión: el centro la tiene en cuenta.')} <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Ir al perfil')}</Link></p>}
+              {diver && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
+              {diver && <DanCard diver={diver} compact />}
+            </Step>
           )}
-          <div className="field">
-            <label htmlFor="seats">{t('Plazas')}</label>
-            <select id="seats" value={seats} onChange={(e) => setSeats(+e.target.value)}>
-              {Array.from({ length: Math.min(trip.available_seats, 6) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
-            </select>
-          </div>
-          {trip.gear_rental_php > 0 && (
-            <label className="check field"><input type="checkbox" checked={gear} onChange={(e) => setGear(e.target.checked)} /> {t('Alquilar equipo completo (+{precio} por persona)', { precio: php(trip.gear_rental_php) })}</label>
-          )}
-          {extras.length > 0 && (
-            <fieldset className="field extras-pick">
-              <legend>{t('Extras del centro')}</legend>
-              {extras.map((e) => (
-                <label key={e.id} className="check">
-                  <input type="checkbox" checked={chosen.includes(e.id)} onChange={() => setChosen((c) => (c.includes(e.id) ? c.filter((x) => x !== e.id) : [...c, e.id]))} />
-                  <span><b>{e.name}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ''} <span className="muted small">({extraKind(e.kind)})</span>{e.description && <><br /><span className="small muted">{e.description}</span></>}</span>
-                </label>
-              ))}
-            </fieldset>
-          )}
-          {gear && !hasSizes && (
-            <p className="small muted" style={{ marginTop: -4 }}>{t('Añade tus tallas en el perfil para que el centro te prepare el equipo.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>
-          )}
-          {sinceDive != null && sinceDive > 365 && (
-            <div className="msg warn" role="status">{t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.')}</div>
-          )}
-          {sinceDive == null && <p className="small muted">{t('Añade en tu perfil la fecha de tu última inmersión: el centro la tiene en cuenta.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>}
-          {diver && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
-          {diver && <DanCard diver={diver} compact />}
-          {(fees > 0 || extrasAmt > 0 || unit < trip.price_php) && (
-            <div className="small muted stack" style={{ marginTop: 8, gap: 2 }}>
-              <div className="row between"><span>{t('Salida')} × {seats}</span><span>{php(seats * unit)}</span></div>
-              {gear && <div className="row between"><span>{t('Alquiler de equipo')} × {seats}</span><span>{php(seats * trip.gear_rental_php)}</span></div>}
-              {fees > 0 && <div className="row between"><span>{t('Tasas de santuarios y parques marinos')} × {seats}</span><span>{php(seats * fees)}</span></div>}
-              {extrasAmt > 0 && <div className="row between"><span>{t('Extras')}</span><span>{php(extrasAmt)}</span></div>}
-              {unit < trip.price_php && <div className="row between"><span>{t('Descuento de última hora')}</span><span>−{php(seats * (trip.price_php - unit))}</span></div>}
+
+          <Step n={session ? 3 : 2} title={t('Pago')} last>
+            {(fees > 0 || extrasAmt > 0 || unit < trip.price_php || gear) && (
+              <div className="small muted stack" style={{ gap: 2 }}>
+                <div className="row between"><span>{t('Salida')} × {seats}</span><span>{php(seats * unit)}</span></div>
+                {gear && <div className="row between"><span>{t('Alquiler de equipo')} × {seats}</span><span>{php(seats * trip.gear_rental_php)}</span></div>}
+                {fees > 0 && <div className="row between"><span>{t('Tasas de santuarios y parques marinos')} × {seats}</span><span>{php(seats * fees)}</span></div>}
+                {extrasAmt > 0 && <div className="row between"><span>{t('Extras')}</span><span>{php(extrasAmt)}</span></div>}
+                {unit < trip.price_php && <div className="row between"><span>{t('Descuento de última hora')}</span><span>−{php(seats * (trip.price_php - unit))}</span></div>}
+              </div>
+            )}
+            <div className="row between" style={{ margin: '12px 0 4px' }}><span>{t('Total')}</span><span className="big">{php(total)}</span></div>
+            <div className="row between small" style={{ marginBottom: 8 }}>
+              <span className="muted">{t('Para reservar pagas como mínimo el 50 %')}</span><b>{php(Math.ceil(total / 2))}</b>
             </div>
-          )}
-          <div className="row between" style={{ margin: '12px 0 4px' }}><span>{t('Total')}</span><span className="big">{php(total)}</span></div>
-          <div className="row between small" style={{ marginBottom: 8 }}>
-            <span className="muted">{t('Para reservar pagas como mínimo el 50 %')}</span><b>{php(Math.ceil(total / 2))}</b>
-          </div>
-          <details className="small how-pay">
-            <summary>{t('¿Cómo funciona el pago?')}</summary>
-            <ul>
-              <li>{t('Ahora pagas la señal (50 %) con GCash o tarjeta. Tu plaza queda guardada 15 minutos mientras pagas.')}</li>
-              <li>{t('El resto lo pagas en la app o en efectivo en el centro el día de la salida. Te mandamos el enlace de pago 24 h antes.')}</li>
-              <li>{t('Si cancelas con 24 h o más, te devolvemos todo. Si el centro cancela por el mar, también.')}</li>
-            </ul>
-          </details>
-          {error && <div className="msg err" role="alert">{error}</div>}
-          <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book} aria-describedby="book-hint">
-            {busy ? t('Reservando…') : t('Reservar plaza')}
-          </button>
-          {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Guarda el cuestionario médico para continuar.')}</p>}
+            <details className="small how-pay">
+              <summary>{t('¿Cómo funciona el pago?')}</summary>
+              <ul>
+                <li>{t('Ahora pagas la señal (50 %) con GCash o tarjeta. Tu plaza queda guardada 15 minutos mientras pagas.')}</li>
+                <li>{t('El resto lo pagas en la app o en efectivo en el centro el día de la salida. Te mandamos el enlace de pago 24 h antes.')}</li>
+                <li>{t('Si cancelas con 24 h o más, te devolvemos todo. Si el centro cancela por el mar, también.')}</li>
+              </ul>
+            </details>
+            {error && <div className="msg err" role="alert">{error}</div>}
+            {!session ? (
+              <>
+                <button type="button" className="btn block" onClick={loginToBook}>{t('Entrar y reservar')}</button>
+                <p className="small muted" style={{ margin: '6px 0 0' }}>{t('Necesitas una cuenta para reservar. Al entrar vuelves aquí con lo que has elegido.')}</p>
+              </>
+            ) : (
+              <>
+                <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book} aria-describedby="book-hint">
+                  {busy ? t('Reservando…') : t('Continuar al pago')}
+                </button>
+                {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Guarda el cuestionario médico para continuar.')}</p>}
+              </>
+            )}
+          </Step>
         </div>
       )}
     </>
+  )
+}
+
+// Paso numerado del formulario de reserva
+function Step({ n, title, last, children }) {
+  return (
+    <section className={'book-step' + (last ? ' last' : '')} aria-label={title}>
+      <h3 className="row" style={{ gap: 8 }}><span className="step-n" aria-hidden>{n}</span>{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+// Plaza retenida: se paga aquí mismo (señal o total). Si caduca, se vuelve a intentar desde Reservas.
+function PagarAhora({ b, mode, onPaid }) {
+  const mins = Math.ceil((holdEnd(b) - Date.now()) / 60000)
+  if (mins <= 0) return (
+    <div className="card">
+      <div className="msg warn" role="status" style={{ marginTop: 0 }}>{t('Se acabó el tiempo para pagar y la plaza se ha liberado.')}</div>
+      <Link to="/reservas" className="btn block ghost">{t('Ver mis reservas')}</Link>
+    </div>
+  )
+  return (
+    <div className="card">
+      <b className="row" style={{ gap: 6 }}><Icon icon={Check} className="ok-ink" /> {t('Plaza retenida {n} min', { n: mins })}</b>
+      <p className="small muted" style={{ margin: '4px 0 0' }}>{t('Paga al menos la señal del 50 % ({amount}) para confirmarla.', { amount: php(b.deposit_php) })}</p>
+      <PayBox b={b} mode={mode} onDone={(m, paidId) => onPaid(paidId || b.id)} />
+      <p className="small muted" style={{ margin: '8px 0 0' }}>{t('También puedes pagarla más tarde en')} <Link to="/reservas">{t('Reservas')}</Link>.</p>
+    </div>
   )
 }

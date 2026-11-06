@@ -116,7 +116,7 @@ export function DanCard({ diver, compact }) {
       <p style={{ margin: '4px 0 8px' }}>{t('Una evacuación o una cámara hiperbárica en Filipinas puede costar miles de dólares y muchos seguros de viaje no cubren el buceo. Los centros suelen pedirlo. DAN (Divers Alert Network) cubre accidentes de buceo con planes anuales.')}</p>
       <div className="row wrap" style={{ gap: 6, alignItems: 'center' }}>
         <a className="btn small ghost" href={url} target="_blank" rel="noopener noreferrer">{t('Ver seguros DAN')}</a>
-        <a className="small" href="#/perfil">{t('Ya tengo seguro')}</a>
+        <a className="small" href="#/perfil?ver=buceo">{t('Ya tengo seguro')}</a>
       </div>
       <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>{t('Lo contratas directamente con DAN; DivingSlot no vende seguros.')}{cfg?.dan_affiliate === '1' ? ' ' + t('DivingSlot puede recibir una pequeña comisión de DAN.') : ''}</p>
     </div>

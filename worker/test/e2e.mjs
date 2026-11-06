@@ -131,7 +131,7 @@ for (const [role, [who, routes]] of Object.entries(plan)) {
   // Cambiar la contraseña desde el Perfil con el código del email (y el de la app si tiene dos pasos)
   if (role === 'diver' || role === 'mfa') {
     errs.length = 0; apiErrors.length = 0
-    await page.goto(ORIGIN + '/#/perfil', { waitUntil: 'domcontentloaded' })
+    await page.goto(ORIGIN + '/#/perfil?ver=cuenta', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('#cc-pw')
     const before = (await db.prepare('SELECT password_hash FROM users WHERE email = ?').bind(`${who}@divingslot.test`).first()).password_hash
     await page.fill('#cc-pw', 'Cambiada123')
@@ -175,7 +175,7 @@ if (!only.length || only.includes('google')) {
   await page.locator('button.google-btn').first().click()
   await page.waitForURL(/\/app\/#\//, { timeout: 8000 }).catch(() => {})
   await page.waitForTimeout(1200)
-  await page.goto(ORIGIN + '/app/#/perfil', { waitUntil: 'domcontentloaded' })
+  await page.goto(ORIGIN + '/app/#/perfil?ver=cuenta', { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(900)
   const txt = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ')
   const bad = [...errs, ...apiErrors.map((e) => 'API ' + e)]

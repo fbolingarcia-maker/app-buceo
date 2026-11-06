@@ -182,7 +182,7 @@ export default function App() {
       <header className={isAdmin ? 'top admin' : 'top'}>
         <Link to="/" className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Flag />
-          <span className="brand-name">Get your slot and dive</span>
+          <span className="brand-name">{t('Reserva tu plaza y bucea')}</span>
           {isAdmin ? <span className="pill admin-pill" style={{ fontSize: 11 }}>{t('Admin')}</span>
             : session && isCenter && <span className="pill" style={{ fontSize: 11 }}>{t('Centro')}</span>}
         </Link>

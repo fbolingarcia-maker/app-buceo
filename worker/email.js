@@ -39,6 +39,43 @@ Object.assign(TEMPLATES, {
       ? `Tu salida con <b>${esc(center)}</b> es el ${esc(when(departs, 'es'))}. Lleva <b>${peso(due)}</b> en efectivo para pagar el resto en el centro.<br>Your trip with <b>${esc(center)}</b> is on ${esc(when(departs, 'en'))}. Bring <b>${peso(due)}</b> in cash to pay the rest at the centre.`
       : `Tu salida con <b>${esc(center)}</b> es el ${esc(when(departs, 'es'))}. Te quedan <b>${peso(due)}</b> por pagar: hazlo ahora con GCash o tarjeta, o en efectivo en el centro.<br>Your trip with <b>${esc(center)}</b> is on ${esc(when(departs, 'en'))}. <b>${peso(due)}</b> is still due: pay now by GCash or card, or in cash at the centre.`}</p>${button(url, cash ? 'Ver mi reserva · View my booking' : 'Pagar el resto · Pay the rest')}${foot('Lleva tu tarjeta de certificación.', 'Bring your certification card.')}`),
   }),
+  // Día antes de la salida: hora, lugar, contacto, mar previsto y lo que queda por pagar
+  tripTomorrow: (r, url, profileUrl) => {
+    const place = [r.locality, r.destination].filter((x, i, a) => x && a.indexOf(x) === i).join(', ')
+    const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.lat != null && r.lng != null ? r.lat + ',' + r.lng : r.center + ' ' + (r.destination || ''))
+    const wa = r.phone ? 'https://wa.me/' + String(r.phone).replace(/\D/g, '') : null
+    const sea = r.sea && {
+      good: ['Buenas condiciones', 'Good conditions'], moderate: ['Mar algo movido', 'Slightly choppy sea'], rough: ['Mar movido: el centro puede cancelar (si cancela, se devuelve todo)', 'Rough sea: the centre may cancel (full refund if it does)'],
+    }[r.sea.level]
+    const seaNum = r.sea ? [r.sea.wave_m != null && r.sea.wave_m + ' m', r.sea.wind_kmh != null && r.sea.wind_kmh + ' km/h'].filter(Boolean).join(' · ') : ''
+    const row = (es, en, v) => `<tr><td style="color:#5d7282;padding:3px 12px 3px 0;vertical-align:top">${es}<br><span style="font-size:12px">${en}</span></td><td style="padding:3px 0">${v}</td></tr>`
+    const pay = r.due <= 0 ? ['Todo pagado', 'Fully paid']
+      : r.pay_on_site ? [`Lleva <b>${peso(r.due)}</b> en efectivo para pagar el resto en el centro.`, `Bring <b>${peso(r.due)}</b> in cash to pay the rest at the centre.`]
+        : [`Quedan <b>${peso(r.due)}</b>: págalo en la app con GCash o tarjeta, o en efectivo en el centro.`, `<b>${peso(r.due)}</b> is still due: pay in the app by GCash or card, or in cash at the centre.`]
+    return {
+      subject: `Mañana buceas con ${r.center} · Diving tomorrow with ${r.center}`,
+      html: wrap(`<h2>DivingSlot 🤿</h2><p>Todo listo para tu salida. Aquí tienes lo que necesitas.<br>You're all set for your trip. Here's what you need.</p>
+<table style="border-collapse:collapse;font-size:15px">
+${row('Salida', 'Departs', `<b>${esc(when(r.departs_at, 'es'))}</b><br>${esc(when(r.departs_at, 'en'))}`)}
+${row('Centro', 'Centre', `<b>${esc(r.center)}</b>${place ? '<br>' + esc(place) : ''}<br><a href="${esc(map)}">Mapa · Map</a>${wa ? ` · <a href="${esc(wa)}">WhatsApp</a>` : ''}`)}
+${r.boat ? row('Barco', 'Boat', esc(r.boat)) : ''}
+${row('Plazas', 'Spots', String(r.seats) + ' · ' + (r.num_dives || 2) + ' inmersiones / dives')}
+${sea ? row('Mar previsto', 'Sea forecast', `${sea[0]}${seaNum ? ' (' + esc(seaNum) + ')' : ''}<br><span style="font-size:13px">${sea[1]}</span>`) : ''}
+${row('Pago', 'Payment', `${pay[0]}<br><span style="font-size:13px">${pay[1]}</span>`)}
+</table>
+<p>Lleva tu tarjeta de certificación y llega 15 minutos antes. No vueles en las 18 h siguientes a bucear.<br>Bring your certification card and arrive 15 minutes early. Don't fly within 18 h after diving.</p>
+${r.insured ? '' : `<p style="background:#f3f6f8;padding:10px 12px;border-radius:8px">No tenemos tu seguro de buceo en el perfil. Muchos centros lo piden. <a href="${esc(profileUrl)}">Añadirlo</a><br>We don't have your dive insurance on file. Many centres ask for it. <a href="${esc(profileUrl)}">Add it</a></p>`}
+${button(url, r.due > 0 && !r.pay_on_site ? 'Pagar el resto · Pay the rest' : 'Ver mi reserva · View my booking')}${foot('Previsión de Open-Meteo, orientativa: el centro decide si sale.', 'Forecast by Open-Meteo, for guidance only: the centre decides whether to go out.')}`),
+    }
+  },
+  // El seguro de buceo que el buceador indicó en su perfil caduca pronto
+  insuranceExpiring: (provider, expiry, danUrl, profileUrl) => {
+    const d = (lang) => new Date(expiry + 'T00:00:00+08:00').toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-GB', { timeZone: 'Asia/Manila', day: 'numeric', month: 'long', year: 'numeric' })
+    return {
+      subject: 'Tu seguro de buceo caduca pronto · Your dive insurance expires soon',
+      html: wrap(`<h2>DivingSlot 🤿</h2><p>Tu seguro de buceo (<b>${esc(provider)}</b>) caduca el <b>${esc(d('es'))}</b>. Renuévalo antes de tu próxima salida y actualiza la fecha en tu perfil.<br>Your dive insurance (<b>${esc(provider)}</b>) expires on <b>${esc(d('en'))}</b>. Renew it before your next trip and update the date in your profile.</p>${button(profileUrl, 'Actualizar mi perfil · Update my profile')}<p><a href="${esc(danUrl)}">Ver seguros DAN · See DAN plans</a></p>${foot('Recibes este aviso porque indicaste la fecha en tu perfil. DivingSlot no vende seguros.', 'You get this because you added the date to your profile. DivingSlot does not sell insurance.')}`),
+    }
+  },
   // Plazas de última hora en un destino que el buceador sigue
   lastMinute: (center, dest, departs, free, unit, price, url) => ({
     subject: `Última hora en ${dest}: ${free === 1 ? '1 plaza' : free + ' plazas'} · Last-minute spots in ${dest}`,

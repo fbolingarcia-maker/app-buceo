@@ -187,7 +187,8 @@ CREATE TABLE IF NOT EXISTS divers (
   allergies TEXT CHECK (length(allergies) <= 300),
   alert_destinations TEXT NOT NULL DEFAULT '[]',
   insurance_provider TEXT CHECK (length(insurance_provider) <= 60),
-  insurance_expiry TEXT
+  insurance_expiry TEXT,
+  insurance_reminded_for TEXT
 );
 
 CREATE TABLE IF NOT EXISTS certifications (

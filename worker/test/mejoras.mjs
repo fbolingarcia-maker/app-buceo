@@ -3,7 +3,8 @@
 // recordatorio del resto 24 h antes, condiciones del mar, Green Fins y alergias en el manifiesto.
 import { D1 } from './shim.mjs'
 import worker, { handleApi } from '../index.js'
-import { balanceReminders, expireUnpaidWithMoney } from '../cron.js'
+import { balanceReminders, insuranceReminders, expireUnpaidWithMoney } from '../cron.js'
+import { TEMPLATES } from '../email.js'
 import { seaLevel } from '../sea.js'
 
 const ORIGIN = 'https://divingslot.test'
@@ -118,9 +119,29 @@ await C.rpc('confirm_payment_demo', { p_booking: BC, p_kind: 'deposit' })
 await db.prepare('UPDATE trips SET departs_at = ? WHERE id = ?').bind(dep(24), T).run()
 mails.length = 0
 let n = await balanceReminders(env, ORIGIN)
-ok(n === 2 && mails.some((m) => m.to === 'c@x.test' && /Paga el resto/.test(m.subject)) && mails.some((m) => m.to === 'b@x.test' && /Mañana buceas/.test(m.subject)), 'recordatorios: enlace de pago y aviso de efectivo', mails)
-ok(!mails.some((m) => m.to === 'a@x.test'), 'quien ya pagó todo no recibe nada')
+ok(n === 3 && ['a@x.test', 'b@x.test', 'c@x.test'].every((to) => mails.some((m) => m.to === to && /Mañana buceas/.test(m.subject))), 'recordatorio del día antes a todas las reservas confirmadas', mails)
 ok((await balanceReminders(env, ORIGIN)) === 0, 'no se repite')
+{
+  const base = { center: 'Centro', departs_at: dep(24), seats: 1, num_dives: 2, lat: 9.55, lng: 123.77, phone: '+63 912 345 6789', insured: 0 }
+  const h = (x) => TEMPLATES.tripTomorrow({ ...base, ...x }, ORIGIN + '/app/#/reservas', ORIGIN + '/app/#/perfil?ver=buceo').html
+  ok(/Pagar el resto/.test(h({ due: 500 })) && /efectivo/.test(h({ due: 500, pay_on_site: 1 })) && /Todo pagado/.test(h({ due: 0 })), 'el email dice qué queda por pagar')
+  ok(/Mar movido/.test(h({ due: 0, sea: { level: 'rough', wave_m: 1.7, wind_kmh: 18 } })) && /wa\.me\/639123456789/.test(h({ due: 0 })), 'incluye mar previsto y WhatsApp del centro')
+  ok(/seguro de buceo/.test(h({ due: 0 })) && !/seguro de buceo/.test(h({ due: 0, insured: 1 })), 'avisa si no tiene seguro')
+}
+
+section('aviso de caducidad del seguro')
+{
+  const dA = await diverOf('a@x.test')
+  const nine = Date.parse(new Date().toISOString().slice(0, 10) + 'T01:30:00Z') // 9:30 en Manila
+  const exp = new Date(nine + 8 * 36e5 + 10 * 864e5).toISOString().slice(0, 10)
+  await db.prepare("UPDATE divers SET insurance_provider = 'DAN', insurance_expiry = ? WHERE id = ?").bind(exp, dA).run()
+  mails.length = 0
+  ok((await insuranceReminders(env, ORIGIN, nine - 2 * 36e5)) === 0, 'fuera de las 9 de Manila no envía')
+  ok((await insuranceReminders(env, ORIGIN, nine)) === 1 && mails.some((m) => m.to === 'a@x.test' && /seguro de buceo caduca/.test(m.subject)), 'avisa 10 días antes', mails)
+  ok((await insuranceReminders(env, ORIGIN, nine)) === 0, 'una sola vez por fecha')
+  await db.prepare("UPDATE divers SET insurance_expiry = ? WHERE id = ?").bind(new Date(nine + 8 * 36e5 + 40 * 864e5).toISOString().slice(0, 10), dA).run()
+  ok((await insuranceReminders(env, ORIGIN, nine)) === 0, 'con 40 días aún no avisa')
+}
 
 section('cobro en efectivo marcado en la app')
 r = await staff.rpc('record_cash_payment', { p_booking: BB.id })

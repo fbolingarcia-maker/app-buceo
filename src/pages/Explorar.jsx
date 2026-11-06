@@ -146,7 +146,7 @@ export default function Explorar() {
 
       <div className="search-box">
         <div className="row" style={{ gap: 8 }}>
-          <input type="search" className="grow" placeholder={t('¿Dónde quieres bucear? Zona, isla, centro…')} value={q}
+          <input type="search" className="grow" placeholder={t('Zona, isla o centro')} aria-label={t('¿Dónde quieres bucear? Zona, isla, centro…')} value={q}
             onChange={(e) => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)}
             aria-label={t('¿Dónde quieres bucear? Zona, isla, centro…')} />
           <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>

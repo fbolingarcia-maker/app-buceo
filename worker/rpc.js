@@ -605,7 +605,7 @@ const RPC = {
         s.push(db.prepare(`UPDATE divers SET user_id = NULL, full_name = 'Cuenta eliminada', email = NULL, avatar_url = NULL, bio = NULL, country = NULL,
           languages = '[]', logged_dives = NULL, seeks_buddy = 0, show_on_trips = 0, buddy_ratings_enabled = 0, wetsuit_size = NULL, bcd_size = NULL,
           fin_size = NULL, last_dive_date = NULL, nitrox = 0, medical_done_at = NULL, medical_result = NULL,
-          allergies = NULL, alert_destinations = '[]', insurance_provider = NULL, insurance_expiry = NULL WHERE id = ?`).bind(d.id))
+          allergies = NULL, alert_destinations = '[]', insurance_provider = NULL, insurance_expiry = NULL, insurance_reminded_for = NULL WHERE id = ?`).bind(d.id))
         s.push(db.prepare('DELETE FROM buddy_ratings WHERE rated_id = ?').bind(d.id))
       } else s.push(db.prepare('DELETE FROM divers WHERE id = ?').bind(d.id))
     }
