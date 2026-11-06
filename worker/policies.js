@@ -75,10 +75,10 @@ export const POLICIES = {
     select: (c, a) => or(and(P(`${a}.share_with_center = 1 AND ${a}.center_id IS NOT NULL`), staffIn(c, `${a}.center_id`)), myDiver(c, `${a}.diver_id`)),
     write: (c, a) => myDiver(c, `${a}.diver_id`), check: (c, a) => myDiver(c, `${a}.diver_id`) },
   buddy_ratings: { select: (c, a) => myDiver(c, `${a}.rater_id`) },
-  // Extras del centro: los activos son públicos; el equipo los gestiona
+  // Extras del centro: los activos son públicos; el equipo los gestiona. Seguros no: los gestiona DivingSlot con DAN
   center_extras: { ops: ['insert', 'update', 'delete'],
-    select: (c, a) => or(P(`${a}.active = 1`), staffIn(c, `${a}.center_id`), admin(c)),
-    write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },
+    select: (c, a) => or(P(`${a}.active = 1 AND ${a}.kind <> 'insurance'`), staffIn(c, `${a}.center_id`), admin(c)),
+    write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => and(staffIn(c, `${a}.center_id`), P(`${a}.kind <> 'insurance'`)) },
   // Extras de una reserva: los ve quien ve la reserva (se crean solo con RPC)
   booking_extras: {
     select: (c, a) => or(admin(c),

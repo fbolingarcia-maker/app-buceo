@@ -35,6 +35,7 @@ export default function Perfil() {
       wetsuit_size: diver.wetsuit_size || '', bcd_size: diver.bcd_size || '', fin_size: diver.fin_size || '',
       last_dive_date: diver.last_dive_date || '', nitrox: !!diver.nitrox,
       allergies: diver.allergies || '', alert_destinations: diver.alert_destinations || [],
+      insurance_provider: diver.insurance_provider || '', insurance_expiry: diver.insurance_expiry || '',
     })
   }, [diver])
 
@@ -62,6 +63,7 @@ export default function Perfil() {
         wetsuit_size: form.wetsuit_size || null, bcd_size: form.bcd_size || null, fin_size: form.fin_size.trim() || null,
         last_dive_date: form.last_dive_date || null, nitrox: form.nitrox,
         allergies: form.allergies.trim() || null, alert_destinations: form.alert_destinations,
+        insurance_provider: form.insurance_provider.trim() || null, insurance_expiry: form.insurance_provider.trim() && form.insurance_expiry ? form.insurance_expiry : null,
       }),
     }).eq('id', diver.id)
     error ? note('p', false, errMsg(error)) : (note('p', true, t('Perfil guardado')), refresh())
@@ -182,6 +184,10 @@ export default function Perfil() {
               <label htmlFor="perfil-al">{t('Alergias (opcional)')}</label>
               <input id="perfil-al" maxLength={300} placeholder={t('p. ej. penicilina, marisco, picaduras de abeja')} value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} />
               <span className="small muted">{t('Solo la ve el centro de las salidas que reserves, en el manifiesto del barco. Puedes borrarla cuando quieras.')}</span>
+            </div>
+            <div className="grid2">
+              <div className="field"><label htmlFor="perfil-ins">{t('Seguro de buceo')}</label><input id="perfil-ins" maxLength={60} placeholder={t('p. ej. DAN')} value={form.insurance_provider} onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })} /></div>
+              <div className="field"><label htmlFor="perfil-insx">{t('Válido hasta')}</label><input id="perfil-insx" type="date" value={form.insurance_expiry} onChange={(e) => setForm({ ...form, insurance_expiry: e.target.value })} /></div>
             </div>
           </fieldset>
           <fieldset className="subform">

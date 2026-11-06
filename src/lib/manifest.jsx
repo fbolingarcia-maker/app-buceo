@@ -25,6 +25,7 @@ export function manifestRows(active) {
       nitrox: d?.nitrox ? t('Sí') : '',
       gear: b.with_gear ? (sizes || t('Sí, sin tallas')) : t('No'),
       allergies: d?.allergies || '',
+      insurance: !d ? '' : d.insurance_provider ? d.insurance_provider + (d.insurance_expiry ? ' · ' + d.insurance_expiry : '') : t('Sin seguro'),
       extras: (b.booking_extras || []).map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')).join(', '),
       pay: b.paid_php >= b.amount_php ? t('Pagado') : t('Falta {amount}', { amount: php(b.amount_php - b.paid_php) }) + (b.pay_on_site ? ' · ' + t('efectivo') : ''),
       onboard: b.checked_in_at ? t('Sí') : '',
@@ -33,7 +34,7 @@ export function manifestRows(active) {
 }
 
 const COLS = () => [['n', t('N.º')], ['name', t('Nombre')], ['seats', t('Plazas')], ['cert', t('Certificación')], ['dives', t('Inmersiones')], ['medical', t('Médico')],
-  ['last', t('Última inmersión')], ['nitrox', t('Nitrox')], ['gear', t('Equipo de alquiler')], ['allergies', t('Alergias')], ['extras', t('Extras')], ['pay', t('Pago')], ['onboard', t('A bordo')]]
+  ['last', t('Última inmersión')], ['nitrox', t('Nitrox')], ['gear', t('Equipo de alquiler')], ['allergies', t('Alergias')], ['insurance', t('Seguro')], ['extras', t('Extras')], ['pay', t('Pago')], ['onboard', t('A bordo')]]
 
 export function manifestCsv(trip, active) {
   const cols = COLS()

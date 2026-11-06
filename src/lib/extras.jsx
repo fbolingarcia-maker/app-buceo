@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { t } from './i18n'
 import { php } from './format'
 import Icon from './Icon'
-import { Leaf, Wind } from 'lucide-react'
+import { Leaf, ShieldCheck, Wind } from 'lucide-react'
+import { supabase } from './supabase'
+import { manilaDate } from './format'
 
 // ── Canal propio del centro: divingslot.com/r/<id> guarda de dónde llega el buceador 7 días ──
 const VIA_KEY = 'ds_via'
@@ -34,7 +36,8 @@ export function PriceTag({ trip }) {
 }
 
 // ── Extras que vende el centro ──
-export const EXTRA_KINDS = [['insurance', 'Seguro de buceo'], ['course', 'Curso'], ['photo', 'Fotos'], ['video', 'Vídeo'], ['nitrox', 'Nitrox'], ['other', 'Otro']]
+// Sin seguros: los centros no los venden (el seguro se contrata con DAN, ver DanCard)
+export const EXTRA_KINDS = [['course', 'Curso'], ['photo', 'Fotos'], ['video', 'Vídeo'], ['nitrox', 'Nitrox'], ['other', 'Otro']]
 export const extraKind = (k) => t((EXTRA_KINDS.find(([x]) => x === k) || [, k])[1])
 export const extrasTotal = (extras, chosen, seats) => extras.filter((e) => chosen.includes(e.id)).reduce((s, e) => s + e.price_php * (e.per_seat ? seats : 1), 0)
 
@@ -96,6 +99,30 @@ const seaLine = (f) => [
   f.wave_m != null && t('Olas {n} m', { n: f.wave_m }),
   f.wind_kmh != null && t('Viento {n} km/h', { n: f.wind_kmh }) + (f.gust_kmh != null ? ' (' + t('rachas {n}', { n: f.gust_kmh }) + ')' : ''),
 ].filter(Boolean).join(' · ')
+// ── Seguro de buceo: DivingSlot no lo vende; enlaza a DAN (Divers Alert Network). El enlace (con el código de
+// socio de DivingSlot cuando lo haya) está en app_config.dan_url; dan_affiliate = '1' muestra el aviso de comisión ──
+export const hasInsurance = (d) => !!d?.insurance_provider && (!d.insurance_expiry || d.insurance_expiry >= manilaDate())
+let danCfg = null
+const loadDan = () => (danCfg ||= supabase.from('app_config').select('key, value').in('key', ['dan_url', 'dan_affiliate'])
+  .then(({ data }) => Object.fromEntries((data || []).map((r) => [r.key, r.value]))).catch(() => ({})))
+export function DanCard({ diver, compact }) {
+  const [cfg, setCfg] = useState(null)
+  useEffect(() => { loadDan().then(setCfg) }, [])
+  if (hasInsurance(diver)) return null
+  const url = cfg?.dan_url || 'https://world.dan.org/membership-coverage/asia-pacific/'
+  return (
+    <div className={compact ? 'dan small' : 'card dan small'}>
+      <b className="row" style={{ gap: 6 }}><Icon icon={ShieldCheck} size={16} /> {t('¿Tienes seguro de buceo?')}</b>
+      <p style={{ margin: '4px 0 8px' }}>{t('Una evacuación o una cámara hiperbárica en Filipinas puede costar miles de dólares y muchos seguros de viaje no cubren el buceo. Los centros suelen pedirlo. DAN (Divers Alert Network) cubre accidentes de buceo con planes anuales.')}</p>
+      <div className="row wrap" style={{ gap: 6, alignItems: 'center' }}>
+        <a className="btn small ghost" href={url} target="_blank" rel="noopener noreferrer">{t('Ver seguros DAN')}</a>
+        <a className="small" href="#/perfil">{t('Ya tengo seguro')}</a>
+      </div>
+      <p className="muted" style={{ margin: '8px 0 0', fontSize: 12 }}>{t('Lo contratas directamente con DAN; DivingSlot no vende seguros.')}{cfg?.dan_affiliate === '1' ? ' ' + t('DivingSlot puede recibir una pequeña comisión de DAN.') : ''}</p>
+    </div>
+  )
+}
+
 // Mapa de olas de Windy en ese punto (enlace externo: Windy no permite incrustarlo en apps comerciales)
 export const windyUrl = ({ lat, lng }) => `https://www.windy.com/?waves,${lat},${lng},10`
 export function SeaCard({ tripId }) {

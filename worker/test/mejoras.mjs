@@ -77,12 +77,13 @@ await staff.rest({ table: 'trip_sites', op: 'insert', values: [{ trip_id: T, sit
 
 section('extras del centro')
 r = await staff.rest({ table: 'center_extras', op: 'insert', values: [
-  { center_id: 'c1', kind: 'insurance', name: 'Seguro de buceo 1 día', price_php: 400, per_seat: true },
+  { center_id: 'c1', kind: 'nitrox', name: 'Nitrox', price_php: 400, per_seat: true },
   { center_id: 'c1', kind: 'video', name: 'Vídeo de la salida', price_php: 1500, per_seat: false },
   { center_id: 'c1', kind: 'photo', name: 'Fotos (retirado)', price_php: 900, active: false }], returning: true, select: 'id, name, active' })
 ok(r.data?.length === 3, 'el centro crea extras', r)
 const [INS, VID, OFF] = r.data.map((x) => x.id)
 ok((await A.rest({ table: 'center_extras', op: 'insert', values: { center_id: 'c1', name: 'x', price_php: 1 } })).status === 403, 'un buceador no crea extras')
+ok((await staff.rest({ table: 'center_extras', op: 'insert', values: { center_id: 'c1', kind: 'insurance', name: 'Seguro', price_php: 300 } })).status === 403, 'el centro no puede vender seguros')
 r = await anon.rest({ table: 'center_extras', select: 'id', filters: [['center_id', 'eq', 'c1']] })
 ok(r.data?.length === 2, 'los inactivos no se ven', r)
 

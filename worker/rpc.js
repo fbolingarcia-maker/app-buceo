@@ -166,7 +166,7 @@ const RPC = {
     const gear = p_with_gear ? 1 : 0
     // Extras del centro (seguro, curso, fotos…): solo los activos de este centro
     const ids = [...new Set((Array.isArray(p_extras) ? p_extras : []).map(String))].slice(0, 10)
-    const extras = ids.length ? await all(ctx.db, `SELECT * FROM center_extras WHERE center_id = ? AND active = 1 AND id IN (${ids.map(() => '?').join(',')})`, t.center_id, ...ids) : []
+    const extras = ids.length ? await all(ctx.db, `SELECT * FROM center_extras WHERE center_id = ? AND active = 1 AND kind <> 'insurance' AND id IN (${ids.map(() => '?').join(',')})`, t.center_id, ...ids) : []
     if (extras.length !== ids.length) fail('BAD_EXTRA', 'algún extra ya no está disponible')
     const unit = Math.floor((t.price_php * (100 - t.lm_pct)) / 100)
     const discount = seats * (t.price_php - unit)
@@ -604,7 +604,8 @@ const RPC = {
       if (await first(db, 'SELECT 1 AS x FROM bookings WHERE diver_id = ?', d.id)) {
         s.push(db.prepare(`UPDATE divers SET user_id = NULL, full_name = 'Cuenta eliminada', email = NULL, avatar_url = NULL, bio = NULL, country = NULL,
           languages = '[]', logged_dives = NULL, seeks_buddy = 0, show_on_trips = 0, buddy_ratings_enabled = 0, wetsuit_size = NULL, bcd_size = NULL,
-          fin_size = NULL, last_dive_date = NULL, nitrox = 0, medical_done_at = NULL, medical_result = NULL WHERE id = ?`).bind(d.id))
+          fin_size = NULL, last_dive_date = NULL, nitrox = 0, medical_done_at = NULL, medical_result = NULL,
+          allergies = NULL, alert_destinations = '[]', insurance_provider = NULL, insurance_expiry = NULL WHERE id = ?`).bind(d.id))
         s.push(db.prepare('DELETE FROM buddy_ratings WHERE rated_id = ?').bind(d.id))
       } else s.push(db.prepare('DELETE FROM divers WHERE id = ?').bind(d.id))
     }

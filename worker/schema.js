@@ -189,6 +189,9 @@ export const TABLES = {
     // Alergias (opcional; solo las ve el centro de una salida reservada) y avisos de plazas de última hora por destino
     ['allergies', 'text', { check: 'length(allergies) <= 300' }],
     ['alert_destinations', 'json', { nn: true, def: "'[]'" }],
+    // Seguro de buceo del propio buceador (lo ve el centro en el manifiesto). DivingSlot no vende seguros: enlaza a DAN
+    ['insurance_provider', 'text', { check: 'length(insurance_provider) <= 60' }],
+    ['insurance_expiry', 'date'],
   ] },
   certifications: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -250,7 +253,7 @@ export const TABLES = {
   center_extras: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
     ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
-    ['kind', 'text', { nn: true, def: "'other'", check: ENUM('kind', ['insurance', 'course', 'photo', 'video', 'nitrox', 'other']) }],
+    ['kind', 'text', { nn: true, def: "'other'", check: ENUM('kind', ['insurance', 'course', 'photo', 'video', 'nitrox', 'other']) }], // 'insurance' ya no se usa: los seguros no los venden los centros
     ['name', 'text', { nn: true, check: 'length(name) BETWEEN 1 AND 80' }],
     ['description', 'text', { check: 'length(description) <= 200' }],
     ['price_php', 'int', { nn: true, check: 'price_php BETWEEN 0 AND 200000' }],
@@ -443,6 +446,6 @@ export function schemaSql() {
   }
   for (const [v, def] of Object.entries(VIEWS)) out.push(`DROP VIEW IF EXISTS ${v};\nCREATE VIEW ${v} AS\n${def.sql};`)
   out.push(...INDEXES.map((i) => i + ';'))
-  out.push("INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250');")
+  out.push("INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');")
   return out.join('\n\n') + '\n'
 }

@@ -185,7 +185,9 @@ CREATE TABLE IF NOT EXISTS divers (
   medical_result TEXT CHECK (medical_result IN ('all_no', 'physician_ok')),
   buddy_ratings_enabled INTEGER NOT NULL DEFAULT 0,
   allergies TEXT CHECK (length(allergies) <= 300),
-  alert_destinations TEXT NOT NULL DEFAULT '[]'
+  alert_destinations TEXT NOT NULL DEFAULT '[]',
+  insurance_provider TEXT CHECK (length(insurance_provider) <= 60),
+  insurance_expiry TEXT
 );
 
 CREATE TABLE IF NOT EXISTS certifications (
@@ -431,4 +433,4 @@ CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at);
 
 CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id);
 
-INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250');
+INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');

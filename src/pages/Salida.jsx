@@ -10,7 +10,7 @@ import Icon from '../lib/Icon'
 import { ArrowLeft, Check, MapPin, MessageCircle, Waves } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
 import { MedicalCheck, medicalValid, daysSinceDive } from '../lib/medical'
-import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard } from '../lib/extras'
+import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard } from '../lib/extras'
 
 // Quién ha reservado ya esta salida (resumen del perfil de cada buceador)
 function QuienVa({ tripId, loggedIn }) {
@@ -255,6 +255,7 @@ export default function Salida({ id }) {
           )}
           {sinceDive == null && <p className="small muted">{t('Añade en tu perfil la fecha de tu última inmersión: el centro la tiene en cuenta.')} <Link to="/perfil">{t('Ir al perfil')}</Link></p>}
           {diver && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
+          {diver && <DanCard diver={diver} compact />}
           {(fees > 0 || extrasAmt > 0 || unit < trip.price_php) && (
             <div className="small muted stack" style={{ marginTop: 8, gap: 2 }}>
               <div className="row between"><span>{t('Salida')} × {seats}</span><span>{php(seats * unit)}</span></div>

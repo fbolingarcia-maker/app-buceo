@@ -8,6 +8,7 @@ import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
 import { CalendarPlus, Check, Lock, Share2, X } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
+import { DanCard } from '../lib/extras'
 
 const HOLD_MIN = 15
 
@@ -28,7 +29,7 @@ async function fnError(error) {
 }
 
 // Tras pagar: resumen de la reserva confirmada y el siguiente paso (calendario, avisar a un buddy, guía del destino)
-function Confirmada({ b, onClose }) {
+function Confirmada({ b, onClose, diver }) {
   const [copied, setCopied] = useState('')
   const balance = b.amount_php - b.paid_php
   const dest = b.trips?.centers?.destination
@@ -62,6 +63,7 @@ function Confirmada({ b, onClose }) {
       </div>
       {copied && <div className="small muted" style={{ marginTop: 6 }}>{copied}</div>}
       {dest && <p className="small" style={{ margin: '10px 0 0' }}><Link to={'/d/' + encodeURIComponent(dest)}>{t('Guía del destino')}</Link></p>}
+      <div style={{ marginTop: 10 }}><DanCard diver={diver} compact /></div>
     </div>
   )
 }
@@ -264,7 +266,7 @@ export default function Reservas() {
       <h1>{t('Mis reservas')}</h1>
       {error && <div className="msg err" role="alert">{error}</div>}
       {info && <div className="msg ok" role="status">{info}</div>}
-      {paid && <Confirmada b={paid} onClose={() => setJustPaid(null)} />}
+      {paid && <Confirmada b={paid} diver={diver} onClose={() => setJustPaid(null)} />}
       <PendingBuddyRatings />
       {upcoming.length === 0 && <div className="card center muted">{t('No tienes reservas próximas.')} <Link to="/">{t('Ver salidas')}</Link></div>}
       {upcoming.map(card)}

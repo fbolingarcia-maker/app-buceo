@@ -332,6 +332,9 @@ function DiverReady({ d, gear }) {
       {days != null && days <= 365 && <span className="muted">{t('Última inmersión hace {n} días', { n: days })}</span>}
       {d.nitrox && <span className="muted">{t('Nitrox')}</span>}
       {d.allergies && <span className="pill warn">{t('Alergias: {a}', { a: d.allergies })}</span>}
+      {d.insurance_provider && (!d.insurance_expiry || d.insurance_expiry >= manilaDate())
+        ? <span className="muted">{t('Seguro: {s}', { s: d.insurance_provider })}</span>
+        : <span className="pill warn">{t('Sin seguro de buceo')}</span>}
       {gear && (sizes.length ? <span className="muted">{sizes.join(' · ')}</span> : <span className="muted">{t('Sin tallas')}</span>)}
     </div>
   )

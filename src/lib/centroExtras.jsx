@@ -40,15 +40,15 @@ export function CanalPropio({ center }) {
   )
 }
 
-// Extras que se ofrecen al reservar: seguro, cursos, fotos o vídeo de la salida…
+// Extras que se ofrecen al reservar: cursos, nitrox, fotos o vídeo de la salida… (seguros no: DivingSlot enlaza a DAN)
 export function Extras({ center, readOnly }) {
   const [list, setList] = useState(null)
-  const [nx, setNx] = useState({ kind: 'insurance', name: '', price_php: '', per_seat: true, description: '' })
+  const [nx, setNx] = useState({ kind: 'course', name: '', price_php: '', per_seat: true, description: '' })
   const [msg, setMsg] = useState(null)
   const load = useCallback(() => supabase.from('center_extras').select('*').eq('center_id', center.id).order('created_at').then(({ data }) => setList(data || [])), [center.id])
   useEffect(() => { load() }, [load])
   async function run(p, ok) { const { error } = await p; setMsg(error ? { ok: false, text: errMsg(error) } : { ok: true, text: ok }); load(); return error }
-  const PRESET = { insurance: t('Seguro de buceo (1 día)'), course: t('Curso Advanced Open Water'), photo: t('Fotos de la salida'), video: t('Vídeo de la salida'), nitrox: t('Nitrox (por inmersión)'), other: '' }
+  const PRESET = { course: t('Curso Advanced Open Water'), photo: t('Fotos de la salida'), video: t('Vídeo de la salida'), nitrox: t('Nitrox (por inmersión)'), other: '' }
   return (
     <div className="card">
       {list === null ? <p className="muted">{t('Cargando…')}</p> : list.length === 0 && <p className="small muted" style={{ marginTop: 0 }}>{t('Aún no ofreces extras. Los buceadores los ven al reservar y se suman al pago.')}</p>}
@@ -75,7 +75,6 @@ export function Extras({ center, readOnly }) {
           </div>
           <input aria-label={t('Descripción (opcional)')} placeholder={t('Descripción (opcional)')} maxLength={200} value={nx.description} onChange={(e) => setNx({ ...nx, description: e.target.value })} style={{ marginTop: 6 }} />
           <button className="btn small" style={{ marginTop: 8 }}>{t('Añadir')}</button>
-          {nx.kind === 'insurance' && <p className="small muted" style={{ margin: '6px 0 0' }}>{t('Ofrece solo seguros que vendas tú o tu aseguradora: DivingSlot cobra el importe y te lo paga con la reserva.')}</p>}
         </form>
       )}
       {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
