@@ -1,9 +1,9 @@
 // Pagos online con PayMongo (tarjeta y GCash): port de las Edge Functions crear-pago y paymongo-webhook.
 // Secretos: PAYMONGO_SECRET_KEY y PAYMONGO_WEBHOOK_SECRET. URL del webhook: https://divingslot.com/api/webhooks/paymongo
 // (evento checkout_session.payment.paid). La app nunca toca datos de tarjeta: todo pasa por la página de PayMongo.
-import { json, first, run } from './lib/util.js'
+import { json, first, run, all } from './lib/util.js'
 import { hmacHex, safeEqual } from './lib/crypto.js'
-import { startOnlinePayment, settlePayment } from './rpc.js'
+import { startOnlinePayment, settlePayment, PAY_METHODS } from './rpc.js'
 import { notifyAdmin } from './stats.js'
 
 // Cobra el pago y avisa al administrador (como el trigger notify_payment de la migración 030)
@@ -14,6 +14,12 @@ async function settleAndNotify(env, db, paymentId) {
     await notifyAdmin(env, { kind: 'pago', title: 'Pago online recibido: ₱' + (before.amount_php || 0).toLocaleString('en-US'),
       lines: ['Método: ' + (before.method || '—'), 'Tipo: ' + (before.kind || '—')] }).catch((e) => console.error('aviso pago', e.message))
   }
+}
+
+// Un pago de PayMongo puede cubrir varias reservas: se aplican todos los pagos con esa sesión
+async function settleSession(env, db, sessionId) {
+  const rows = await all(db, "SELECT id FROM payments WHERE provider_ref = ? AND status <> 'paid'", sessionId)
+  for (const r of rows) await settleAndNotify(env, db, r.id)
 }
 
 const PM = 'https://api.paymongo.com/v1'
@@ -37,27 +43,37 @@ export async function crearPago(req, env, ctx) {
       const p = await first(ctx.db, 'SELECT p.* FROM payments p JOIN bookings b ON b.id = p.booking_id WHERE p.id = ? AND b.diver_id = ?', String(body.payment_id || ''), ctx.diverId || '')
       if (!p) return json({ error: 'Pago no encontrado' }, 404)
       if (p.status === 'paid') return json({ status: 'paid' })
-      if (key && p.provider_ref && (await sessionPaid(p.provider_ref, key))) { await settleAndNotify(env, ctx.db, p.id); return json({ status: 'paid' }) }
+      if (key && p.provider_ref && (await sessionPaid(p.provider_ref, key))) { await settleSession(env, ctx.db, p.provider_ref); return json({ status: 'paid' }) }
       return json({ status: p.status })
     }
     const { booking_id, kind, method } = body
-    if (!['deposit', 'full', 'balance'].includes(kind) || !['card', 'gcash'].includes(method)) return json({ error: 'Datos de pago no válidos' }, 400)
+    // Varias salidas en un solo pago: booking_ids (hasta 7), cada una con su señal o total
+    const ids = Array.isArray(body.booking_ids) && body.booking_ids.length ? [...new Set(body.booking_ids.map(String))].slice(0, 7) : [String(booking_id || '')]
+    if (!['deposit', 'full', 'balance'].includes(kind) || !PAY_METHODS.includes(method)) return json({ error: 'Datos de pago no válidos' }, 400)
     if (!key) return json({ error: 'Los pagos con tarjeta y GCash aún no están activados' }, 503)
     const origin = new URL(req.url).origin
     const allowed = [origin + '/', origin + '/app/', ...String(env.APP_URLS || '').split(',').map((s) => s.trim()).filter(Boolean)]
     const appUrl = allowed.includes(body.return_url) ? body.return_url : allowed[0]
 
-    let p
-    try { p = await startOnlinePayment(ctx, String(booking_id || ''), kind, method) } catch (e) { return json({ error: dbMsg(e.message) }, 400) }
-    const b = await first(ctx.db, 'SELECT b.seats, t.departs_at, c.name AS center FROM bookings b JOIN trips t ON t.id = b.trip_id JOIN centers c ON c.id = t.center_id WHERE b.id = ?', p.booking_id)
-    const when = new Date(b?.departs_at).toLocaleString('es-ES', { timeZone: 'Asia/Manila', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    const ps = []
+    try { for (const id of ids) ps.push(await startOnlinePayment(ctx, id, kind, method)) } catch (e) {
+      for (const x of ps) await run(ctx.db, "UPDATE payments SET status = 'failed' WHERE id = ?", x.id)
+      return json({ error: dbMsg(e.message) }, 400)
+    }
+    const p = ps[0]
+    const items = []
+    for (const x of ps) {
+      const b = await first(ctx.db, 'SELECT b.seats, t.departs_at, c.name AS center FROM bookings b JOIN trips t ON t.id = b.trip_id JOIN centers c ON c.id = t.center_id WHERE b.id = ?', x.booking_id)
+      const when = new Date(b?.departs_at).toLocaleString('es-ES', { timeZone: 'Asia/Manila', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+      items.push({ name: `${KIND_LABEL[kind]} · ${b?.center ?? 'Salida de buceo'} · ${when}`, amount: x.amount_php * 100, currency: 'PHP', quantity: 1, seats: b?.seats })
+    }
     const r = await fetch(`${PM}/checkout_sessions`, {
       method: 'POST',
       headers: { Authorization: 'Basic ' + btoa(key + ':'), 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: { attributes: {
-        line_items: [{ name: `${KIND_LABEL[kind]} · ${b?.center ?? 'Salida de buceo'} · ${when}`, amount: p.amount_php * 100, currency: 'PHP', quantity: 1 }],
+        line_items: items.map(({ seats, ...it }) => it),
         payment_method_types: [method],
-        description: `Reserva ${p.booking_id.slice(0, 8)} · ${b?.seats} plaza(s)`,
+        description: ps.length > 1 ? `${ps.length} reservas` : `Reserva ${p.booking_id.slice(0, 8)} · ${items[0].seats} plaza(s)`,
         reference_number: p.id,
         success_url: `${appUrl}#/reservas?pago=${p.id}`,
         cancel_url: `${appUrl}#/reservas?pago=${p.id}&cancelado=1`,
@@ -67,10 +83,10 @@ export async function crearPago(req, env, ctx) {
     })
     const j = await r.json().catch(() => ({}))
     if (!r.ok) {
-      await run(ctx.db, "UPDATE payments SET status = 'failed' WHERE id = ?", p.id)
+      for (const x of ps) await run(ctx.db, "UPDATE payments SET status = 'failed' WHERE id = ?", x.id)
       return json({ error: `PayMongo: ${j?.errors?.[0]?.detail ?? 'error desconocido'}` }, 502)
     }
-    await run(ctx.db, 'UPDATE payments SET provider_ref = ?, checkout_url = ? WHERE id = ?', j.data.id, j.data.attributes.checkout_url, p.id)
+    for (const x of ps) await run(ctx.db, 'UPDATE payments SET provider_ref = ?, checkout_url = ? WHERE id = ?', j.data.id, j.data.attributes.checkout_url, x.id)
     return json({ payment_id: p.id, checkout_url: j.data.attributes.checkout_url })
   } catch (e) {
     console.error('crear-pago', e.message)
@@ -94,10 +110,10 @@ export async function paymongoWebhook(req, env) {
   const type = attrs.type ?? evt?.data?.type
   const session = attrs.data ?? evt?.data?.data
   if (type !== 'checkout_session.payment.paid' || !session?.id) return new Response('ignored')
-  const p = await first(env.DB, 'SELECT id, status FROM payments WHERE provider_ref = ?', session.id)
-  if (!p) return new Response('unknown session')
+  const p = await first(env.DB, "SELECT count(*) AS n, sum(status <> 'paid') AS open FROM payments WHERE provider_ref = ?", session.id)
+  if (!p?.n) return new Response('unknown session')
   try {
-    if (p.status !== 'paid' && (await sessionPaid(session.id, key))) await settleAndNotify(env, env.DB, p.id)
+    if (p.open && (await sessionPaid(session.id, key))) await settleSession(env, env.DB, session.id)
   } catch (e) { console.error('settle', e.message); return new Response('error', { status: 500 }) }
   return new Response('ok')
 }

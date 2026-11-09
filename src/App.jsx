@@ -14,6 +14,7 @@ import ErrorBoundary from './lib/ErrorBoundary'
 import { lazyPage, prefetchWhenIdle } from './lib/lazyPage'
 import Icon from './lib/Icon'
 import { setVia } from './lib/extras'
+import { OfflineBanner } from './lib/plus'
 import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText } from 'lucide-react'
 
 // Explorar, Salida y Login van en el paquete principal (son la entrada habitual); el resto se carga al abrirlo
@@ -195,6 +196,7 @@ export default function App() {
         </div>
       </header>
       {isAdmin && !needsMfa && <AdminBar />}
+      <OfflineBanner />
       <main><ErrorBoundary resetKey={path}><Suspense fallback={<p className="muted center">{t('Cargando…')}</p>}>{page}</Suspense></ErrorBoundary></main>
       <Flash key={session ? 'in' : 'out'} />
       <nav className="tabs" aria-label={t('Navegación principal')}>

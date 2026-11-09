@@ -455,3 +455,48 @@ a.card.trip.full { opacity: .6; }
   .adminbar .seg button, .adminbar select { min-height: 44px; }
   label.check { min-height: 44px; }
 }
+
+/* ── Mejoras de usabilidad (9 nov 2026) ── */
+.quick-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 10px; }
+.quick-filters::-webkit-scrollbar { display: none; }
+.quick-filters .filter-btn { flex: 0 0 auto; position: relative; }
+.quick-filters .badge { position: static; margin-left: 2px; }
+.filter-panel { display: grid; gap: 4px; margin-bottom: 12px; }
+.filter-panel .field { margin-bottom: 6px; }
+.tiny { display: block; font-size: 11px; }
+.slot-course, .slot-buddy { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; color: var(--laguna, #1fa5a0); }
+.pill.exp { background: color-mix(in srgb, var(--oceano) 10%, transparent); color: var(--oceano); }
+details.fold > summary { cursor: pointer; list-style: none; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: '▾'; margin-left: 6px; color: var(--muted, #5d7282); font-size: 12px; }
+details.fold:not([open]) > summary::after { content: '▸'; }
+.medical-due { padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--warn, #c77700) 10%, transparent); }
+.banner.offline { background: #fff4de; color: #6b4b00; }
+/* Mapa */
+.map { position: relative; overflow: hidden; border-radius: 16px; margin-bottom: 12px; background: #dfeaf0; touch-action: none; user-select: none; }
+.map img { pointer-events: none; }
+.map-pin { position: absolute; transform: translate(-50%, -100%); border: 0; background: var(--oceano); color: #fff; font: 700 12px var(--font-data); padding: 4px 8px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.25); cursor: pointer; white-space: nowrap; min-height: 28px; }
+.map-pin::after { content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--oceano); border-bottom: 0; }
+.map-pin.on { background: var(--abisal, #0b2233); }
+.map-pin.on::after { border-top-color: var(--abisal, #0b2233); }
+.map-zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.map-zoom button { width: 40px; height: 40px; border: 0; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer; display: grid; place-items: center; }
+.map-attr { position: absolute; right: 6px; bottom: 4px; font-size: 10px; background: rgba(255,255,255,.8); padding: 1px 4px; border-radius: 4px; }
+/* Chat */
+.chat > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
+.chat > summary::-webkit-details-marker { display: none; }
+.chat-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+.chat-msg { display: flex; flex-direction: column; gap: 2px; max-width: 85%; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.chat-msg.staff { background: color-mix(in srgb, var(--oceano) 10%, transparent); }
+.chat-msg.mine { align-self: flex-end; background: color-mix(in srgb, var(--laguna, #1fa5a0) 14%, transparent); }
+/* Reseñas e insignias */
+.stars-static { display: inline-flex; color: #a57f00; }
+.review { padding: 8px 0; border-top: 1px solid var(--line); }
+.review-reply { margin: 4px 0 0; padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 8px; }
+.badge-item { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 8px 4px; border-radius: 12px; color: var(--muted, #5d7282); opacity: .45; }
+.badge-item small { font-size: 11px; line-height: 1.2; }
+.badge-item.got { opacity: 1; color: var(--coral, #f26b5b); background: color-mix(in srgb, var(--coral, #f26b5b) 8%, transparent); }
+.year-card .big { font-size: 26px; }
+.next-trip { border: 2px solid color-mix(in srgb, var(--oceano) 30%, transparent); }
+.add-days summary { cursor: pointer; }

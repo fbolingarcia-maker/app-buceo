@@ -23,7 +23,8 @@ export const medicalLabel = (d) => (d?.medical_result ? t(RESULT[d.medical_resul
 
 // Estado + formulario. compact: dentro de la reserva (solo pide lo necesario para seguir)
 export function MedicalCheck({ diver, onSaved, compact }) {
-  const [edit, setEdit] = useState(!medicalValid(diver))
+  // En la reserva (compact) no se despliega el formulario de golpe: primero un botón «Renovar (1 min)»
+  const [edit, setEdit] = useState(!medicalValid(diver) && !compact)
   const [answer, setAnswer] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -41,6 +42,12 @@ export function MedicalCheck({ diver, onSaved, compact }) {
     <div className="row between wrap medical-ok" style={{ gap: 8 }}>
       <span className="small"><Icon icon={Check} size={16} className="ok-ic" /> <b>{t('Cuestionario médico al día')}</b> · {medicalLabel(diver)} · {t('hasta el {fecha}', { fecha: dayLabel(until, { day: 'numeric', month: 'short', year: 'numeric' }) })}</span>
       {!compact && <button type="button" className="btn xs ghost" onClick={() => setEdit(true)}>{t('Actualizar')}</button>}
+    </div>
+  )
+  if (compact && !edit) return (
+    <div className="row between wrap medical-due" style={{ gap: 8 }}>
+      <span className="small"><b>{until ? t('Tu cuestionario médico caducó') : t('Falta el cuestionario médico')}</b> · {t('lo piden todos los centros')}</span>
+      <button type="button" className="btn small" onClick={() => setEdit(true)}>{until ? t('Renovar (1 min)') : t('Rellenar (1 min)')}</button>
     </div>
   )
   return (

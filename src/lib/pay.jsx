@@ -17,24 +17,36 @@ export async function fnError(error) {
   try { const j = await error.context.json(); return j.error || error.message } catch { return error.message }
 }
 
-export function PayBox({ b, mode, onDone }) {
-  const pending = b.status === 'pending_payment'
-  const balance = b.amount_php - b.paid_php
+// Métodos de PayMongo Checkout. QR Ph sirve para cualquier banco o cartera filipina (la comisión más baja)
+export const METHODS = [['gcash', 'GCash'], ['paymaya', 'Maya'], ['qrph', 'QR Ph'], ['card', 'Tarjeta'], ['grab_pay', 'GrabPay']]
+const METHOD_KEY = 'ds_paymethod'
+
+// Paga una reserva (b) o varias a la vez (bs: varias salidas del mismo viaje en un solo pago)
+export function PayBox({ b, bs, mode, onDone }) {
+  const list = bs?.length ? bs : [b]
+  const pending = list.every((x) => x.status === 'pending_payment')
+  const sum = (f) => list.reduce((n, x) => n + f(x), 0)
+  const balance = sum((x) => x.amount_php - x.paid_php)
   const [kind, setKind] = useState(pending ? 'deposit' : 'balance')
-  const [method, setMethod] = useState('gcash')
+  const [method, setMethod] = useState(() => { try { return localStorage.getItem(METHOD_KEY) || 'gcash' } catch (e) { return 'gcash' } })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const amount = kind === 'deposit' ? b.deposit_php - b.paid_php : balance
+  const amount = kind === 'deposit' ? sum((x) => Math.max(0, x.deposit_php - x.paid_php)) : balance
+  const label = (METHODS.find(([k]) => k === method) || [, 'GCash'])[1]
 
   async function pay() {
     setBusy(true); setError('')
     if (mode === 'demo') {
-      const { error } = await supabase.rpc('confirm_payment_demo', { p_booking: b.id, p_kind: kind })
+      for (const x of list) {
+        const { error } = await supabase.rpc('confirm_payment_demo', { p_booking: x.id, p_kind: kind })
+        if (error) { setBusy(false); return setError(errMsg(error)) }
+      }
       setBusy(false)
-      return error ? setError(errMsg(error)) : onDone(null, b.id)
+      return onDone(null, list[0].id)
     }
+    try { localStorage.setItem(METHOD_KEY, method) } catch (e) { /* sin almacenamiento */ }
     const { data, error } = await supabase.functions.invoke('crear-pago', {
-      body: { booking_id: b.id, kind, method, return_url: siteUrl() },
+      body: { booking_id: list[0].id, booking_ids: list.map((x) => x.id), kind, method, return_url: siteUrl() },
     })
     if (error) { setBusy(false); return setError(await fnError(error)) }
     window.location.href = data.checkout_url
@@ -45,25 +57,22 @@ export function PayBox({ b, mode, onDone }) {
       {pending && <p className="small muted" style={{ margin: '0 0 6px' }}>{t('¿Cuánto quieres pagar ahora?')}</p>}
       {pending ? (
         <div className="seg">
-          <button className={kind === 'deposit' ? 'on' : ''} onClick={() => setKind('deposit')}>{t('Señal 50 % · {amount}', { amount: php(b.deposit_php - b.paid_php) })}</button>
+          <button className={kind === 'deposit' ? 'on' : ''} onClick={() => setKind('deposit')}>{t('Señal 50 % · {amount}', { amount: php(sum((x) => Math.max(0, x.deposit_php - x.paid_php))) })}</button>
           <button className={kind === 'full' ? 'on' : ''} onClick={() => setKind('full')}>{t('Todo · {amount}', { amount: php(balance) })}</button>
         </div>
       ) : null}
       {mode !== 'demo' && (
-        <div className="seg">
-          <button className={method === 'gcash' ? 'on' : ''} onClick={() => setMethod('gcash')}>GCash</button>
-          <button className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}>{t('Tarjeta')}</button>
+        <div className="seg" role="group" aria-label={t('Método de pago')}>
+          {METHODS.map(([k, n]) => <button key={k} className={method === k ? 'on' : ''} aria-pressed={method === k} onClick={() => setMethod(k)}>{k === 'card' ? t(n) : n}</button>)}
         </div>
       )}
       {error && <div className="msg err" role="alert">{error}</div>}
       <button className="btn block" disabled={busy || amount <= 0} onClick={pay}>
         {busy ? t('Un momento…')
           : mode === 'demo' ? t('Pagar {amount} (modo demo)', { amount: php(amount) })
-          : method === 'gcash' ? t('Pagar {amount} con GCash', { amount: php(amount) })
-          : t('Pagar {amount} con tarjeta', { amount: php(amount) })}
+          : t('Pagar {amount} con {metodo}', { amount: php(amount), metodo: method === 'card' ? t('tarjeta') : label })}
       </button>
       {mode !== 'demo' && <p className="small muted" style={{ margin: '6px 0 0' }}><Icon icon={Lock} size={14} /> {t('Pago seguro con PayMongo. DivingSlot no guarda los datos de tu tarjeta.')}</p>}
     </div>
   )
 }
-

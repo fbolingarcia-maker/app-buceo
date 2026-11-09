@@ -14,6 +14,8 @@ import Icon from '../lib/Icon'
 import { ShieldCheck, Star, X } from 'lucide-react'
 import DestinoSelect from '../lib/DestinoSelect'
 import { hashParam } from '../lib/centro'
+import { PushToggle, InstallButton, CurrencySelect } from '../lib/plus'
+import { Camera } from 'lucide-react'
 import { BuddyBreakdown, BUDDY_RATINGS, MIN_RATINGS, WINDOW_DAYS } from '../lib/buddy'
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
@@ -219,7 +221,10 @@ export default function Perfil() {
               <b>{c.agency} · {levelName(c.level)}</b>
               <div className="small muted">{c.card_number || t('Sin nº de tarjeta')} · {c.verified_at ? t('Verificada por {centro}', { centro: c.centers?.name || t('un centro') }) : t('Sin verificar')}</div>
             </div>
-            {!c.verified_at && <button className="btn small ghost" onClick={() => delCert(c.id)}>{t('Quitar')}</button>}
+            <span className="row" style={{ gap: 4 }}>
+              <CertPhoto cert={c} uid={user.id} onDone={loadCerts} />
+              {!c.verified_at && <button className="btn small ghost" onClick={() => delCert(c.id)}>{t('Quitar')}</button>}
+            </span>
           </div>
         ))}
         <form onSubmit={addCert} style={{ marginTop: 12 }}>
@@ -296,6 +301,12 @@ export default function Perfil() {
             <span className="grow"><b>{t('Idioma de la app')}</b><small>{t('Por defecto, el de tu móvil')}</small></span>
             <LangSwitch />
           </div>
+          <PushToggle />
+          <div className="li">
+            <span className="grow"><b>{t('Precios aproximados en')}</b><small>{t('El cobro siempre es en pesos filipinos; esto solo es orientativo.')}</small></span>
+            <CurrencySelect />
+          </div>
+          <div className="li"><span className="grow"><b>{t('App en el móvil')}</b><small>{t('Instálala para abrirla como una app y recibir avisos.')}</small></span><InstallButton /></div>
           <a className="li" href={siteUrl() + 'legal/privacy'}><span className="grow"><b>{t('Privacidad')}</b></span></a>
           <a className="li" href={siteUrl() + 'legal/terms'}><span className="grow"><b>{t('Términos de uso')}</b></span></a>
           <a className="li" href={siteUrl() + 'legal/cancellation'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
@@ -349,5 +360,31 @@ function BuddyRatings({ diver, refresh }) {
         {on && <p className="small muted" style={{ margin: '12px 0 0' }}><Icon icon={Star} size={14} /> {t('Se ve en «¿Quién va?» de tus salidas. Desactívalo cuando quieras y deja de verse al momento.')}</p>}
       </div>
     </>
+  )
+}
+
+// Foto de la tarjeta de certificación (PADI/SSI eCard o la de plástico): la ve el centro de las salidas que reserves
+function CertPhoto({ cert, uid, onDone }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  async function pick(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setBusy(true); setErr('')
+    const ext = (f.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg')
+    const path = uid + '/cards/' + cert.id + '.' + ext
+    const up = await supabase.storage.from('dive-photos').upload(path, f, { upsert: true, contentType: f.type })
+    if (up.error) { setBusy(false); return setErr(errMsg(up.error)) }
+    const { error } = await supabase.from('certifications').update({ photo_path: path }).eq('id', cert.id)
+    setBusy(false)
+    if (error) return setErr(errMsg(error))
+    onDone()
+  }
+  return (
+    <label className={'btn small ghost' + (busy ? ' disabled' : '')} title={t('La ve el centro de las salidas que reserves')} style={{ cursor: 'pointer' }}>
+      <Icon icon={Camera} size={16} /> {cert.photo_path ? t('Cambiar foto') : t('Foto de la tarjeta')}
+      <input type="file" accept="image/*" capture="environment" onChange={pick} style={{ display: 'none' }} disabled={busy} />
+      {err && <span className="small" style={{ color: 'var(--bad)' }}>{err}</span>}
+    </label>
   )
 }

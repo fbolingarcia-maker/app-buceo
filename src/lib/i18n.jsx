@@ -1,10 +1,21 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import EN from './i18n-en'
+import DE from './lang-de'
+import KO from './lang-ko'
+import JA from './lang-ja'
+import ZH from './lang-zh'
+
+// Idiomas extra (9 nov 2026): solo las pantallas del buceador (buscar, reservar, pagar, entrar). Lo que falta sale en inglés.
+const EXTRA = { de: DE, ko: KO, ja: JA, zh: ZH }
 
 // Idiomas disponibles. El texto base del código está en español; EN traduce cada frase.
 export const LANGS = [
   ['en', 'English'],
   ['es', 'Español'],
+  ['de', 'Deutsch'],
+  ['ko', '한국어'],
+  ['ja', '日本語'],
+  ['zh', '中文'],
 ]
 
 function initialLang() {
@@ -12,17 +23,19 @@ function initialLang() {
     const s = localStorage.getItem('lang')
     if (LANGS.some(([k]) => k === s)) return s
   } catch {}
-  return (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en'
+  const nav = (navigator.language || '').toLowerCase().slice(0, 2)
+  return LANGS.some(([k]) => k === nav) ? nav : 'en'
 }
 
 let current = initialLang()
 export const getLang = () => current
 // Locale para Intl (fechas y horas)
-export const locale = () => (current === 'es' ? 'es-ES' : 'en-GB')
+const LOCALES = { es: 'es-ES', de: 'de-DE', ko: 'ko-KR', ja: 'ja-JP', zh: 'zh-CN' }
+export const locale = () => LOCALES[current] || 'en-GB'
 
 // Ejemplo: t con 'Quedan {n} plazas' y { n: 3 } -> "3 seats left" en inglés
 export function t(s, vars) {
-  let r = current === 'es' ? s : EN[s] ?? s
+  let r = current === 'es' ? s : EXTRA[current]?.[s] ?? EN[s] ?? s
   if (vars) r = r.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m))
   return r
 }
@@ -53,11 +66,10 @@ export const useLang = () => useContext(LangCtx)
 // Selector de idioma como control segmentado (Perfil → Ajustes). Cada idioma se nombra en su propio idioma.
 export function LangSwitch() {
   const { lang, setLang } = useLang()
+  // Seis idiomas: un desplegable (cada idioma con su propio nombre)
   return (
-    <div className="seg" role="group" aria-label="Language / Idioma" style={{ margin: 0, flexWrap: 'nowrap' }}>
-      {LANGS.map(([k, n]) => (
-        <button key={k} type="button" className={lang === k ? 'on' : ''} aria-pressed={lang === k} onClick={() => setLang(k)}>{n}</button>
-      ))}
-    </div>
+    <select value={lang} onChange={(e) => setLang(e.target.value)} aria-label="Language / Idioma" style={{ width: 'auto' }}>
+      {LANGS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+    </select>
   )
 }

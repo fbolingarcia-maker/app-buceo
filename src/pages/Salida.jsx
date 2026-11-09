@@ -7,11 +7,13 @@ import DepthBar from '../lib/DepthBar'
 import { t, getLang } from '../lib/i18n'
 import { Flags, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
-import { ArrowLeft, Check, MapPin, MessageCircle, Waves } from 'lucide-react'
+import { ArrowLeft, Check, MapPin, MessageCircle, Waves, Users, GraduationCap, Clock, Plus } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
 import { MedicalCheck, medicalValid, daysSinceDive } from '../lib/medical'
 import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard } from '../lib/extras'
 import { PayBox, holdEnd } from '../lib/pay'
+import { TripChat, CenterReviews, expName, Approx } from '../lib/plus'
+import { time, dayLabel, manilaDate } from '../lib/format'
 
 const DRAFT = 'ds_book_draft'
 const toProfile = (back) => { try { sessionStorage.setItem('afterCert', back) } catch (e) { /* sin almacenamiento */ } }
@@ -26,8 +28,8 @@ function QuienVa({ tripId, loggedIn }) {
   if (!data) return null
   const total = data.divers.reduce((n, d) => n + d.seats, 0) + data.others
   return (
-    <>
-      <h2>{t('¿Quién va?')} {total > 0 && <span className="muted small" style={{ fontWeight: 400 }}>· {total === 1 ? t('1 plaza reservada') : t('{n} plazas reservadas', { n: total })}</span>}</h2>
+    <details className="fold" open={total < 5}>
+      <summary><h2 style={{ display: 'inline' }}>{t('¿Quién va?')} {total > 0 && <span className="muted small" style={{ fontWeight: 400 }}>· {total === 1 ? t('1 plaza reservada') : t('{n} plazas reservadas', { n: total })}</span>}</h2></summary>
       {total === 0 && <div className="card muted">{t('Aún no ha reservado nadie. ¡Sé el primero!')}</div>}
       {data.divers.map((d, i) => (
         <div key={i} className="card diver">
@@ -35,9 +37,12 @@ function QuienVa({ tripId, loggedIn }) {
           <div className="grow">
             <div className="row between wrap" style={{ gap: 6 }}>
               <b>{d.name}{d.is_me ? ' · ' + t('Tú') : ''}{d.seats > 1 ? ' ' + (d.seats === 2 ? t('+1 acompañante') : t('+{n} acompañantes', { n: d.seats - 1 })) : ''}</b>
-              {d.level
-                ? <span className="pill">{levelName(d.level)}{d.verified && <Icon icon={Check} size={14} aria-label={t('Verificada')} />}</span>
-                : <span className="pill warn">{t('Sin certificación')}</span>}
+              <span className="row" style={{ gap: 4 }}>
+                {d.level
+                  ? <span className="pill">{levelName(d.level)}{d.verified && <Icon icon={Check} size={14} aria-label={t('Verificada')} />}</span>
+                  : <span className="pill warn">{t('Sin certificación')}</span>}
+                {d.exp && <span className="pill small exp">{expName(d.exp)}</span>}
+              </span>
             </div>
             <div className="small muted row wrap" style={{ marginTop: 2, gap: '2px 10px' }}>
               <span><Icon icon={Waves} size={14} /> {d.dives ? t('{n} inmersiones', { n: d.dives }) : t('Primeras inmersiones')}</span>
@@ -49,6 +54,7 @@ function QuienVa({ tripId, loggedIn }) {
             {(d.fav_site || d.seeks_buddy) && (
               <div className="row wrap small" style={{ marginTop: 4, gap: 6 }}>
                 {d.seeks_buddy && <span className="pill ok">{t('Busca buddy')}</span>}
+                {d.seeks_buddy && !d.is_me && <button type="button" className="linkish small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><Icon icon={Users} size={14} /> {t('Bucear con {name}', { name: d.name.split(' ')[0] })}</button>}
                 {d.fav_site && <span className="muted">{t('Punto favorito: {site}', { site: d.fav_site })}</span>}
               </div>
             )}
@@ -65,7 +71,7 @@ function QuienVa({ tripId, loggedIn }) {
               : (data.others === 1 ? t('1 plaza reservada por alguien que prefiere no mostrar su perfil.') : t('{n} plazas reservadas por gente que prefiere no mostrar su perfil.', { n: data.others }))}
         </p>
       )}
-    </>
+    </details>
   )
 }
 
@@ -82,8 +88,12 @@ export default function Salida({ id }) {
   const [chosen, setChosen] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  // Reserva recién creada: el pago se hace aquí mismo, sin cambiar de pantalla
+  // Reserva recién creada: el pago se hace aquí mismo, sin cambiar de pantalla (y se pueden sumar más días)
   const [booked, setBooked] = useState(null)
+  const [mine, setMine] = useState(null) // reserva activa propia en esta salida (para el chat)
+  const [wait, setWait] = useState(null) // { position } si está en la lista de espera
+  const [pack, setPack] = useState(null)
+  const openChat = /[?&]chat=1/.test(window.location.hash)
   const [mode, setMode] = useState('demo')
   const [, tick] = useState(0)
   useEffect(() => {
@@ -117,6 +127,12 @@ export default function Salida({ id }) {
   useEffect(() => {
     if (diver) supabase.from('certifications').select('level').eq('diver_id', diver.id).then(({ data }) => setCerts(data || []))
   }, [diver])
+  useEffect(() => {
+    if (!diver) return
+    supabase.from('bookings').select('id, status').eq('trip_id', id).eq('diver_id', diver.id).in('status', ['confirmed', 'pending_payment']).then(({ data }) => setMine((data || [])[0] || null))
+    supabase.rpc('my_waitlist').then(({ data }) => { const w = (data || []).find((x) => x.trip_id === id); setWait(w || null) })
+  }, [diver, id, booked])
+  useEffect(() => { supabase.rpc('pack_preview', { p_trip: id }).then(({ data }) => setPack(data || null)) }, [id, session])
 
   // Barra fija de reserva mientras la sección «Reservar» no está a la vista
   const [ctaVisible, setCtaVisible] = useState(false)
@@ -132,7 +148,9 @@ export default function Salida({ id }) {
   if (trip === false) return <div className="card">{t('Esta salida ya no está disponible.')} <Link to="/">{t('Ver salidas')}</Link></div>
 
   const best = certs.reduce((m, c) => Math.max(m, levelRank(c.level)), -1)
-  const levelOk = best >= levelRank(trip.min_level)
+  const course = trip.kind === 'course'
+  const need = course ? trip.course_prereq : trip.min_level
+  const levelOk = !need || best >= levelRank(need)
   const medical = medicalValid(diver)
   const sinceDive = daysSinceDive(diver)
   const hasSizes = !!(diver?.wetsuit_size || diver?.bcd_size || diver?.fin_size)
@@ -185,7 +203,9 @@ export default function Salida({ id }) {
         <div className="row between"><span className="muted">{t('Salida')}</span><b>{dateTime(trip.departs_at)}</b></div>
         {trip.boat_name && <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>}
         <div className="row between"><span className="muted">{t('Inmersiones')}</span><span>{trip.num_dives}</span></div>
-        <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill lvl"><i style={{ background: levelColor(trip.min_level) }} />{levelName(trip.min_level)}</span></div>
+        {course && <div className="row between"><span className="muted">{t('Curso')}</span><span className="pill ok"><Icon icon={GraduationCap} size={14} /> {trip.course_name || t('Curso')}{trip.course_days ? ' · ' + (trip.course_days === 1 ? t('1 día') : t('{n} días', { n: trip.course_days })) : ''}</span></div>}
+        {course ? <div className="row between"><span className="muted">{t('Requisito')}</span><span>{trip.course_prereq ? levelName(trip.course_prereq) : t('Ninguno: es para empezar')}</span></div> :
+        <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill lvl"><i style={{ background: levelColor(trip.min_level) }} />{levelName(trip.min_level)}</span></div>}
         <div className="row between"><span className="muted">{t('Precio por buceador')}</span><span><LastMinuteTag trip={trip} /> <PriceTag trip={trip} /></span></div>
         {fees > 0 && <div className="row between"><span className="muted">{t('Tasas de santuarios y parques marinos')}</span><span>{php(fees)} · {t('incluidas en el pago')}</span></div>}
         <div className="row between"><span className="muted">{t('Con tu equipo / alquilando')}</span><span>{trip.gear_rental_php ? <>{php(unit + fees)} / {php(unit + fees + trip.gear_rental_php)}</> : t('Equipo incluido o no disponible')}</span></div>
@@ -199,8 +219,8 @@ export default function Salida({ id }) {
         const deepest = Math.max(0, ...siteInfo.map((x) => x.max_depth_m || 0))
         const scale = deepest > 40 ? Math.ceil(deepest / 10) * 10 : 40
         return (
-          <div className="card">
-            <div className="over" style={{ marginBottom: 12 }}>{t('Puntos de esta salida')}</div>
+          <details className="card fold" open>
+            <summary className="over" style={{ marginBottom: 12 }}>{t('Puntos de esta salida')} · {trip.sites.length}</summary>
             <div className="sites">
               {trip.sites.map((s) => {
                 const info = siteInfo.find((x) => x.name === s)
@@ -214,7 +234,7 @@ export default function Salida({ id }) {
               })}
             </div>
             <div className="depth-axis" aria-hidden="true"><span /><div><span>0</span><span>{scale / 2}</span><span>{scale} m</span></div></div>
-          </div>
+          </details>
         )
       })()}
 
@@ -233,7 +253,10 @@ export default function Salida({ id }) {
           </div>
         </div>
         {shared && <div className="msg ok" role="status">{shared}</div>}
+        {trip.center_reviews > 0 && <details className="fold" style={{ marginTop: 10 }}><summary className="small"><b>{t('Reseñas del centro')}</b> · {trip.center_rating} ★ ({trip.center_reviews})</summary><div style={{ marginTop: 8 }}><CenterReviews centerId={trip.center_id} /></div></details>}
       </div>
+
+      {(mine || isCenter) && session && <TripChat tripId={trip.id} open={openChat} />}
 
       <QuienVa tripId={trip.id} loggedIn={!!session} />
 
@@ -245,14 +268,19 @@ export default function Salida({ id }) {
       )}
       <h2 id="reservar" style={{ scrollMarginTop: 12 }}>{t('Reservar')}</h2>
       {booked ? (
-        <PagarAhora b={booked} mode={mode} onPaid={(id) => go('/reservas?pagado=' + id)} />
+        <PagarAhora b={booked} trip={trip} seats={seats} gear={gear} mode={mode} onPaid={(id) => go('/reservas?pagado=' + id)} />
       ) : isCenter ? (
         <div className="card muted">{t('Estás con una cuenta de centro. Para reservar, usa una cuenta de buceador.')}</div>
       ) : trip.available_seats < 1 ? (
-        <div className="card muted">{t('Salida completa.')}</div>
+        <Espera trip={trip} diver={diver} session={session} wait={wait} setWait={setWait} medical={medical} levelOk={levelOk} refresh={refresh} />
       ) : (
         <div className="card book-steps">
           <Step n={1} title={t('Tu salida')}>
+            {pack?.packs?.length > 0 && (
+              <div className="msg ok small" role="status" style={{ marginTop: 0 }}>
+                {pack.packs.map((p) => <div key={p.id}><b>{p.name}</b>: {t('con {n} salidas en {d} días, −{pct} % a partir de la {n}.ª', { n: p.trips, d: p.valid_days, pct: p.discount_pct })}{pack.booked_here + 1 >= p.trips ? ' · ' + t('aplicado a esta salida') : pack.booked_here > 0 ? ' · ' + t('llevas {n}', { n: pack.booked_here }) : ''}</div>)}
+              </div>
+            )}
             <div className="field">
               <label htmlFor="seats">{t('Plazas')}</label>
               <select id="seats" value={seats} onChange={(e) => setSeats(+e.target.value)}>
@@ -282,10 +310,10 @@ export default function Salida({ id }) {
             <Step n={2} title={t('Certificación y salud')}>
               {!levelOk ? (
                 <div className="msg warn" role="status" style={{ marginTop: 0 }}>
-                  {certs.length === 0 ? t('Añade tu certificación en el perfil para poder reservar.') : t('Esta salida requiere {nivel}.', { nivel: levelName(trip.min_level) })}{' '}
+                  {certs.length === 0 ? t('Añade tu certificación en el perfil para poder reservar.') : t('Esta salida requiere {nivel}.', { nivel: levelName(need) })}{' '}
                   <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Ir al perfil')}</Link>
                 </div>
-              ) : <p className="small row" style={{ gap: 6, margin: '0 0 8px' }}><Icon icon={Check} size={16} className="ok-ink" /> {t('Tu certificación cumple el nivel mínimo')}</p>}
+              ) : <p className="small row" style={{ gap: 6, margin: '0 0 8px' }}><Icon icon={Check} size={16} className="ok-ink" /> {course && !need ? t('Este curso no pide certificación previa') : t('Tu certificación cumple el nivel mínimo')}</p>}
               {sinceDive != null && sinceDive > 365 && (
                 <div className="msg warn" role="status">{t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.')}</div>
               )}
@@ -348,21 +376,93 @@ function Step({ n, title, last, children }) {
   )
 }
 
-// Plaza retenida: se paga aquí mismo (señal o total). Si caduca, se vuelve a intentar desde Reservas.
-function PagarAhora({ b, mode, onPaid }) {
-  const mins = Math.ceil((holdEnd(b) - Date.now()) / 60000)
+// Plaza retenida: se paga aquí mismo (señal o total). Se pueden sumar más días con el mismo centro y pagarlo todo junto.
+function PagarAhora({ b, trip, seats, gear, mode, onPaid }) {
+  const [list, setList] = useState([b])
+  const [more, setMore] = useState(null)
+  const [busy, setBusy] = useState('')
+  const [err, setErr] = useState('')
+  const [, tick] = useState(0)
+  useEffect(() => { const i = setInterval(() => tick((n) => n + 1), 15000); return () => clearInterval(i) }, [])
+  useEffect(() => {
+    const from = new Date().toISOString(), to = new Date(Date.now() + 8 * 864e5).toISOString()
+    supabase.from('published_trips').select('id, departs_at, price_php, last_minute_pct, early_pct, available_seats, num_dives, kind')
+      .eq('center_id', trip.center_id).gte('departs_at', from).lt('departs_at', to).order('departs_at')
+      .then(({ data }) => setMore((data || []).filter((x) => x.id !== trip.id && x.available_seats >= seats && x.kind !== 'course').slice(0, 8)))
+  }, [trip.id, trip.center_id, seats])
+  const mins = Math.min(...list.map((x) => Math.ceil((holdEnd(x) - Date.now()) / 60000)))
   if (mins <= 0) return (
     <div className="card">
       <div className="msg warn" role="status" style={{ marginTop: 0 }}>{t('Se acabó el tiempo para pagar y la plaza se ha liberado.')}</div>
       <Link to="/reservas" className="btn block ghost">{t('Ver mis reservas')}</Link>
     </div>
   )
+  async function add(x) {
+    setBusy(x.id); setErr('')
+    const { data, error } = await supabase.rpc('book_trip', { p_trip: x.id, p_seats: seats, p_with_gear: gear, p_medical_signed: true, p_ref: viaFor(trip.center_id) })
+    setBusy('')
+    if (error) return setErr(errMsg(error))
+    setList([...list, data]); setMore(more.filter((y) => y.id !== x.id))
+  }
+  const dep = list.reduce((n, x) => n + x.deposit_php, 0)
   return (
     <div className="card">
-      <b className="row" style={{ gap: 6 }}><Icon icon={Check} className="ok-ink" /> {t('Plaza retenida {n} min', { n: mins })}</b>
-      <p className="small muted" style={{ margin: '4px 0 0' }}>{t('Paga al menos la señal del 50 % ({amount}) para confirmarla.', { amount: php(b.deposit_php) })}</p>
-      <PayBox b={b} mode={mode} onDone={(m, paidId) => onPaid(paidId || b.id)} />
+      <b className="row" style={{ gap: 6 }}><Icon icon={Check} className="ok-ink" /> {list.length > 1 ? t('{n} salidas retenidas {m} min', { n: list.length, m: mins }) : t('Plaza retenida {n} min', { n: mins })}</b>
+      <p className="small muted" style={{ margin: '4px 0 0' }}>{t('Paga al menos la señal del 50 % ({amount}) para confirmarla.', { amount: php(dep) })}</p>
+      {more?.length > 0 && (
+        <details className="fold add-days" style={{ marginTop: 10 }}>
+          <summary className="small"><b><Icon icon={Plus} size={14} /> {t('¿Buceas más días? Añade otra salida de este centro')}</b></summary>
+          <div className="stack" style={{ marginTop: 8, gap: 6 }}>
+            {more.map((x) => (
+              <div key={x.id} className="row between small" style={{ gap: 8 }}>
+                <span><b>{dayLabel(manilaDate(new Date(x.departs_at)), { weekday: 'short', day: 'numeric' })} · {time(x.departs_at)}</b> · {t('{n} inmersiones', { n: x.num_dives })} · {php(Math.floor(x.price_php * (100 - Math.max(x.last_minute_pct || 0, x.early_pct || 0)) / 100))}</span>
+                <button type="button" className="btn small ghost" disabled={!!busy} onClick={() => add(x)}>{busy === x.id ? t('Un momento…') : t('Añadir')}</button>
+              </div>
+            ))}
+          </div>
+          <p className="small muted" style={{ margin: '6px 0 0' }}>{t('Todas en un solo pago. Si el centro tiene bono, el descuento se aplica solo.')}</p>
+        </details>
+      )}
+      {list.length > 1 && <ul className="small" style={{ margin: '8px 0 0', paddingLeft: 18 }}>{list.map((x) => <li key={x.id}>{php(x.amount_php)}{x.discount_php > 0 ? ' · ' + t('ahorras {amount}', { amount: php(x.discount_php) }) : ''}</li>)}</ul>}
+      {err && <div className="msg err" role="alert">{err}</div>}
+      <PayBox bs={list} mode={mode} onDone={(m, paidId) => onPaid(paidId || b.id)} />
       <p className="small muted" style={{ margin: '8px 0 0' }}>{t('También puedes pagarla más tarde en')} <Link to="/reservas">{t('Reservas')}</Link>.</p>
+    </div>
+  )
+}
+
+// Salida completa: lista de espera (como Playtomic). Al quedar plaza se reserva sola 30 min para el primero y se le avisa.
+function Espera({ trip, diver, session, wait, setWait, medical, levelOk, refresh }) {
+  const [seats, setSeats] = useState(1)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  if (!session) return <div className="card"><p style={{ marginTop: 0 }}>{t('Salida completa.')} {t('Entra para apuntarte a la lista de espera.')}</p><Link to="/login" className="btn small" onClick={() => { try { sessionStorage.setItem('afterLogin', '/salida/' + trip.id) } catch (e) { /* sin almacenamiento */ } }}>{t('Entrar')}</Link></div>
+  if (wait) return (
+    <div className="card">
+      <b className="row" style={{ gap: 6 }}><Icon icon={Clock} size={18} /> {wait.status === 'offered' ? t('Tienes una plaza retenida: págala en Reservas') : t('Estás en la lista de espera (puesto {n})', { n: wait.position })}</b>
+      <p className="small muted">{t('Si alguien cancela, la plaza se reserva sola para ti 30 minutos y te avisamos por email y en el móvil.')}</p>
+      {wait.status === 'offered' ? <Link to="/reservas" className="btn block">{t('Pagar ahora')}</Link>
+        : <button type="button" className="btn small ghost" onClick={async () => { await supabase.rpc('leave_waitlist', { p_trip: trip.id }); setWait(null) }}>{t('Salir de la lista')}</button>}
+    </div>
+  )
+  return (
+    <div className="card">
+      <p style={{ marginTop: 0 }}><b>{t('Salida completa.')}</b> {trip.waitlist > 0 ? t('{n} personas en la lista de espera.', { n: trip.waitlist }) : t('Nadie en la lista de espera todavía.')}</p>
+      <p className="small muted">{t('Si alguien cancela, la plaza se reserva sola para ti 30 minutos y te avisamos por email y en el móvil.')}</p>
+      {!levelOk && <div className="msg warn" role="status">{t('Esta salida requiere {nivel}.', { nivel: levelName(trip.kind === 'course' ? trip.course_prereq : trip.min_level) })}</div>}
+      {diver && !medical && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
+      <div className="row" style={{ gap: 8, alignItems: 'flex-end' }}>
+        <div className="field" style={{ margin: 0 }}><label htmlFor="w-seats">{t('Plazas')}</label>
+          <select id="w-seats" value={seats} onChange={(e) => setSeats(+e.target.value)} style={{ width: 'auto' }}>{[1, 2, 3, 4].map((n) => <option key={n}>{n}</option>)}</select></div>
+        <button type="button" className="btn grow" disabled={busy || !medical || !levelOk} onClick={async () => {
+          setBusy(true); setErr('')
+          const { data, error } = await supabase.rpc('join_waitlist', { p_trip: trip.id, p_seats: seats, p_medical_signed: medical })
+          setBusy(false)
+          if (error) return setErr(errMsg(error))
+          setWait({ status: 'waiting', position: data.position })
+        }}>{t('Apuntarme a la lista de espera')}</button>
+      </div>
+      {err && <div className="msg err" role="alert">{err}</div>}
     </div>
   )
 }

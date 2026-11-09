@@ -76,6 +76,16 @@ ${button(url, r.due > 0 && !r.pay_on_site ? 'Pagar el resto · Pay the rest' : '
       html: wrap(`<h2>DivingSlot 🤿</h2><p>Tu seguro de buceo (<b>${esc(provider)}</b>) caduca el <b>${esc(d('es'))}</b>. Renuévalo antes de tu próxima salida y actualiza la fecha en tu perfil.<br>Your dive insurance (<b>${esc(provider)}</b>) expires on <b>${esc(d('en'))}</b>. Renew it before your next trip and update the date in your profile.</p>${button(profileUrl, 'Actualizar mi perfil · Update my profile')}<p><a href="${esc(danUrl)}">Ver seguros DAN · See DAN plans</a></p>${foot('Recibes este aviso porque indicaste la fecha en tu perfil. DivingSlot no vende seguros.', 'You get this because you added the date to your profile. DivingSlot does not sell insurance.')}`),
     }
   },
+  // Lista de espera: se ha liberado una plaza y está retenida unos minutos para el buceador
+  waitlistOffer: (center, departs, mins, url) => ({
+    subject: `Plaza libre con ${center} · A spot opened up with ${center}`,
+    html: wrap(`<h2>DivingSlot 🤿</h2><p>Se ha liberado una plaza en la salida de <b>${esc(center)}</b> del ${esc(when(departs, 'es'))}. Está retenida para ti <b>${mins} minutos</b>: paga la señal para confirmarla.<br>A spot opened up on the <b>${esc(center)}</b> trip on ${esc(when(departs, 'en'))}. It is held for you for <b>${mins} minutes</b>: pay the deposit to confirm it.</p>${button(url, 'Pagar y confirmar · Pay and confirm')}${foot('Si no pagas a tiempo, la plaza pasa al siguiente de la lista.', 'If you do not pay in time, the spot goes to the next person on the list.')}`),
+  }),
+  // Alguien de nivel parecido busca buddy en un destino que el buceador sigue
+  buddyAlert: (name, level, center, dest, departs, url) => ({
+    subject: `${name} busca buddy en ${dest} · ${name} is looking for a buddy in ${dest}`,
+    html: wrap(`<h2>DivingSlot 🤿</h2><p><b>${esc(name)}</b>${level ? ' (' + esc(String(level).replace('_', ' ')) + ')' : ''} ha reservado con <b>${esc(center)}</b> el ${esc(when(departs, 'es'))} y busca buddy.<br><b>${esc(name)}</b> booked with <b>${esc(center)}</b> on ${esc(when(departs, 'en'))} and is looking for a buddy.</p>${button(url, 'Ver la salida · See the trip')}${foot('Recibes esto porque marcaste «Busco buddy» y sigues este destino. Puedes quitarlo en tu perfil.', 'You get this because you are looking for a buddy and follow this destination. You can turn it off in your profile.')}`),
+  }),
   // Plazas de última hora en un destino que el buceador sigue
   lastMinute: (center, dest, departs, free, unit, price, url) => ({
     subject: `Última hora en ${dest}: ${free === 1 ? '1 plaza' : free + ' plazas'} · Last-minute spots in ${dest}`,

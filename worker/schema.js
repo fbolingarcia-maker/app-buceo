@@ -155,6 +155,14 @@ export const TABLES = {
     ['last_minute_pct', 'int', { nn: true, def: '0', check: 'last_minute_pct BETWEEN 0 AND 50' }],
     ['last_minute_at', 'ts'],
     ['last_minute_notified_at', 'ts'],
+    // Reserva anticipada: descuento si se reserva con más de early_days días (no se suma al de última hora: se aplica el mayor)
+    ['early_pct', 'int', { nn: true, def: '0', check: 'early_pct BETWEEN 0 AND 30' }],
+    ['early_days', 'int', { nn: true, def: '14', check: 'early_days BETWEEN 2 AND 90' }],
+    // Cursos con su propio calendario: kind = 'course', nombre, días y nivel previo (null = sin certificación previa)
+    ['kind', 'text', { nn: true, def: "'fun'", check: ENUM('kind', ['fun', 'course']) }],
+    ['course_name', 'text', { check: 'length(course_name) <= 80' }],
+    ['course_days', 'int', { check: 'course_days BETWEEN 1 AND 14' }],
+    ['course_prereq', 'text', { check: ENUM('course_prereq', CERT_LEVELS) }],
   ] },
   trip_sites: { pk: ['trip_id', 'position'], cols: [
     ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
@@ -249,8 +257,71 @@ export const TABLES = {
     ['recorded_by', 'uuid'],
     ['created_at', 'ts', { nn: true, def: NOW }],
     ['paid_at', 'ts'],
+    // Detalle del método online (paymaya, qrph, grab_pay…): method solo admite card/gcash/cash/demo
+    ['channel_method', 'text'],
   ] },
   // Extras que vende el centro (seguro, cursos, fotos o vídeo de la salida…)
+  // Lista de espera de una salida completa: al quedar plazas se crea sola una reserva retenida 30 min para el primero
+  trip_waitlist: { checks: ['seats BETWEEN 1 AND 6'], cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
+    ['diver_id', 'uuid', { nn: true, ref: 'divers(id)', onDelete: 'CASCADE' }],
+    ['seats', 'int', { nn: true, def: '1' }],
+    ['with_gear', 'bool', { nn: true, def: '0' }],
+    ['status', 'text', { nn: true, def: "'waiting'", check: ENUM('status', ['waiting', 'offered', 'booked', 'left', 'expired']) }],
+    ['booking_id', 'uuid', { ref: 'bookings(id)', onDelete: 'SET NULL' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+    ['offered_at', 'ts'],
+  ] },
+  // Chat de cada salida: el centro y los buceadores con reserva activa
+  trip_messages: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
+    ['user_id', 'uuid', { ref: 'users(id)', onDelete: 'SET NULL' }],
+    ['author', 'text', { nn: true }],
+    ['is_staff', 'bool', { nn: true, def: '0' }],
+    ['body', 'text', { nn: true, check: 'length(body) BETWEEN 1 AND 500' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // Reseña del centro tras una salida (una por reserva con check-in) y respuesta del centro
+  center_reviews: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['booking_id', 'uuid', { nn: true, unique: true, ref: 'bookings(id)', onDelete: 'CASCADE' }],
+    ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
+    ['diver_id', 'uuid', { ref: 'divers(id)', onDelete: 'SET NULL' }],
+    ['author', 'text', { nn: true }],
+    ['rating', 'int', { nn: true, check: 'rating BETWEEN 1 AND 5' }],
+    ['body', 'text', { check: 'length(body) <= 600' }],
+    ['reply', 'text', { check: 'length(reply) <= 400' }],
+    ['replied_at', 'ts'],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // Bonos del centro: con N salidas reservadas en el centro dentro de valid_days días, cada salida lleva discount_pct
+  center_packs: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
+    ['name', 'text', { nn: true, check: 'length(name) BETWEEN 1 AND 60' }],
+    ['trips', 'int', { nn: true, check: 'trips BETWEEN 2 AND 20' }],
+    ['discount_pct', 'int', { nn: true, check: 'discount_pct BETWEEN 5 AND 40' }],
+    ['valid_days', 'int', { nn: true, def: '14', check: 'valid_days BETWEEN 2 AND 90' }],
+    ['active', 'bool', { nn: true, def: '1' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // Avisos en el móvil (Web Push): una suscripción por navegador
+  push_subscriptions: { cols: [
+    ['endpoint', 'text', { pk: true }],
+    ['user_id', 'uuid', { nn: true, ref: 'users(id)', onDelete: 'CASCADE' }],
+    ['p256dh', 'text', { nn: true }],
+    ['auth', 'text', { nn: true }],
+    ['lang', 'text'],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // Avisos de buddy ya enviados (uno por salida y buceador)
+  buddy_alerts: { pk: ['trip_id', 'diver_id'], cols: [
+    ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
+    ['diver_id', 'uuid', { nn: true, ref: 'divers(id)', onDelete: 'CASCADE' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
   center_extras: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
     ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
@@ -298,6 +369,9 @@ export const TABLES = {
     ['share_with_center', 'bool', { nn: true, def: '0' }],
     ['created_at', 'ts', { nn: true, def: NOW }],
     ['updated_at', 'ts', { nn: true, def: NOW }],
+    // Firma del centro (el guía confirma la inmersión de una salida en la que hizo check-in): bitácora verificada
+    ['signed_by_center', 'uuid'], // sin FK: dive_logs ya enlaza con centers por center_id (si no, la relación sería ambigua)
+    ['signed_at', 'ts'],
   ] },
   dive_log_photos: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -364,6 +438,7 @@ export const BOOKED = (t) => SUM_HOLD(t, '1')
 // Tasas de santuarios/parques por plaza de una salida (0 si la salida no las incluye): la cifra del centro o la suma de los puntos
 export const FEES = (t) => `(CASE WHEN ${t}.include_fees THEN coalesce(${t}.fees_per_diver, (SELECT coalesce(sum(ds.sanctuary_fee_php), 0) FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = ${t}.id)) ELSE 0 END)`
 // Descuento de última hora activo: hasta 48 h antes de salir
+export const EARLY = (t) => `(${t}.early_pct > 0 AND ${t}.departs_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+' || ${t}.early_days || ' days'))`
 export const LAST_MINUTE = (t) => `(${t}.last_minute_pct > 0 AND ${t}.departs_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+48 hours'))`
 
 // Vistas (solo lectura)
@@ -373,7 +448,8 @@ export const VIEWS = {
       ['gear_rental_php', 'int'], ['center_name', 'text'], ['boat_name', 'text'], ['sites', 'json'], ['available_seats', 'int'],
       ['center_area', 'text'], ['center_locality', 'text'], ['center_lat', 'real'], ['center_lng', 'real'], ['booked_seats', 'int'],
       ['center_destination', 'text'], ['center_province', 'text'], ['center_languages', 'json'], ['center_agencies', 'json'], ['center_course_languages', 'json'],
-      ['include_fees', 'bool'], ['fees_php', 'int'], ['last_minute_pct', 'int'], ['center_green_fins', 'text'], ['center_green_fins_verified', 'bool']],
+      ['include_fees', 'bool'], ['fees_php', 'int'], ['last_minute_pct', 'int'], ['center_green_fins', 'text'], ['center_green_fins_verified', 'bool'],
+      ['early_pct', 'int'], ['kind', 'text'], ['course_name', 'text'], ['course_days', 'int'], ['course_prereq', 'text'], ['buddy_seekers', 'json'], ['waitlist', 'int'], ['center_rating', 'real'], ['center_reviews', 'int']],
     sql: `SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t.gear_rental_php, c.name AS center_name,
   CASE WHEN bo.show_to_divers THEN bo.name END AS boat_name,
   (SELECT json_group_array(name) FROM (SELECT ds.name FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = t.id ORDER BY ts.position)) AS sites,
@@ -383,13 +459,25 @@ export const VIEWS = {
   c.destination AS center_destination, c.province AS center_province, c.languages AS center_languages, c.agencies AS center_agencies, c.course_languages AS center_course_languages,
   t.include_fees, ${FEES('t')} AS fees_php,
   CASE WHEN ${LAST_MINUTE('t')} THEN t.last_minute_pct ELSE 0 END AS last_minute_pct,
-  c.green_fins AS center_green_fins, c.green_fins_verified AS center_green_fins_verified
+  c.green_fins AS center_green_fins, c.green_fins_verified AS center_green_fins_verified,
+  CASE WHEN ${EARLY('t')} THEN t.early_pct ELSE 0 END AS early_pct, t.kind, t.course_name, t.course_days, t.course_prereq,
+  (SELECT json_group_array((SELECT ce.level FROM certifications ce WHERE ce.diver_id = d.id ORDER BY CASE ce.level WHEN 'instructor' THEN 4 WHEN 'divemaster' THEN 3 WHEN 'rescue' THEN 2 WHEN 'advanced' THEN 1 ELSE 0 END DESC LIMIT 1))
+     FROM bookings b JOIN divers d ON d.id = b.diver_id WHERE b.trip_id = t.id AND ${HOLDS('b')} AND d.seeks_buddy = 1 AND d.show_on_trips = 1) AS buddy_seekers,
+  (SELECT count(*) FROM trip_waitlist w WHERE w.trip_id = t.id AND w.status = 'waiting') AS waitlist,
+  (SELECT round(avg(r.rating), 1) FROM center_reviews r WHERE r.center_id = c.id) AS center_rating,
+  (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified'`,
   },
 }
 
 export const INDEXES = [
+  'CREATE INDEX IF NOT EXISTS waitlist_trip ON trip_waitlist(trip_id, status, created_at)',
+  "CREATE UNIQUE INDEX IF NOT EXISTS waitlist_one ON trip_waitlist(trip_id, diver_id) WHERE status IN ('waiting', 'offered')",
+  'CREATE INDEX IF NOT EXISTS messages_trip ON trip_messages(trip_id, created_at)',
+  'CREATE INDEX IF NOT EXISTS reviews_center ON center_reviews(center_id, created_at)',
+  'CREATE INDEX IF NOT EXISTS push_user ON push_subscriptions(user_id)',
+  'CREATE INDEX IF NOT EXISTS packs_center ON center_packs(center_id)',
   'CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id)',
   'CREATE INDEX IF NOT EXISTS auth_tokens_user ON auth_tokens(user_id)',
   'CREATE INDEX IF NOT EXISTS mfa_user ON mfa_factors(user_id)',

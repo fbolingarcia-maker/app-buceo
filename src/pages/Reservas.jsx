@@ -6,9 +6,10 @@ import { BOOKING_STATUS, dateTime, php, manilaDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
-import { CalendarPlus, Check, Share2, X } from 'lucide-react'
+import { CalendarPlus, Check, Share2, X, Navigation, MessageCircle, Clock } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
-import { DanCard } from '../lib/extras'
+import { DanCard, SeaChip } from '../lib/extras'
+import { NoFlyBanner, ReviewForm, TripChat, InstallButton } from '../lib/plus'
 import { PayBox, fnError, holdEnd } from '../lib/pay'
 
 function addToCalendar(b) {
@@ -17,6 +18,31 @@ function addToCalendar(b) {
   a.download = 'divingslot-' + b.id.slice(0, 8) + '.ics'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
+
+// Próxima salida destacada: hora, punto de encuentro, mar previsto y «Cómo llegar»
+function NextTrip({ b }) {
+  const c = b.trips?.centers || {}
+  const dest = [c.locality, c.destination].filter(Boolean).join(', ')
+  const maps = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(c.lat != null ? c.lat + ',' + c.lng : (c.name || '') + ' ' + (c.destination || ''))
+  const h = (new Date(b.trips.departs_at) - Date.now()) / 36e5
+  return (
+    <div className="card next-trip">
+      <span className="over">{h < 24 ? t('Tu próxima salida es hoy o mañana') : t('Tu próxima salida')}</span>
+      <div className="row between wrap" style={{ gap: 8, marginTop: 6 }}>
+        <div>
+          <b className="big">{dateTime(b.trips.departs_at)}</b>
+          <div className="small">{c.name}{dest ? ' · ' + dest : ''}{b.trips?.boats?.show_to_divers ? ' · ' + b.trips.boats.name : ''}</div>
+          <div style={{ marginTop: 6 }}><SeaChip tripId={b.trip_id} /></div>
+        </div>
+        <div className="row wrap" style={{ gap: 6 }}>
+          <a className="btn small" href={maps} target="_blank" rel="noreferrer"><Icon icon={Navigation} size={16} /> {t('Cómo llegar')}</a>
+          {c.phone && <a className="btn small ghost" href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
+        </div>
+      </div>
+      <p className="small muted" style={{ margin: '8px 0 0' }}>{t('Llega 15 minutos antes con tu tarjeta de certificación.')}</p>
+    </div>
+  )
 }
 
 // Tras pagar: resumen de la reserva confirmada y el siguiente paso (calendario, avisar a un buddy, guía del destino)
@@ -80,6 +106,9 @@ export default function Reservas() {
   // Reserva recién pagada: muestra arriba el resumen y el siguiente paso (no se guarda: al recargar ya no sale)
   const [justPaid, setJustPaid] = useState(null)
   const [, tick] = useState(0)
+  const [waits, setWaits] = useState([])
+  const [reviews, setReviews] = useState({})
+  const [chatFor, setChatFor] = useState(null)
 
   const load = useCallback(async () => {
     if (!diver) return
@@ -91,6 +120,11 @@ export default function Reservas() {
   }, [diver])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!diver) return
+    supabase.rpc('my_waitlist').then(({ data }) => setWaits(data || []))
+    supabase.rpc('my_reviews').then(({ data }) => setReviews(Object.fromEntries((data || []).map((r) => [r.booking_id, r]))))
+  }, [diver, list])
   // Recién reservada (y pagada) desde la ficha de la salida: #/reservas?pagado=<id>
   useEffect(() => {
     const q = new URLSearchParams(window.location.hash.split('?')[1] || '')
@@ -144,6 +178,10 @@ export default function Reservas() {
   const paid = justPaid && list.find((b) => b.id === justPaid)
   const upcoming = list.filter((b) => new Date(b.trips?.departs_at) > now)
   const past = list.filter((b) => new Date(b.trips?.departs_at) <= now)
+  const next = upcoming.filter((b) => b.status === 'confirmed').sort((a, b) => a.trips.departs_at.localeCompare(b.trips.departs_at))[0]
+  // Fin aproximado de la última salida hecha: hora de salida + 1,5 h por inmersión (para el aviso de no volar)
+  const done = past.filter((b) => b.status === 'confirmed').map((b) => new Date(b.trips.departs_at).getTime() + (b.trips.num_dives || 2) * 1.5 * 36e5).filter((x) => x <= now)
+  const lastEnd = done.length ? new Date(Math.max(...done)).toISOString() : null
 
   const card = (b) => {
     const minsLeft = Math.ceil((holdEnd(b) - now) / 60000)
@@ -182,6 +220,11 @@ export default function Reservas() {
             <div style={{ marginTop: 6 }}><Link to="/">{t('Buscar otra salida')}</Link></div>
           </div>
         ) : b.refund_php > 0 && <div className="msg ok" role="status">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
+        {active && future && (
+          <button type="button" className="btn small ghost" style={{ marginTop: 8, marginRight: 8 }} onClick={() => setChatFor(chatFor === b.trip_id ? null : b.trip_id)}><Icon icon={MessageCircle} /> {t('Chat de la salida')}</button>
+        )}
+        {chatFor === b.trip_id && <div style={{ marginTop: 8 }}><TripChat tripId={b.trip_id} open /></div>}
+        {!future && b.status === 'confirmed' && <ReviewForm booking={b} existing={reviews[b.id]} onDone={() => supabase.rpc('my_reviews').then(({ data }) => setReviews(Object.fromEntries((data || []).map((r) => [r.booking_id, r]))))} />}
         {active && future && diver?.insurance_provider && diver.insurance_expiry && diver.insurance_expiry < manilaDate(b.trips?.departs_at) && (
           <div className="msg warn" role="status">{t('Tu seguro de buceo caduca antes de esta salida.')} <a href="#/perfil?ver=buceo">{t('Actualizar')}</a></div>
         )}
@@ -217,8 +260,22 @@ export default function Reservas() {
       {info && <div className="msg ok" role="status">{info}</div>}
       {paid && <Confirmada b={paid} diver={diver} onClose={() => setJustPaid(null)} />}
       <PendingBuddyRatings />
+      <NoFlyBanner lastDiveEnd={lastEnd} />
+      {next && <NextTrip b={next} />}
+      {waits.length > 0 && (
+        <div className="card">
+          <span className="over">{t('Listas de espera')}</span>
+          {waits.map((w) => (
+            <div key={w.trip_id} className="row between wrap" style={{ gap: 8, marginTop: 8 }}>
+              <span className="small"><Icon icon={Clock} size={14} /> <b>{w.center_name}</b> · {dateTime(w.departs_at)} · {w.status === 'offered' ? <b className="ok-ink">{t('Plaza retenida: págala abajo')}</b> : t('puesto {n}', { n: w.position })}</span>
+              <Link to={'/salida/' + w.trip_id} className="btn small ghost">{t('Ver')}</Link>
+            </div>
+          ))}
+        </div>
+      )}
       {upcoming.length === 0 && <div className="card center muted">{t('No tienes reservas próximas.')} <Link to="/">{t('Ver salidas')}</Link></div>}
       {upcoming.map(card)}
+      {upcoming.length > 0 && <p className="small muted center" style={{ marginTop: 12 }}><InstallButton className="btn small ghost" /></p>}
       {past.length > 0 && <><h2>{t('Anteriores')}</h2>{past.map(card)}</>}
     </>
   )

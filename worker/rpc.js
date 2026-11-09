@@ -1,10 +1,12 @@
 // Funciones de negocio (port de las funciones SECURITY DEFINER de Supabase), mismas reglas y mismos errores «CODIGO: mensaje».
 // Concurrencia: D1 no tiene SELECT … FOR UPDATE. Cada comprobación de plazas + alta es UNA sentencia
 // (INSERT … SELECT … WHERE plazas_libres >= pedidas), y los cobros van en un batch (transacción) con condiciones.
-import { HOLDS, OPERATIVE, APP_AVAILABLE, CERT_LEVELS, FEES, LAST_MINUTE } from './schema.js'
+import { HOLDS, OPERATIVE, APP_AVAILABLE, CERT_LEVELS, FEES, LAST_MINUTE, EARLY } from './schema.js'
 import { fail, nowIso, uuid, all, first, run, changes, outRow } from './lib/util.js'
 import { sendEmail, TEMPLATES } from './email.js'
 import { centreEmail, notifyLater } from './stats.js'
+import { PLUS, processWaitlist, buddyAlerts, packDiscount, expLevel } from './plus.js'
+import { notifyDiver, notifyCentreStaff } from './push.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -59,16 +61,19 @@ async function payNow(ctx, b, kind, method, provider, recordedBy = null) {
 }
 
 // Pago online: valida y crea el pago pendiente (port de start_online_payment). Lo usa payments.js
+// Métodos de PayMongo Checkout: tarjeta, GCash, Maya, QR Ph (cualquier banco o cartera) y GrabPay
+export const PAY_METHODS = ['card', 'gcash', 'paymaya', 'qrph', 'grab_pay']
 export async function startOnlinePayment(ctx, bookingId, kind, method) {
   mfa(ctx)
   const b = await booking(ctx.db, bookingId)
   if (!b || !ctx.diverId || b.diver_id !== ctx.diverId) fail('NOT_FOUND', 'reserva no encontrada')
-  if (!['card', 'gcash'].includes(method)) fail('BAD_METHOD', 'método de pago no válido')
+  if (!PAY_METHODS.includes(method)) fail('BAD_METHOD', 'método de pago no válido')
   if (b.status === 'pending_payment' && !holdsSeat(b)) fail('HOLD_EXPIRED', 'la reserva ha caducado, vuelve a reservar')
   const amt = paymentAmount(b, kind)
   if (amt < 100) fail('BAD_AMOUNT', 'el importe mínimo para pagar online es ₱100')
   const pid = uuid()
-  const stmts = [ctx.db.prepare('INSERT INTO payments (id, booking_id, kind, method, amount_php) VALUES (?, ?, ?, ?, ?)').bind(pid, b.id, kind, method, amt)]
+  // payments.method solo admite card/gcash/cash/demo (CHECK): las demás carteras van como gcash y el detalle en channel_method
+  const stmts = [ctx.db.prepare('INSERT INTO payments (id, booking_id, kind, method, channel_method, amount_php) VALUES (?, ?, ?, ?, ?, ?)').bind(pid, b.id, kind, method === 'card' ? 'card' : 'gcash', method, amt)]
   if (b.status === 'pending_payment') stmts.push(ctx.db.prepare('UPDATE bookings SET hold_until = ? WHERE id = ?').bind(new Date(Date.now() + 30 * 60000).toISOString(), b.id))
   await ctx.db.batch(stmts)
   return { id: pid, booking_id: b.id, amount_php: amt, kind, method }
@@ -107,7 +112,7 @@ async function buddyPublic(db, diver) {
   return { count: s.count, score: s.overall, raters: s.raters, scores: s.scores, dive_again: s.dive_again }
 }
 
-const RPC = {
+export const RPC = {
   async is_platform_admin(ctx) { return ctx.isAdmin },
 
   async center_private(ctx, { p_center }) {
@@ -144,7 +149,7 @@ const RPC = {
     }
     const divers = rows.map((d) => ({
       is_me: d.id === ctx.diverId, name: short(d.full_name), level: d.best_level, verified: !!d.verified, dives: d.dives,
-      languages: JSON.parse(d.languages || '[]'), country: d.country, bio: d.bio, seeks_buddy: !!d.seeks_buddy, fav_site: d.fav_site, seats: seatsBy[d.id],
+      languages: JSON.parse(d.languages || '[]'), exp: expLevel(d.best_level, d.dives), country: d.country, bio: d.bio, seeks_buddy: !!d.seeks_buddy, fav_site: d.fav_site, seats: seatsBy[d.id],
       _id: d.id, _buddy: !!d.buddy_ratings_enabled,
     })).sort((a, b) => (b.is_me - a.is_me) || (b.dives - a.dives))
     for (const d of divers) { d.buddy = d._buddy ? await buddyPublic(ctx.db, d._id) : null; delete d._id; delete d._buddy }
@@ -157,18 +162,22 @@ const RPC = {
     if (!ctx.diverId) fail('NO_PROFILE', 'crea tu perfil de buceador')
     const seats = +p_seats
     if (!Number.isInteger(seats) || seats < 1 || seats > 20) fail('BAD_SEATS', 'número de plazas no válido')
-    const t = await first(ctx.db, `SELECT t.*, ${FEES('t')} AS fees_seat, CASE WHEN ${LAST_MINUTE('t')} THEN t.last_minute_pct ELSE 0 END AS lm_pct FROM trips t WHERE t.id = ?`, p_trip)
+    const t = await first(ctx.db, `SELECT t.*, ${FEES('t')} AS fees_seat, max(CASE WHEN ${LAST_MINUTE('t')} THEN t.last_minute_pct ELSE 0 END, CASE WHEN ${EARLY('t')} THEN t.early_pct ELSE 0 END) AS lm_pct FROM trips t WHERE t.id = ?`, p_trip)
     if (!t || t.status !== 'published') fail('NOT_BOOKABLE', 'la salida no está abierta')
     if (Date.parse(t.departs_at) - Date.now() < RULES.min_lead_minutes * 60000) fail('TOO_LATE', 'ya no se puede reservar por la app')
     if (!p_medical_signed) fail('NO_MEDICAL', 'falta la declaración médica')
     const levels = (await all(ctx.db, 'SELECT level FROM certifications WHERE diver_id = ?', ctx.diverId)).map((c) => CERT_LEVELS.indexOf(c.level))
-    if (!levels.length || Math.max(...levels) < CERT_LEVELS.indexOf(t.min_level)) fail('LEVEL', 'tu certificación no alcanza el mínimo')
+    // Cursos: solo piden el nivel previo del curso (un Open Water no pide nada); salidas: el nivel mínimo
+    const need = t.kind === 'course' ? t.course_prereq : t.min_level
+    if (need && (!levels.length || Math.max(...levels) < CERT_LEVELS.indexOf(need))) fail('LEVEL', 'tu certificación no alcanza el mínimo')
     const gear = p_with_gear ? 1 : 0
     // Extras del centro (seguro, curso, fotos…): solo los activos de este centro
     const ids = [...new Set((Array.isArray(p_extras) ? p_extras : []).map(String))].slice(0, 10)
     const extras = ids.length ? await all(ctx.db, `SELECT * FROM center_extras WHERE center_id = ? AND active = 1 AND kind <> 'insurance' AND id IN (${ids.map(() => '?').join(',')})`, t.center_id, ...ids) : []
     if (extras.length !== ids.length) fail('BAD_EXTRA', 'algún extra ya no está disponible')
-    const unit = Math.floor((t.price_php * (100 - t.lm_pct)) / 100)
+    // Bono del centro (N salidas en X días): se aplica sobre el precio ya rebajado
+    const pack = await packDiscount(ctx.db, t.center_id, ctx.diverId, t.id, t.departs_at)
+    const unit = Math.floor((Math.floor((t.price_php * (100 - t.lm_pct)) / 100) * (100 - pack)) / 100)
     const discount = seats * (t.price_php - unit)
     const fees = seats * t.fees_seat
     const extrasAmt = extras.reduce((s, e) => s + e.price_php * (e.per_seat ? seats : 1), 0)
@@ -200,7 +209,11 @@ const RPC = {
         .bind(id, e.id, e.kind, e.name, e.per_seat ? seats : 1, e.price_php)))
     }
     // Aviso al equipo del centro (como el trigger notify_booking de Supabase, migración 031)
-    const p = notifyCentreBooking(ctx, t, seats, id, direct).catch((e) => console.error('aviso reserva', e.message))
+    const p = Promise.all([
+      notifyCentreBooking(ctx, t, seats, id, direct),
+      notifyCentreStaff(ctx.env, t.center_id, { title: 'Nueva reserva · New booking', body: `${seats} ${seats === 1 ? 'plaza' : 'plazas'} · ${new Date(t.departs_at).toLocaleString('en-GB', { timeZone: 'Asia/Manila', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`, url: '/centro/agenda', tag: 'booking-' + id }),
+      buddyAlerts(ctx.env, ctx.db, t.id, ctx.diverId),
+    ]).catch((e) => console.error('aviso reserva', e.message))
     if (ctx.waitUntil) ctx.waitUntil(p)
     return booking(ctx.db, id)
   },
@@ -267,6 +280,9 @@ const RPC = {
         commission_php = CASE WHEN ?1 THEN 0 ELSE commission_php END, cancelled_at = ?2
       WHERE id = ?3 AND status = ?4`, full ? 1 : 0, nowIso(), b.id, b.status)
     if (!changes(r)) fail('BAD_STATE', 'la reserva ha cambiado, vuelve a intentarlo')
+    // La plaza liberada pasa al primero de la lista de espera
+    const q = processWaitlist(ctx.env, ctx.db, b.trip_id, RPC, ctx.waitUntil).catch((e) => console.error('lista de espera', e.message))
+    if (ctx.waitUntil) ctx.waitUntil(q); else await q
     return booking(ctx.db, b.id)
   },
 
@@ -350,6 +366,9 @@ const RPC = {
         WHERE trip_id = ? AND status IN ('pending_payment', 'confirmed') AND EXISTS (SELECT 1 FROM trips WHERE id = ? AND status = 'cancelled_weather')`).bind(now, t.id, t.id),
     ])
     if (!changes(upd)) fail('BAD_STATE')
+    const hit = await all(ctx.db, "SELECT DISTINCT diver_id FROM bookings WHERE trip_id = ? AND status = 'cancelled_by_center' AND diver_id IS NOT NULL", t.id)
+    const q = Promise.all(hit.map((x) => notifyDiver(ctx.env, x.diver_id, { title: 'Salida cancelada · Trip cancelled', body: 'El centro ha cancelado la salida por el estado del mar. Se devuelve todo lo pagado. · Cancelled due to sea conditions: full refund.', url: '/reservas', urgent: true }))).catch(() => {})
+    if (ctx.waitUntil) ctx.waitUntil(q)
     return (await first(ctx.db, "SELECT count(*) AS n FROM bookings WHERE trip_id = ? AND status = 'cancelled_by_center'", t.id)).n
   },
 
@@ -636,6 +655,9 @@ async function notifyCentreBooking(ctx, t, seats, id, direct = false) {
 
 const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_at, locality, website, source_url, lat, lng, location_precision, listing_status, destination, province, languages, course_languages, verification_status, claims_center_id, verified_at, agencies, agency_detail, directory_check, checked_at, green_fins, green_fins_verified, eco'
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
+
+// Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
+Object.assign(RPC, PLUS)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

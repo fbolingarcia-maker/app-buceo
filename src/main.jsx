@@ -13,6 +13,9 @@ import '@fontsource/barlow-condensed/600.css'
 import './styles.css'
 
 // Sin cobertura (barco, puerto): el service worker guarda la app para abrirla sin red. Solo en producción.
+// «Instalar la app»: el navegador avisa una vez; se guarda para el botón de Perfil y Reservas
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__dsInstall = e; window.dispatchEvent(new Event('ds-install')) })
+
 if (import.meta.env.PROD && 'serviceWorker' in navigator && window.location.pathname.startsWith('/app')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(() => {}))
 }

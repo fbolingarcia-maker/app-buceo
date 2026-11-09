@@ -15,6 +15,7 @@ export default function NuevaSalida({ id }) {
     boat_id: '', date: addDays(manilaDate(), 1), hour: '07:30', num_dives: 3, min_level: 'open_water',
     price_php: 5500, gear_rental_php: 800, guides: 2, divers_per_guide: center?.default_divers_per_guide || 4,
     seat_override: '', blocked_seats: 0, sites: ['', '', ''], publish: true, include_fees: false, fees_per_diver: '',
+    early_pct: 0, early_days: 14, kind: 'fun', course_name: '', course_days: '', course_prereq: '', repeat: 0,
   })
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function NuevaSalida({ id }) {
         sites: Array.from({ length: data.num_dives }, (_, i) => ts.find((x) => x.position === i + 1)?.site_id || ''),
         publish: data.status !== 'draft', status: data.status,
         include_fees: !!data.include_fees, fees_per_diver: data.fees_per_diver ?? '',
+        early_pct: data.early_pct || 0, early_days: data.early_days || 14, kind: data.kind || 'fun', course_name: data.course_name || '', course_days: data.course_days ?? '', course_prereq: data.course_prereq || '', repeat: 0,
       })
       setHasBookings((data.bookings || []).some((b) => ['pending_payment', 'confirmed'].includes(b.status)))
       setLoaded(true)
@@ -70,6 +72,9 @@ export default function NuevaSalida({ id }) {
       price_php: f.price_php, gear_rental_php: f.gear_rental_php || 0, guides: f.guides, divers_per_guide: f.divers_per_guide,
       seat_override: f.seat_override === '' ? null : f.seat_override, blocked_seats: f.blocked_seats || 0,
       include_fees: !!f.include_fees, fees_per_diver: f.include_fees && f.fees_per_diver !== '' ? +f.fees_per_diver : null,
+      early_pct: +f.early_pct || 0, early_days: +f.early_days || 14, kind: f.kind,
+      course_name: f.kind === 'course' ? f.course_name.trim() || null : null, course_days: f.kind === 'course' && f.course_days !== '' ? +f.course_days : null,
+      course_prereq: f.kind === 'course' ? f.course_prereq || null : null,
     }
     if (!id || ['draft', 'published'].includes(f.status)) fields.status = f.publish && verified ? 'published' : 'draft'
     const { data: trip, error } = id
@@ -81,6 +86,12 @@ export default function NuevaSalida({ id }) {
     if (ts.length) {
       const { error: e2 } = await supabase.from('trip_sites').insert(ts)
       if (e2) { setBusy(false); return setError(t('Salida creada, pero falló guardar los puntos: {error}', { error: errMsg(e2) })) }
+    }
+    // Repetir: la misma salida los N días siguientes a la misma hora (como las clases fijas de un club)
+    if (!id && f.repeat > 0) {
+      const dates = Array.from({ length: f.repeat }, (_, i) => addDays(f.date, i + 1))
+      const { error: e3 } = await supabase.rpc('repeat_trip', { p_trip: trip.id, p_dates: dates })
+      if (e3) { setBusy(false); return setError(t('Salida creada, pero falló repetirla: {error}', { error: errMsg(e3) })) }
     }
     setBusy(false)
     go(id ? '/centro/salidas' : '/centro/agenda?dia=' + f.date)
@@ -98,6 +109,17 @@ export default function NuevaSalida({ id }) {
         </div>
       ) : (
         <form className="card" onSubmit={save}>
+          <div className="seg" role="group" aria-label={t('Tipo')}>
+            <button type="button" className={f.kind === 'fun' ? 'on' : ''} aria-pressed={f.kind === 'fun'} onClick={() => setF({ ...f, kind: 'fun' })}>{t('Salida de buceo')}</button>
+            <button type="button" className={f.kind === 'course' ? 'on' : ''} aria-pressed={f.kind === 'course'} onClick={() => setF({ ...f, kind: 'course', num_dives: Math.min(f.num_dives, 2) })}>{t('Curso')}</button>
+          </div>
+          {f.kind === 'course' && (
+            <div className="grid3">
+              <div className="field"><label htmlFor="ns-cn">{t('Nombre del curso')}</label><input id="ns-cn" required maxLength={80} placeholder={t('p. ej. Open Water, Advanced, Nitrox')} value={f.course_name} onChange={set('course_name')} /></div>
+              <div className="field"><label htmlFor="ns-cd">{t('Días')}</label><input id="ns-cd" type="number" inputMode="numeric" min="1" max="14" value={f.course_days} onChange={set('course_days', true)} /></div>
+              <div className="field"><label htmlFor="ns-cp">{t('Requisito')}</label><select id="ns-cp" value={f.course_prereq} onChange={set('course_prereq')}><option value="">{t('Ninguno (para empezar)')}</option>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+            </div>
+          )}
           <div className="grid2">
             <div className="field"><label htmlFor="nuevasalida-1">{t('Día')}</label><input id="nuevasalida-1" type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
             <div className="field"><label htmlFor="nuevasalida-2">{t('Hora (Manila)')}</label><input id="nuevasalida-2" type="time" required value={f.hour} onChange={set('hour')} /></div>
@@ -142,6 +164,19 @@ export default function NuevaSalida({ id }) {
             })()}
           </div>
 
+          <div className="grid2" style={{ marginTop: 10 }}>
+            <div className="field"><label htmlFor="ns-early">{t('Descuento por reserva anticipada (%)')}</label>
+              <input id="ns-early" type="number" inputMode="numeric" min="0" max="30" value={f.early_pct} onChange={set('early_pct', true)} />
+              <span className="small muted">{t('Para llenar el barco antes: se aplica si reservan con más de {n} días.', { n: f.early_days || 14 })}</span></div>
+            <div className="field"><label htmlFor="ns-early-d">{t('Días de antelación')}</label><input id="ns-early-d" type="number" inputMode="numeric" min="2" max="90" value={f.early_days} onChange={set('early_days', true)} /></div>
+          </div>
+          {!id && (
+            <div className="field"><label htmlFor="ns-rep">{t('Repetir los días siguientes')}</label>
+              <select id="ns-rep" value={f.repeat} onChange={set('repeat', true)}>
+                <option value={0}>{t('No repetir')}</option>
+                {[6, 13, 29].map((n) => <option key={n} value={n}>{t('Cada día, {n} días más', { n })}</option>)}
+              </select></div>
+          )}
           <p className="small muted">{t('Plazas operativas:')} <b>{operative}</b> · {t('en la app:')} <b>{Math.max(0, operative - (f.blocked_seats || 0))}</b> · {t('precio {price}', { price: php(f.price_php) })}</p>
           {verified
             ? <label className="check field"><input type="checkbox" checked={f.publish} onChange={(e) => setF({ ...f, publish: e.target.checked })} /> {t('Publicar ya (si no, queda como borrador)')}</label>

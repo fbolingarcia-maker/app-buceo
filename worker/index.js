@@ -15,7 +15,9 @@ import { handleRest } from './rest.js'
 import { handleRpc } from './rpc.js'
 import { handleStorage } from './storage.js'
 import { crearPago, paymongoWebhook } from './payments.js'
-import { cleanup, balanceReminders, insuranceReminders, expireUnpaidWithMoney } from './cron.js'
+import { cleanup, balanceReminders, insuranceReminders, expireUnpaidWithMoney, updateFx } from './cron.js'
+import { processAllWaitlists } from './plus.js'
+import { RPC } from './rpc.js'
 import { handleSea } from './sea.js'
 import { handleImport } from './import.js'
 import { handleHealth } from './health.js'
@@ -101,6 +103,10 @@ export default {
   async scheduled(event, env, ectx) {
     env = await withSecrets(env).catch(() => env)
     const onFail = (what) => (e) => { console.error(what, e?.message); alertError(env, ectx, 'la tarea programada (' + what + ')', e) }
+    // Cada 10 min: solo la lista de espera (las ofertas de plaza caducan a los 30 min)
+    ectx.waitUntil(processAllWaitlists(env, RPC).catch(onFail('lista de espera')))
+    if (event?.cron === '*/10 * * * *') return
+    ectx.waitUntil(updateFx(env).catch((e) => console.error('fx', e.message)))
     ectx.waitUntil(cleanup(env).catch(onFail('limpieza')))
     ectx.waitUntil(pruneVisits(env).catch(onFail('visitas')))
     ectx.waitUntil(dailyDigest(env).catch(onFail('resumen diario')))

@@ -79,6 +79,14 @@ export const POLICIES = {
   center_extras: { ops: ['insert', 'update', 'delete'],
     select: (c, a) => or(P(`${a}.active = 1 AND ${a}.kind <> 'insurance'`), staffIn(c, `${a}.center_id`), admin(c)),
     write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => and(staffIn(c, `${a}.center_id`), P(`${a}.kind <> 'insurance'`)) },
+  // Lista de espera: la ve el propio buceador y el centro de la salida (se escribe con RPC)
+  trip_waitlist: { select: (c, a) => or(myDiver(c, `${a}.diver_id`), staffTrip(c, `${a}.trip_id`), admin(c)) },
+  // Reseñas de centros: públicas (se escriben con RPC)
+  center_reviews: { select: () => YES },
+  // Bonos: los activos son públicos; el equipo del centro los gestiona
+  center_packs: { ops: ['insert', 'update', 'delete'],
+    select: (c, a) => or(P(`${a}.active = 1`), staffIn(c, `${a}.center_id`), admin(c)),
+    write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },
   // Extras de una reserva: los ve quien ve la reserva (se crean solo con RPC)
   booking_extras: {
     select: (c, a) => or(admin(c),

@@ -51,6 +51,14 @@ async function sign(env, bucket, path, exp) {
   return hmacHex(await signingKey(env.AUTH_SECRET, 'storage'), `${bucket}/${path}:${exp}`)
 }
 
+// Enlace firmado relativo (mismo dominio) para que una RPC dé acceso puntual a un fichero privado (p. ej. la tarjeta de
+// certificación que el buceador subió, para el centro de una salida reservada)
+export async function signedObjectUrl(env, bucket, path, ttl = 600) {
+  const p = cleanPath(path)
+  const exp = Math.floor(Date.now() / 1000) + ttl
+  return `/api/storage/object/${bucket}/${p}?exp=${exp}&sig=${await sign(env, bucket, p, exp)}`
+}
+
 export async function handleStorage(req, env, ctx, rest) {
   const url = new URL(req.url)
   // Descarga con enlace firmado: /api/storage/object/<bucket>/<path>?exp=…&sig=…

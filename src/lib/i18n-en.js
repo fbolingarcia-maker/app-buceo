@@ -12,5 +12,6 @@ import buddy from './en/buddy'
 import perfil from './en/perfil'
 import mejoras from './en/mejoras'
 import mejoras2 from './en/mejoras2'
+import plus from './en/plus'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2 }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus }

@@ -9,6 +9,7 @@ import { Agencies } from '../lib/agencies'
 import { GreenFinsBadge, EcoList, LastMinuteTag, PriceTag } from '../lib/extras'
 import Icon from '../lib/Icon'
 import FavButton from '../lib/FavButton'
+import { CenterReviews } from '../lib/plus'
 import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
@@ -72,6 +73,7 @@ export default function CentroInfo({ id }) {
         <a className="btn small ghost" href={mapUrl} target="_blank" rel="noreferrer">{t('Mapa')}</a>
       </div>
 
+      <CentroPacks centerId={id} />
       <h2>{t('Próximas salidas')}</h2>
       {trips.length === 0 && (
         <div className="card muted">
@@ -101,6 +103,27 @@ export default function CentroInfo({ id }) {
         </div>
       ))}
       {!allDays && byDay.length > 3 && <button type="button" className="btn ghost block" onClick={() => setAllDays(true)}>{t('Ver más días ({n})', { n: byDay.length - 3 })}</button>}
+      <h2>{t('Reseñas')}</h2>
+      <div className="card"><CenterReviews centerId={id} limit={10} />{' '}<ReviewsEmpty centerId={id} /></div>
     </>
   )
+}
+
+// Bonos del centro (N salidas en X días con descuento)
+function CentroPacks({ centerId }) {
+  const [packs, setPacks] = useState([])
+  useEffect(() => { supabase.from('center_packs').select('id, name, trips, discount_pct, valid_days').eq('center_id', centerId).eq('active', true).order('trips').then(({ data }) => setPacks(data || [])) }, [centerId])
+  if (!packs.length) return null
+  return (
+    <div className="card msg ok" style={{ margin: '12px 0' }}>
+      <b>{t('Bonos del centro')}</b>
+      {packs.map((p) => <div key={p.id} className="small">{p.name}: {t('con {n} salidas en {d} días, −{pct} % a partir de la {n}.ª', { n: p.trips, d: p.valid_days, pct: p.discount_pct })}</div>)}
+      <div className="small muted">{t('Se aplica solo al reservar.')}</div>
+    </div>
+  )
+}
+function ReviewsEmpty({ centerId }) {
+  const [n, setN] = useState(null)
+  useEffect(() => { supabase.rpc('center_reviews', { p_center: centerId, p_limit: 1 }).then(({ data }) => setN(data?.count || 0)) }, [centerId])
+  return n === 0 ? <span className="small muted">{t('Aún no hay reseñas. Los buceadores pueden valorar el centro después de su salida.')}</span> : null
 }

@@ -3,6 +3,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link } from '../lib/router'
 import { dayLabel, manilaDate, depthColor, TZ } from '../lib/format'
+import { Badges, YearInReview } from '../lib/plus'
 import { t, locale } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import DepthBar from '../lib/DepthBar'
@@ -133,6 +134,9 @@ export default function Bitacora() {
         {fav && <p className="small muted" style={{ margin: '10px 0 0' }}>{t('Punto favorito:')} <b>{fav}</b></p>}
       </div>
 
+      {logs.length > 0 && <YearInReview logs={logs} />}
+      {logs.length > 0 && <details className="fold"><summary className="small"><b>{t('Insignias')}</b></summary><Badges logs={logs} /></details>}
+
       {!feat && pending}
       {logs.length === 0 && pendingTrips.length === 0 && (
         <div className="card center muted">
@@ -190,7 +194,7 @@ export default function Bitacora() {
                   <span className="log-date"><b>{dayLabel(l.dive_date, { day: 'numeric' })}</b><small>{dayLabel(l.dive_date, { weekday: 'short' })}</small></span>
                   <span className="grow" style={{ minWidth: 0 }}>
                     <b className="log-site">{l.site_name || t('Inmersión')}</b>
-                    <small>{[l.centers?.name, l.duration_min ? l.duration_min + ' min' : null].filter(Boolean).join(' · ') || '—'}</small>
+                    <small>{[l.centers?.name, l.duration_min ? l.duration_min + ' min' : null, l.signed_by_center ? t('Firmada por el centro') : null].filter(Boolean).join(' · ') || '—'}</small>
                   </span>
                   <span className="log-depth">
                     <span className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>{l.id === recordId && <Record />}<b>{d ? d + ' m' : '—'}</b></span>

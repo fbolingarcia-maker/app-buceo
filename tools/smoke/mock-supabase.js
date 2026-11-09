@@ -64,6 +64,9 @@ const T = {
   admin_audit: role === 'admin' ? [{ id: 1, at: iso(now - H), action: 'center_status', target: C1, detail: { name: 'Demo · Centro Alona', from: 'pending', to: 'verified' } }, { id: 2, at: iso(now - 2 * H), action: 'admin_grant', detail: { email: 'admin@example.com' } }] : [],
 }
 const RPC = {
+  center_reviews: { avg: 4.6, count: 2, reviews: [{ id: 'rv1', author: 'Ana L.', rating: 5, body: 'Guías muy atentos y barco puntual.', reply: 'Gracias Ana', created_at: iso(now - 2 * D) }, { id: 'rv2', author: 'Marco R.', rating: 4, body: null, reply: null, created_at: iso(now - 5 * D) }] },
+  pack_preview: { packs: [{ id: 'pk1', name: 'Semana de buceo', trips: 3, discount_pct: 10, valid_days: 10 }], booked_here: 1 },
+  trip_messages: [{ id: 'm1', author: 'Demo · Centro Alona', is_staff: true, body: 'Quedamos a las 7:00 en el muelle de Alona', created_at: iso(now - H), mine: false }],
   book_trip: { id: 'nb1', trip_id: 't1-1', status: 'pending_payment', seats: 1, amount_php: 5800, paid_php: 0, deposit_php: 2900, created_at: iso(now), hold_until: null },
   is_platform_admin: role === 'admin', center_ratings: [{ center_id: C1, rating: 4.7, reviews: 12 }],
   delete_my_account: { ok: role !== 'centerv', blockers: role === 'centerv' ? ['Tu centro tiene 2 reserva(s) en salidas futuras. Cancélalas o avisa a los buceadores antes de eliminar la cuenta.'] : [], centers: role.startsWith('center') ? [C1] : [], dive_logs: 3, bookings_kept: 2 },

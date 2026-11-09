@@ -8,6 +8,7 @@ import { t } from '../lib/i18n'
 import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
 import { ManifestSheet, manifestCsv } from '../lib/manifest'
 import { SeaChip } from '../lib/extras'
+import { TripChat } from '../lib/plus'
 
 // Sin cobertura en el barco: la agenda de cada día se guarda en el móvil y los check-in se encolan hasta que vuelva la red
 const cacheKey = (center, day) => 'ds_agenda:' + center + ':' + day
@@ -236,6 +237,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
                   {b.divers?.certifications?.map((c) => (
                     <div key={c.id} className="small row wrap" style={{ gap: 6 }}>
                       <span>{c.agency} {levelName(c.level)} {c.verified_at ? '✓' : ''}</span>
+                      {c.photo_path && <button type="button" className="linkish" onClick={async () => { const { data, error } = await supabase.rpc('cert_photo_url', { p_cert: c.id }); if (!error && data?.url) window.open(data.url, '_blank', 'noopener') }}>{t('Ver tarjeta')}</button>}
                       {!c.verified_at && (
                         <button type="button" className="linkish" disabled={busy === 'vc' + c.id}
                           onClick={() => run(supabase.rpc('verify_certification', { p_cert: c.id, p_center: center.id }), t('Certificación verificada'), 'vc' + c.id)}>{t('Verificar')}</button>
@@ -292,6 +294,10 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
               <button type="button" className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'published' }).eq('id', trip.id), t('Salida publicada'))}>{t('Publicar')}</button>
             )}
             {trip.status === 'draft' && !verified && <span className="small muted">{t('Podrás publicarla cuando tu centro esté verificado.')}</span>}
+            {started && active.some((b) => b.checked_in_at && b.divers) && (
+              <button type="button" className="btn small ghost" title={t('Confirma en la bitácora de cada buceador con check-in que hizo esta salida')}
+                onClick={() => run(supabase.rpc('sign_trip_logs', { p_trip: trip.id }), t('Bitácoras firmadas. Las inmersiones que se apunten más tarde se firman al volver a pulsar.'))}>{t('Firmar bitácoras')}</button>
+            )}
             {trip.status === 'published' && started && (
               <button type="button" className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'completed' }).eq('id', trip.id), t('Salida marcada como completada'))}>{t('Marcar completada')}</button>
             )}
@@ -310,6 +316,8 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
               </>
             )}
           </div>
+          <WaitCount tripId={trip.id} />
+          <TripChat tripId={trip.id} />
           <p className="small muted">{trip.guides === 1
             ? t('Salida: {date} · {guides} guía × {n} buceadores', { date: dateTime(trip.departs_at), guides: trip.guides, n: trip.divers_per_guide })
             : t('Salida: {date} · {guides} guías × {n} buceadores', { date: dateTime(trip.departs_at), guides: trip.guides, n: trip.divers_per_guide })}</p>
@@ -338,4 +346,12 @@ function DiverReady({ d, gear }) {
       {gear && (sizes.length ? <span className="muted">{sizes.join(' · ')}</span> : <span className="muted">{t('Sin tallas')}</span>)}
     </div>
   )
+}
+
+// Buceadores en la lista de espera (la plaza que se libera se les ofrece sola, 30 min)
+function WaitCount({ tripId }) {
+  const [n, setN] = useState(null)
+  useEffect(() => { supabase.from('trip_waitlist').select('id', { count: 'exact', head: true }).eq('trip_id', tripId).eq('status', 'waiting').then(({ count }) => setN(count || 0)) }, [tripId])
+  if (!n) return null
+  return <p className="small"><b>{n === 1 ? t('1 buceador en la lista de espera') : t('{n} buceadores en la lista de espera', { n })}</b> · {t('si se libera una plaza, se le ofrece sola durante 30 min')}</p>
 }

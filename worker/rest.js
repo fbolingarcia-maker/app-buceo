@@ -202,6 +202,10 @@ async function beforeWrite(ctx, t, op, row, old) {
   if (t === 'centers' && op === 'update' && !ctx.isAdmin && !ctx.trusted) {
     for (const c of PROTECTED.centers) if (JSON.stringify(row[c] ?? null) !== JSON.stringify(old[c] ?? null)) fail('FORBIDDEN', 'solo la plataforma puede cambiar la verificación del centro', 403)
   }
+  // La firma de la bitácora solo la pone el centro (sign_trip_logs)
+  if (t === 'dive_logs' && !ctx.trusted) {
+    for (const c of ['signed_by_center', 'signed_at']) if (JSON.stringify(row[c] ?? null) !== JSON.stringify(op === 'insert' ? null : old?.[c] ?? null)) fail('FORBIDDEN', 'la firma la pone el centro', 403)
+  }
   if (t === 'trips' && row.status === 'published' && (op === 'insert' || old?.status !== 'published')) {
     const c = await first(ctx.db, "SELECT 1 AS ok FROM centers WHERE id = ? AND verification_status = 'verified'", row.center_id)
     if (!c) fail('NOT_VERIFIED', 'tu centro aún no está verificado. Podrás publicar salidas cuando lo validemos (puedes dejarlas en borrador).')

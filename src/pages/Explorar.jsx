@@ -10,8 +10,9 @@ import { langName } from '../lib/langs'
 import Icon from '../lib/Icon'
 import FavButton from '../lib/FavButton'
 import { useFavs } from '../lib/favs'
-import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves, Heart } from 'lucide-react'
+import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves, Heart, SlidersHorizontal, Map as MapIcon, List, GraduationCap, Users } from 'lucide-react'
 import { unitPrice, GreenFinsBadge } from '../lib/extras'
+import { Approx, MapView } from '../lib/plus'
 
 const DAYS = 14
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
@@ -25,6 +26,11 @@ export default function Explorar() {
   const [agency, setAgency] = useState(() => ss('agency') || '')
   const [lang, setLang] = useState(() => ss('lang') || '')
   const [onlyFav, setOnlyFav] = useState(() => ss('fav') === '1')
+  const [kind, setKind] = useState(() => ss('kind') || '') // '' | 'course'
+  const [buddy, setBuddy] = useState(() => ss('buddy') === '1')
+  const [view, setView] = useState(() => ss('view') || 'list')
+  const [panel, setPanel] = useState(false)
+  const [pin, setPin] = useState(null)
   const favs = useFavs()
   const [trips, setTrips] = useState(null)
   const [dests, setDests] = useState([])
@@ -40,9 +46,9 @@ export default function Explorar() {
   const [geoErr, setGeoErr] = useState('')
 
   useEffect(() => {
-    ssSet('q', q); ssSet('day', day); ssSet('sort', sort); ssSet('level', level); ssSet('agency', agency); ssSet('lang', lang); ssSet('fav', onlyFav ? '1' : '')
+    ssSet('q', q); ssSet('day', day); ssSet('sort', sort); ssSet('level', level); ssSet('agency', agency); ssSet('lang', lang); ssSet('fav', onlyFav ? '1' : ''); ssSet('kind', kind); ssSet('buddy', buddy ? '1' : ''); ssSet('view', view)
     ssSet('place', place ? JSON.stringify(place) : ''); ssSet('here', here ? JSON.stringify(here) : '')
-  }, [q, day, sort, place, here, level, agency, lang, onlyFav])
+  }, [q, day, sort, place, here, level, agency, lang, onlyFav, kind, buddy, view])
 
   // Todas las salidas de las próximas dos semanas en una sola consulta (para quien planea el viaje con antelación)
   useEffect(() => {
@@ -82,6 +88,8 @@ export default function Explorar() {
     .filter((tr) => !agency || (tr.center_agencies || []).some((a) => a.toUpperCase() === agency.toUpperCase()))
     .filter((tr) => !lang || (tr.center_languages || []).includes(lang) || (tr.center_course_languages || []).includes(lang))
     .filter((tr) => !onlyFav || favs.includes(tr.center_id))
+    .filter((tr) => (kind === 'course' ? tr.kind === 'course' : true))
+    .filter((tr) => !buddy || (tr.buddy_seekers || []).length > 0)
     .filter((tr) => inPlace({ destination: destOf(tr), province: tr.center_province }, place, dests))
     .filter((tr) => {
       if (!words.length) return true
@@ -91,7 +99,7 @@ export default function Explorar() {
     })
     .map((tr) => ({ ...tr, km: here && tr.center_lat != null ? distKm(here, { lat: tr.center_lat, lng: tr.center_lng }) : null })),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [trips, level, agency, lang, place, q, here, dests, onlyFav, favs])
+  [trips, level, agency, lang, place, q, here, dests, onlyFav, favs, kind, buddy])
 
   const perDay = {}
   for (const tr of filtered) { const d = manilaDate(new Date(tr.departs_at)); perDay[d] = (perDay[d] || 0) + 1 }
@@ -100,7 +108,7 @@ export default function Explorar() {
   else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
   // Salidas del día agrupadas por centro (como los clubs de Playtomic: primero el centro, luego su disponibilidad)
   const groups = Object.values(shown.reduce((m, tr) => {
-    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, langs: tr.center_languages || [], agencies: tr.center_agencies || [], gf: tr.center_green_fins, gfv: tr.center_green_fins_verified, trips: [] })
+    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, lat: tr.center_lat, lng: tr.center_lng, rating: tr.center_rating, reviews: tr.center_reviews, langs: tr.center_languages || [], agencies: tr.center_agencies || [], gf: tr.center_green_fins, gfv: tr.center_green_fins_verified, trips: [] })
     g.trips.push(tr)
     return m
   }, {})).map((g) => {
@@ -109,6 +117,7 @@ export default function Explorar() {
     g.booked = g.trips.reduce((n, x) => n + (x.booked_seats || 0), 0)
     g.min = Math.min(...g.trips.map((x) => unitPrice(x)))
     g.lastMin = g.trips.some((x) => x.last_minute_pct > 0 && x.available_seats > 0)
+    g.buddies = g.trips.reduce((n, x) => n + (x.buddy_seekers || []).length, 0)
     return g
   })
   if (sort === 'price') groups.sort((a, b) => a.min - b.min)
@@ -138,6 +147,7 @@ export default function Explorar() {
   const agencyOpts = [...new Set((trips || []).flatMap((tr) => (tr.center_agencies || []).map((a) => a.toUpperCase())))].sort()
   const langOpts = [...new Set((trips || []).flatMap((tr) => [...(tr.center_languages || []), ...(tr.center_course_languages || [])]))]
 
+  const nFilters = [level !== 'all', agency, lang, sort !== 'time'].filter(Boolean).length
   const pickPlace = (p) => { setPlace(p); setQ(''); setFocus(false); if (sort === 'near') setSort('time') }
 
   return (
@@ -192,35 +202,49 @@ export default function Explorar() {
         ))}
       </div>
 
-      {/* Filtros en una sola fila que se desliza: en el móvil no ocupan media pantalla */}
-      <div className="filters">
+      {/* Atajos visibles y el resto de filtros en un panel (botón «Filtros»): se ve claro qué hay y qué está activo */}
+      <div className="quick-filters">
+        <button type="button" className={'filter-btn' + (panel || nFilters ? ' on' : '')} aria-expanded={panel} onClick={() => setPanel(!panel)}>
+          <Icon icon={SlidersHorizontal} size={16} />{t('Filtros')}{nFilters > 0 && <span className="badge">{nFilters}</span>}
+        </button>
         {(favs.length > 0 || onlyFav) && (
           <button type="button" className={onlyFav ? 'filter-btn on' : 'filter-btn'} aria-pressed={onlyFav} onClick={() => setOnlyFav(!onlyFav)}>
             <Icon icon={Heart} size={16} fill={onlyFav ? 'currentColor' : 'none'} />{t('Mis centros')}
           </button>
         )}
-        <select className={level !== 'all' ? 'on' : ''} value={level} onChange={(e) => { setLevel(e.target.value); ssSet('levelSet', '1') }} aria-label={t('Tu nivel')}>
-          <option value="all">{t('Cualquier nivel')}</option>
-          {LEVELS.slice(0, 4).map(([k, n]) => <option key={k} value={k}>{t('Soy {nivel}', { nivel: n })}</option>)}
-        </select>
-        {agencyOpts.length > 0 && (
-          <select className={agency ? 'on' : ''} value={agency} onChange={(e) => setAgency(e.target.value)} aria-label={t('Agencia')}>
-            <option value="">{t('Cualquier agencia')}</option>
-            {agencyOpts.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
-        )}
-        {langOpts.length > 1 && (
-          <select className={lang ? 'on' : ''} value={lang} onChange={(e) => setLang(e.target.value)} aria-label={t('Idioma del centro')}>
-            <option value="">{t('Cualquier idioma')}</option>
-            {langOpts.map((l) => <option key={l} value={l}>{langName(l)}</option>)}
-          </select>
-        )}
-        <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label={t('Ordenar')}>
-          <option value="time">{t('Ordenar: hora')}</option>
-          <option value="price">{t('Ordenar: precio')}</option>
-          {here && <option value="near">{t('Ordenar: distancia')}</option>}
-        </select>
+        <button type="button" className={buddy ? 'filter-btn on' : 'filter-btn'} aria-pressed={buddy} onClick={() => setBuddy(!buddy)}><Icon icon={Users} size={16} />{t('Buscan buddy')}</button>
+        <button type="button" className={kind === 'course' ? 'filter-btn on' : 'filter-btn'} aria-pressed={kind === 'course'} onClick={() => setKind(kind === 'course' ? '' : 'course')}><Icon icon={GraduationCap} size={16} />{t('Cursos')}</button>
+        <button type="button" className="filter-btn" onClick={() => { setView(view === 'map' ? 'list' : 'map'); setPin(null) }} aria-pressed={view === 'map'}><Icon icon={view === 'map' ? List : MapIcon} size={16} />{view === 'map' ? t('Lista') : t('Mapa')}</button>
       </div>
+      {panel && (
+        <div className="card filter-panel">
+          <div className="field"><label htmlFor="f-level">{t('Tu nivel')}</label>
+            <select id="f-level" value={level} onChange={(e) => { setLevel(e.target.value); ssSet('levelSet', '1') }}>
+              <option value="all">{t('Cualquier nivel')}</option>
+              {LEVELS.slice(0, 4).map(([k, n]) => <option key={k} value={k}>{t('Soy {nivel}', { nivel: n })}</option>)}
+            </select></div>
+          {agencyOpts.length > 0 && <div className="field"><label htmlFor="f-ag">{t('Agencia')}</label>
+            <select id="f-ag" value={agency} onChange={(e) => setAgency(e.target.value)}>
+              <option value="">{t('Cualquier agencia')}</option>
+              {agencyOpts.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select></div>}
+          {langOpts.length > 1 && <div className="field"><label htmlFor="f-lang">{t('Idioma del centro')}</label>
+            <select id="f-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
+              <option value="">{t('Cualquier idioma')}</option>
+              {langOpts.map((l) => <option key={l} value={l}>{langName(l)}</option>)}
+            </select></div>}
+          <div className="field"><label htmlFor="f-sort">{t('Ordenar')}</label>
+            <select id="f-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="time">{t('Ordenar: hora')}</option>
+              <option value="price">{t('Ordenar: precio')}</option>
+              {here && <option value="near">{t('Ordenar: distancia')}</option>}
+            </select></div>
+          <div className="row between" style={{ gap: 8 }}>
+            <button type="button" className="btn small ghost" onClick={() => { setLevel('all'); setAgency(''); setLang(''); setSort('time') }}>{t('Quitar filtros')}</button>
+            <button type="button" className="btn small" onClick={() => setPanel(false)}>{t('Ver {n} salidas', { n: shown.length })}</button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="msg err" role="alert">{error}</div>}
       {trips === null && [0, 1, 2].map((i) => <div key={i} className="card skeleton" aria-hidden="true"><div /><div /><div /></div>)}
@@ -244,7 +268,7 @@ export default function Explorar() {
                 {t('Ver el {dia} ({n})', { dia: dayLabel(nextDay, { weekday: 'long', day: 'numeric' }), n: perDay[nextDay] })}
               </button>
             )}
-            {(place || q || level !== 'all' || agency || lang || onlyFav) && <button className="btn small ghost" onClick={() => { setQ(''); setPlace(null); setLevel('all'); setAgency(''); setLang(''); setOnlyFav(false) }}>{t('Quitar filtros')}</button>}
+            {(place || q || level !== 'all' || agency || lang || onlyFav || kind || buddy) && <button className="btn small ghost" onClick={() => { setQ(''); setPlace(null); setLevel('all'); setAgency(''); setLang(''); setOnlyFav(false); setKind(''); setBuddy(false) }}>{t('Quitar filtros')}</button>}
           </div>
         </div>
       )}
@@ -253,8 +277,12 @@ export default function Explorar() {
           {groups.length === 1 ? t('1 centro con salidas') : t('{n} centros con salidas', { n: groups.length })} · {shown.length === 1 ? t('1 salida') : t('{n} salidas', { n: shown.length })}
         </p>
       )}
-      {groups.map((g) => (
-        <section key={g.id} className="card centre-card" aria-label={g.name}>
+      {view === 'map' && groups.length > 0 && (
+        <MapView points={groups.map((g) => ({ id: g.id, lat: g.lat, lng: g.lng, label: g.name, badge: php(g.min) }))} selected={pin}
+          onPick={(id) => { setPin(id === pin ? null : id) }} />
+      )}
+      {(view === 'map' && pin ? groups.filter((g) => g.id === pin) : groups).map((g) => (
+        <section key={g.id} id={'c-' + g.id} className="card centre-card" aria-label={g.name}>
           <div className="centre-top">
           <Link to={'/c/' + g.id} className="centre-head">
             <span className="centre-avatar" aria-hidden="true">{initials(g.name)}</span>
@@ -262,12 +290,12 @@ export default function Explorar() {
               <b className="centre-name">{g.name}</b>
               <span className="small muted centre-meta">
                 {g.dest}{g.km != null ? ' · ' + kmLabel(g.km) : ''}
-                {ratings[g.id] && <> · <span className="rating">{ratings[g.id].rating}</span></>}
+                {g.reviews > 0 ? <> · <span className="rating">{g.rating}</span> <span className="muted">({g.reviews})</span></> : ratings[g.id] && <> · <span className="rating">{ratings[g.id].rating}</span></>}
                 {g.agencies.length > 0 && <> · <span className="agency-text">{[...new Set(g.agencies.map((a) => a.toUpperCase()))].join(' · ')}</span></>}
               </span>
-              {(g.gf || g.lastMin) && <span className="row wrap" style={{ gap: 4, marginTop: 4 }}>{g.lastMin && <span className="pill lastmin small">{t('Última hora')}</span>}<GreenFinsBadge level={g.gf} verified={g.gfv} small /></span>}
+              {(g.gf || g.lastMin || g.buddies > 0) && <span className="row wrap" style={{ gap: 4, marginTop: 4 }}>{g.lastMin && <span className="pill lastmin small">{t('Última hora')}</span>}{g.buddies > 0 && <span className="pill ok small"><Icon icon={Users} size={12} /> {g.buddies === 1 ? t('1 busca buddy') : t('{n} buscan buddy', { n: g.buddies })}</span>}<GreenFinsBadge level={g.gf} verified={g.gfv} small /></span>}
             </span>
-            <span className="from small muted">{t('desde')}<b className="data">{php(g.min)}</b></span>
+            <span className="from small muted">{t('desde')}<b className="data">{php(g.min)}</b><Approx php={g.min} className="tiny muted" /></span>
           </Link>
           <FavButton id={g.id} name={g.name} compact />
           </div>
@@ -275,7 +303,8 @@ export default function Explorar() {
             {g.trips.map((tr) => {
               const free = Math.max(0, tr.available_seats)
               const cap = Math.min(8, Math.max(free + (tr.booked_seats || 0), 1))
-              const label = (free === 0 ? t('Completa') : free === 1 ? t('Última plaza') : t('{n} libres', { n: free })) + (free > 0 && tr.last_minute_pct ? ' · −' + tr.last_minute_pct + ' %' : '')
+              const pct = Math.max(tr.last_minute_pct || 0, tr.early_pct || 0)
+              const label = (free === 0 ? (tr.waitlist ? t('Lista de espera ({n})', { n: tr.waitlist }) : t('Completa')) : free === 1 ? t('Última plaza') : t('{n} libres', { n: free })) + (free > 0 && pct ? ' · −' + pct + ' %' : '')
               return (
                 <Link key={tr.id} to={'/salida/' + tr.id} className={'slot' + (free === 0 ? ' full' : free === 1 ? ' low' : '')}
                   aria-label={t('{hora}, {plazas}, nivel mínimo {nivel}', { hora: time(tr.departs_at), plazas: label, nivel: levelName(tr.min_level) })}>
@@ -283,6 +312,8 @@ export default function Explorar() {
                   <b className="data">{time(tr.departs_at)}</b>
                   <span className="seats" aria-hidden="true">{Array.from({ length: cap }, (_, i) => <i key={i} className={i < free ? 'on' : ''} />)}</span>
                   <small>{label}</small>
+                  {tr.kind === 'course' && <small className="slot-course"><Icon icon={GraduationCap} size={12} /> {tr.course_name || t('Curso')}</small>}
+                  {(tr.buddy_seekers || []).length > 0 && <small className="slot-buddy" title={t('Alguien busca buddy en esta salida')}><Icon icon={Users} size={12} /></small>}
                 </Link>
               )
             })}

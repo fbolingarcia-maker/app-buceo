@@ -2,6 +2,7 @@
 // se calculan al leer (holds_seat), igual que en Supabase.
 import { nowIso, all, first } from './lib/util.js'
 import { tripSea } from './sea.js'
+import { notifyDiver } from './push.js'
 import { sendEmail, TEMPLATES } from './email.js'
 import { notifyAdmin } from './stats.js'
 import { checkImportLock } from './import.js'
@@ -26,7 +27,7 @@ export async function cleanup(env) {
 export async function balanceReminders(env, origin = 'https://divingslot.com') {
   const now = Date.now()
   const today = new Date(now + 8 * 36e5).toISOString().slice(0, 10)
-  const rows = await all(env.DB, `SELECT b.id, b.trip_id, b.seats, b.amount_php - b.paid_php AS due, b.pay_on_site, t.departs_at, t.num_dives,
+  const rows = await all(env.DB, `SELECT b.id, b.trip_id, b.diver_id, b.seats, b.amount_php - b.paid_php AS due, b.pay_on_site, t.departs_at, t.num_dives,
       CASE WHEN bo.show_to_divers = 1 THEN bo.name END AS boat, c.name AS center, c.phone, c.locality, c.destination, c.lat, c.lng,
       CASE WHEN d.insurance_provider IS NOT NULL AND (d.insurance_expiry IS NULL OR d.insurance_expiry >= ?3) THEN 1 ELSE 0 END AS insured, u.email
     FROM bookings b JOIN trips t ON t.id = b.trip_id JOIN centers c ON c.id = t.center_id LEFT JOIN boats bo ON bo.id = t.boat_id
@@ -44,8 +45,24 @@ export async function balanceReminders(env, origin = 'https://divingslot.com') {
     seaCache[r.trip_id] ??= await tripSea(env, r.trip_id).then((x) => x?.forecast || null).catch(() => null)
     await sendEmail(env, r.email, TEMPLATES.tripTomorrow({ ...r, sea: seaCache[r.trip_id] }, origin + '/app/#/reservas', origin + '/app/#/perfil?ver=buceo'))
       .then(() => sent++).catch((e) => console.error('recordatorio', e.message))
+    await notifyDiver(env, r.diver_id, { title: 'Mañana buceas · Diving tomorrow', body: `${r.center} · ${new Date(r.departs_at).toLocaleString('en-GB', { timeZone: 'Asia/Manila', weekday: 'short', hour: '2-digit', minute: '2-digit' })}${r.sea?.level === 'rough' ? ' · mar movido / rough sea' : ''}`, url: '/reservas', tag: 'tomorrow-' + r.id }).catch(() => 0)
   }
   return sent
+}
+
+// Tipos de cambio para mostrar precios aproximados a los extranjeros (el cobro siempre es en pesos). Una vez al día.
+export async function updateFx(env, now = Date.now()) {
+  const cur = await first(env.DB, "SELECT value FROM app_config WHERE key = 'fx'")
+  const at = cur?.value ? JSON.parse(cur.value).at : null
+  if (at && now - Date.parse(at) < 20 * 36e5) return false
+  const r = await fetch('https://open.er-api.com/v6/latest/PHP')
+  if (!r.ok) throw new Error('fx ' + r.status)
+  const j = await r.json()
+  const pick = ['USD', 'EUR', 'GBP', 'AUD', 'KRW', 'JPY', 'CNY', 'SGD']
+  const rates = Object.fromEntries(pick.filter((k) => j?.rates?.[k]).map((k) => [k, j.rates[k]]))
+  if (!rates.USD) throw new Error('fx sin datos')
+  await env.DB.prepare("INSERT INTO app_config (key, value) VALUES ('fx', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify({ rates, at: new Date(now).toISOString(), source: 'open.er-api.com' })).run()
+  return true
 }
 
 // Una vez al día (a las 9:xx de Manila): aviso de que el seguro de buceo caduca en 14 días o menos, una vez por fecha

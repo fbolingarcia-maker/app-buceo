@@ -115,3 +115,40 @@ export function GreenFins({ center, refresh, readOnly }) {
     </form>
   )
 }
+
+// Bonos: «3 salidas en 10 días, −10 %». Se aplican solos en book_trip a partir de la N.ª salida del buceador en el centro
+export function Packs({ center, readOnly }) {
+  const [list, setList] = useState(null)
+  const [nx, setNx] = useState({ name: '', trips: 3, discount_pct: 10, valid_days: 10 })
+  const [msg, setMsg] = useState(null)
+  const load = useCallback(() => supabase.from('center_packs').select('*').eq('center_id', center.id).order('trips').then(({ data }) => setList(data || [])), [center.id])
+  useEffect(() => { load() }, [load])
+  async function run(p, ok) { const { error } = await p; setMsg(error ? { ok: false, text: errMsg(error) } : { ok: true, text: ok }); load(); return error }
+  return (
+    <div className="card">
+      <p className="small muted" style={{ marginTop: 0 }}>{t('Premia a quien bucea varios días contigo (como los bonos de un club). El descuento se aplica solo a partir de la salida N.ª dentro del plazo.')}</p>
+      {list?.map((p) => (
+        <div key={p.id} className="doc-row row between" style={{ gap: 8 }}>
+          <span className={p.active ? '' : 'muted'}><b>{p.name}</b> · {t('{n} salidas en {d} días', { n: p.trips, d: p.valid_days })} · −{p.discount_pct} %</span>
+          {!readOnly && <button type="button" className="btn small ghost" onClick={() => run(supabase.from('center_packs').update({ active: !p.active }).eq('id', p.id), t('Bono actualizado'))}>{p.active ? t('Ocultar') : t('Mostrar')}</button>}
+        </div>
+      ))}
+      {!readOnly && (
+        <form style={{ marginTop: 10 }} onSubmit={async (ev) => {
+          ev.preventDefault()
+          const err = await run(supabase.from('center_packs').insert({ center_id: center.id, name: nx.name.trim() || t('Bono {n} salidas', { n: nx.trips }), trips: +nx.trips, discount_pct: +nx.discount_pct, valid_days: +nx.valid_days }), t('Bono creado'))
+          if (!err) setNx({ ...nx, name: '' })
+        }}>
+          <div className="grid2">
+            <div className="field"><label htmlFor="pk-n">{t('Nombre')}</label><input id="pk-n" maxLength={60} placeholder={t('p. ej. Semana de buceo')} value={nx.name} onChange={(e) => setNx({ ...nx, name: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pk-t">{t('Salidas')}</label><input id="pk-t" type="number" inputMode="numeric" min="2" max="20" required value={nx.trips} onChange={(e) => setNx({ ...nx, trips: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pk-d">{t('Descuento (%)')}</label><input id="pk-d" type="number" inputMode="numeric" min="5" max="40" required value={nx.discount_pct} onChange={(e) => setNx({ ...nx, discount_pct: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pk-v">{t('En cuántos días')}</label><input id="pk-v" type="number" inputMode="numeric" min="2" max="90" required value={nx.valid_days} onChange={(e) => setNx({ ...nx, valid_days: e.target.value })} /></div>
+          </div>
+          <button className="btn small">{t('Crear bono')}</button>
+        </form>
+      )}
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
+    </div>
+  )
+}

@@ -7,6 +7,7 @@ import Icon from './Icon'
 import { Leaf, ShieldCheck, Wind } from 'lucide-react'
 import { supabase } from './supabase'
 import { manilaDate } from './format'
+import { Approx } from './plus'
 
 // ── Canal propio del centro: divingslot.com/r/<id> guarda de dónde llega el buceador 7 días ──
 const VIA_KEY = 'ds_via'
@@ -19,20 +20,22 @@ export function viaFor(centerId) {
 }
 export const bookingLink = (id) => window.location.origin + '/r/' + id
 
-// ── Precio de una salida: descuento de última hora y tasas incluidas ──
+// ── Precio de una salida: descuento de última hora o de reserva anticipada (el mayor) y tasas incluidas ──
+export const discountPct = (trip) => Math.max(trip?.last_minute_pct || 0, trip?.early_pct || 0)
 export function unitPrice(trip) {
-  const pct = trip?.last_minute_pct || 0
-  return Math.floor(((trip?.price_php || 0) * (100 - pct)) / 100)
+  return Math.floor(((trip?.price_php || 0) * (100 - discountPct(trip))) / 100)
 }
 export function LastMinuteTag({ trip }) {
-  if (!trip?.last_minute_pct) return null
-  return <span className="pill lastmin">{t('Última hora −{n} %', { n: trip.last_minute_pct })}</span>
+  if (trip?.last_minute_pct && trip.last_minute_pct >= (trip.early_pct || 0)) return <span className="pill lastmin">{t('Última hora −{n} %', { n: trip.last_minute_pct })}</span>
+  if (trip?.early_pct) return <span className="pill ok">{t('Reserva anticipada −{n} %', { n: trip.early_pct })}</span>
+  return null
 }
-export function PriceTag({ trip }) {
+export function PriceTag({ trip, approx = true }) {
   const unit = unitPrice(trip)
-  return unit < trip.price_php
-    ? <><s className="muted small">{php(trip.price_php)}</s> <b>{php(unit)}</b></>
-    : <b>{php(trip.price_php)}</b>
+  return <>
+    {unit < trip.price_php ? <><s className="muted small">{php(trip.price_php)}</s> <b>{php(unit)}</b></> : <b>{php(trip.price_php)}</b>}
+    {approx && <> <Approx php={unit} /></>}
+  </>
 }
 
 // ── Extras que vende el centro ──

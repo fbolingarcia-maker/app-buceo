@@ -35,7 +35,7 @@
   // Emails sin claves con Cloudflare Email Service (Workers Paid contratado el 3 nov 2026). Envía desde
   // EMAIL_FROM o no-reply@divingslot.com: divingslot.com tiene que estar dado de alta en Email Service → Email Sending.
   "send_email": [{ "name": "EMAIL" }],
-  // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados, cierre de la importación)
-  "triggers": { "crons": ["17 * * * *"] },
+  // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados, cierre de la importación) y lista de espera cada 10 min
+  "triggers": { "crons": ["17 * * * *", "*/10 * * * *"] },
   "observability": { "enabled": true }
 }

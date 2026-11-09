@@ -7,11 +7,12 @@ import { seatsSummary, money, holds, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { TriangleAlert } from 'lucide-react'
+import { CenterReviews } from '../lib/plus'
 
 const dayOf = (iso) => manilaDate(new Date(iso))
 
 export default function CentroPanel() {
-  const { center } = useAuth()
+  const { center, readOnly } = useAuth()
   const today = manilaDate()
   const [trips, setTrips] = useState(null)
   const [error, setError] = useState('')
@@ -135,6 +136,11 @@ export default function CentroPanel() {
           </div>
         </>
       )}
+
+      <details className="fold" style={{ marginTop: 16 }}>
+        <summary><h2 style={{ display: 'inline' }}>{t('Reseñas de tus buceadores')}</h2></summary>
+        <div className="card"><CenterReviews centerId={center.id} staff={!readOnly} /></div>
+      </details>
 
       <h2>{t('Próximos 7 días')}</h2>
       <div className="card" style={{ padding: 0 }}>
