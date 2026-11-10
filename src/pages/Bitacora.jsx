@@ -203,7 +203,7 @@ export default function Bitacora() {
                     <small>{[l.centers?.name, l.duration_min ? l.duration_min + ' min' : null, l.signed_by_center ? t('Firmada por el centro') : null].filter(Boolean).join(' · ') || '—'}</small>
                   </span>
                   <span className="log-depth">
-                    <span className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>{l.id === recordId && <Record />}<b>{d ? d + ' m' : '—'}</b></span>
+                    <span className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>{l.id === recordId && <Record />}<b style={{ whiteSpace: 'nowrap' }}>{d ? d + ' m' : '—'}</b></span>
                     {d > 0 && <i style={{ width: Math.min(100, (d / 40) * 100) + '%', background: depthColor(d) }} />}
                   </span>
                 </Link>

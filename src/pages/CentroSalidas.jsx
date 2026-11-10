@@ -110,7 +110,7 @@ export default function CentroSalidas() {
                     <button className="btn small ghost" onClick={() => run(supabase.from('trips').update({ status: 'draft' }).eq('id', tr.id), t('Pasada a borrador'))}>{t('Despublicar')}</button>
                   )}
                   {tr.status === 'published' && new Date(tr.departs_at) < new Date() && (
-                    <button className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'completed' }).eq('id', tr.id), t('Marcada como completada'))}>{t('Completada')}</button>
+                    <button className="btn small" onClick={() => run(supabase.from('trips').update({ status: 'completed' }).eq('id', tr.id), t('Marcada como completada'))}>{t('Marcar completada')}</button>
                   )}
                   {nBookings === 0 && (
                     <button className="btn small danger" onClick={() => window.confirm(t('¿Eliminar la salida del {date}? No se puede deshacer.', { date: dayLabel(d) + ' ' + time(tr.departs_at) })) && run(supabase.from('trips').delete().eq('id', tr.id), t('Salida eliminada'))}>{t('Eliminar')}</button>

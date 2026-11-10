@@ -198,8 +198,9 @@ export default function App() {
         <div className="row" style={{ gap: 8 }}>
           {isAdmin && adminView !== 'admin' && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}><Icon icon={ShieldCheck} />{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
-          {session && (
-            <button type="button" className="btn small ghost" onClick={async () => { await signOut(); go('/') }}>{t('Salir')}</button>
+          {/* Con sesión, «Salir» está en Perfil → Cuenta; el centro llega a su perfil desde aquí (su barra ya tiene 5 pestañas) */}
+          {session && isCenter && !isAdmin && (
+            <Link to="/perfil" className={seg[0] === 'perfil' ? 'btn small ghost icon-only on' : 'btn small ghost icon-only'} title={t('Tu perfil')} aria-label={t('Tu perfil')} aria-current={seg[0] === 'perfil' ? 'page' : undefined}><Icon icon={User} /></Link>
           )}
         </div>
       </header>
@@ -224,7 +225,7 @@ export default function App() {
             {tab('/centro/salidas', Ship, 'Salidas', ['salidas', 'nueva', 'salida'].includes(seg[1]))}
             {tab('/centro/informes', ChartLine, 'Informes', seg[1] === 'informes')}
             {tab('/centro/ajustes', Settings, 'Centro', seg[1] === 'ajustes')}
-            {tab('/perfil', User, 'Perfil', seg[0] === 'perfil')}
+            {isAdmin && tab('/perfil', User, 'Perfil', seg[0] === 'perfil')}
           </>
         ) : (
           <>

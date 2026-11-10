@@ -202,7 +202,7 @@ export default function Salida({ id }) {
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
         </div>
       )}
-      <div className="card stack">
+      <div className="card stack facts">
         <div className="row between"><span className="muted">{t('Salida')}</span><b>{dateTime(trip.departs_at)}</b></div>
         {trip.boat_name && <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>}
         {noCert(trip) && <div className="row between"><span className="muted">{t('Actividad')}</span><span className="pill act">{activityName(trip.activity)} · {t('sin certificación')}</span></div>}

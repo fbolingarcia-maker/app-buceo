@@ -211,7 +211,7 @@ export default function Perfil() {
             </label>
           </>}
           {tab === 'datos' && show('p')}
-          <button className="btn">{t('Guardar')}</button>
+          <div className="sticky-save"><button className="btn block">{t('Guardar')}</button></div>
         </form>
       )}
 
@@ -269,7 +269,7 @@ export default function Perfil() {
               </div>
             </fieldset>
             {show('p')}
-            <button className="btn">{t('Guardar')}</button>
+            <div className="sticky-save"><button className="btn block">{t('Guardar')}</button></div>
           </form>
 
       {BUDDY_RATINGS && <BuddyRatings diver={diver} refresh={refresh} />}
@@ -316,6 +316,7 @@ export default function Perfil() {
           <a className="li" href={siteUrl() + 'legal/cancellation'}><span className="grow"><b>{t('Política de cancelación')}</b></span></a>
           <a className="li" href="mailto:divingslot@gmail.com"><span className="grow"><b>{t('Contacto')}</b><small>divingslot@gmail.com</small></span></a>
         </div>
+        <button type="button" className="btn block ghost" style={{ marginTop: 16 }} onClick={async () => { await signOut(); go('/') }}>{t('Cerrar sesión')}</button>
         <EliminarCuenta diver={diver} isCenter={isCenter} signOut={signOut} />
       </>}
     </>

@@ -168,12 +168,12 @@ function Resumen({ onPick }) {
 
           <h2>{t('Dinero recibido en el periodo')}</h2>
           <div className="card stack small">
-            {Object.keys(r.byMethod).length === 0 && <span className="muted">{t('Sin cobros en este periodo.')}</span>}
+            {Object.keys(r.byMethod).length === 0 && <div className="muted">{t('Sin cobros en este periodo.')}</div>}
             {Object.entries(r.byMethod).map(([m, v]) => (
               <div key={m} className="row between"><span>{t(METHODS[m] || m)}</span><b>{php(v)}</b></div>
             ))}
             {Object.keys(r.byMethod).length > 1 && <div className="row between" style={{ borderTop: '1px solid var(--line)', paddingTop: 6 }}><span>{t('Total')}</span><b>{php(r.cashIn)}</b></div>}
-            <button type="button" className="linkish small" onClick={() => onPick('movimientos')}>{t('Ver todos los movimientos')} ›</button>
+            <button type="button" className="linkish small" style={{ display: 'block', alignSelf: 'flex-start' }} onClick={() => onPick('movimientos')}>{t('Ver todos los movimientos')} ›</button>
           </div>
 
           <h2>{t('De dónde vienen las reservas')}</h2>

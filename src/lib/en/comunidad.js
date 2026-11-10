@@ -33,6 +33,7 @@ export default {
   'sin asignar': 'not assigned',
   'Asignar': 'Assign',
   'Invita a tus guías en Centro → Equipo': 'Invite your guides in Centre → Team',
+  'para asignarlos a cada salida.': 'to assign them to each trip.',
   'Guardar guías': 'Save guides',
   'La salida pide {n} guías.': 'This trip needs {n} guides.',
   'Mi QR de embarque': 'My boarding QR',

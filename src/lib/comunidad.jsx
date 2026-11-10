@@ -144,11 +144,12 @@ export function GuideAssign({ trip, team, assigned, onSaved, readOnly }) {
   const [busy, setBusy] = useState(false)
   useEffect(() => { setSel(assigned.map((g) => g.user_id)) }, [assigned])
   const names = assigned.map((g) => g.name).join(', ')
+  // Sin equipo ni guías asignados no se repite en cada salida: la Agenda muestra una sola invitación arriba
+  if (!names && team.length === 0) return null
   return (
     <div className="guide-assign small">
       <span><Icon icon={Users} size={14} /> {t('Guías')}: {names || <span className="muted">{t('sin asignar')}</span>}</span>
       {!readOnly && team.length > 0 && <button type="button" className="linkish small" onClick={() => setOpen(!open)}>{open ? t('Cerrar') : t('Asignar')}</button>}
-      {!readOnly && team.length === 0 && <Link to="/centro/ajustes" className="small">{t('Invita a tus guías en Centro → Equipo')}</Link>}
       {open && (
         <div className="stack" style={{ marginTop: 6 }}>
           {[...team].sort((a, b) => (a.role === 'guide' ? 0 : 1) - (b.role === 'guide' ? 0 : 1)).map((m) => (
@@ -200,7 +201,7 @@ export function CheckinPass({ booking }) {
 }
 
 // Escáner del guía o del centro: cámara (BarcodeDetector) o código tecleado
-export function QrCheckin({ onDone }) {
+export function QrCheckin({ onDone, ghost }) {
   const [open, setOpen] = useState(false)
   const [manual, setManual] = useState('')
   const [res, setRes] = useState(null)
@@ -245,7 +246,7 @@ export function QrCheckin({ onDone }) {
 
   return (
     <>
-      <button type="button" className="btn small" onClick={() => { setOpen(true); setRes(null) }}><Icon icon={QrCode} size={16} /> {t('Check-in con QR')}</button>
+      <button type="button" className={ghost ? 'btn small ghost' : 'btn small'} onClick={() => { setOpen(true); setRes(null) }}><Icon icon={QrCode} size={16} /> {t('Check-in con QR')}</button>
       {open && (
         <div className="modal" role="dialog" aria-modal="true" aria-label={t('Check-in con QR')} onClick={() => { stop(); setOpen(false) }}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>

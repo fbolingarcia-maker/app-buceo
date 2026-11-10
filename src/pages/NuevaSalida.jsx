@@ -170,10 +170,10 @@ export default function NuevaSalida({ id }) {
 
           <div className="grid2" style={{ marginTop: 10 }}>
             <div className="field"><label htmlFor="ns-early">{t('Descuento por reserva anticipada (%)')}</label>
-              <input id="ns-early" type="number" inputMode="numeric" min="0" max="30" value={f.early_pct} onChange={set('early_pct', true)} />
-              <span className="small muted">{t('Para llenar el barco antes: se aplica si reservan con más de {n} días.', { n: f.early_days || 14 })}</span></div>
+              <input id="ns-early" type="number" inputMode="numeric" min="0" max="30" value={f.early_pct} onChange={set('early_pct', true)} /></div>
             <div className="field"><label htmlFor="ns-early-d">{t('Días de antelación')}</label><input id="ns-early-d" type="number" inputMode="numeric" min="2" max="90" value={f.early_days} onChange={set('early_days', true)} /></div>
           </div>
+          <p className="small muted" style={{ marginTop: -4 }}>{t('Para llenar el barco antes: se aplica si reservan con más de {n} días.', { n: f.early_days || 14 })}</p>
           {!id && (
             <div className="field"><label htmlFor="ns-rep">{t('Repetir los días siguientes')}</label>
               <select id="ns-rep" value={f.repeat} onChange={set('repeat', true)}>

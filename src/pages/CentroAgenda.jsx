@@ -111,7 +111,7 @@ export default function CentroAgenda() {
     <>
       <div className="row between wrap" style={{ gap: 8 }}>
         <h1>{t('Agenda')}</h1>
-        <span className="row wrap" style={{ gap: 6 }}>{!readOnly && <QrCheckin onDone={() => load()} />}<Link to="/centro/nueva" className="btn small">{t('+ Salida')}</Link></span>
+        <span className="row wrap" style={{ gap: 6 }}>{!readOnly && <QrCheckin ghost onDone={() => load()} />}<Link to="/centro/nueva" className="btn small">{t('+ Salida')}</Link></span>
       </div>
       <div className="days" role="group" aria-label={t('Día')}>
         {Array.from({ length: 17 }, (_, i) => addDays(today, i - 3)).map((d) => (
@@ -121,6 +121,9 @@ export default function CentroAgenda() {
         ))}
       </div>
       <p className="muted small" style={{ marginTop: -4 }}>{dayLabel(day, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+      {!readOnly && !offline && team.length === 0 && trips?.length > 0 && (
+        <p className="small" style={{ marginTop: -4 }}><Link to="/centro/ajustes">{t('Invita a tus guías en Centro → Equipo')}</Link> {t('para asignarlos a cada salida.')}</p>
+      )}
       {offline && <div className="banner" role="status"><span>{t('Sin conexión: ves la copia guardada a las {hora}. Los check-in se guardan y se envían al volver la red.', { hora: time(offline) })}</span></div>}
       {trips === null && <p className="muted">{t('Cargando…')}</p>}
       {trips === false && <div className="msg err" role="alert">{t('No se pudo cargar la agenda.')} <button type="button" className="linkish" onClick={() => { setTrips(null); load() }}>{t('Reintentar')}</button></div>}
@@ -205,11 +208,15 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
     <div className="card">
       <button type="button" className="row between linkish" aria-expanded={open} onClick={() => setOpen(!open)}
         style={{ width: '100%', color: 'inherit', alignItems: 'flex-start' }}>
-        <div>
-          <div className="big">{time(trip.departs_at)} · {trip.boats?.name}</div>
+        {/* El título ocupa todo el ancho; los avisos (mar, última hora) van debajo para no estrecharlo */}
+        <div className="grow" style={{ minWidth: 0 }}>
+          <div className="big trip-title">{time(trip.departs_at)} · {trip.boats?.name}</div>
           <div className="small muted">{trip.activity && trip.activity !== 'scuba' ? activityName(trip.activity) : <>{t('{n} inm.', { n: trip.num_dives })} · {t('mín. {level}', { level: levelName(trip.min_level) })}</>} · {php(trip.price_php)} · {sites.join(', ') || t('sin puntos')}</div>
+          {!started && (!offline || trip.last_minute_pct > 0) && (
+            <span className="row wrap" style={{ gap: 6, marginTop: 6 }}>{!offline && <SeaChip tripId={trip.id} />}{trip.last_minute_pct > 0 && <span className="pill lastmin">−{trip.last_minute_pct} %</span>}</span>
+          )}
         </div>
-        <span className="row wrap" style={{ gap: 6, justifyContent: 'flex-end' }}>{!started && !offline && <SeaChip tripId={trip.id} />}{trip.last_minute_pct > 0 && !started && <span className="pill lastmin">−{trip.last_minute_pct} %</span>}<span className={statusCls}>{TRIP_STATUS[trip.status]}</span><span className="small muted" aria-hidden>{open ? '▲' : '▼'}</span></span>
+        <span className="row nowrap" style={{ gap: 6, flexShrink: 0 }}><span className={statusCls}>{TRIP_STATUS[trip.status]}</span><span className="small muted" aria-hidden>{open ? '▲' : '▼'}</span></span>
       </button>
       <div className="bar" style={{ marginTop: 10 }}><div style={{ width: `${s.operative ? Math.min(100, (s.booked / s.operative) * 100) : 0}%` }} /></div>
       <div className="row wrap small" style={{ marginTop: 6, gap: 14 }}>
