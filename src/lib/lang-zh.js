@@ -261,5 +261,19 @@ export default {
  "Centros": "潜水中心",
  "Perfil": "个人资料",
  "Última hora −{n} %": "最后时刻 −{n}%",
- "Reserva anticipada −{n} %": "早鸟 −{n}%"
+ "Reserva anticipada −{n} %": "早鸟 −{n}%",
+ "Tus datos para el centro": "发送给潜水中心的资料",
+ "Se envía al centro con tu reserva. Se cambia en tu perfil.": "会随预订发送给潜水中心。可在个人资料中修改。",
+ "Completar en el perfil": "在个人资料中填写",
+ "Completa en tu perfil lo que falta en el paso 2 para continuar.": "请在个人资料中补全第 2 步缺少的内容后继续。",
+ "Certificación": "潜水证书",
+ "Cuestionario médico": "健康问卷",
+ "Última inmersión": "上次潜水",
+ "Sin indicar": "未填写",
+ "Tallas de equipo": "装备尺码",
+ "Traje": "潜水服",
+ "Chaleco": "BCD",
+ "Aletas": "脚蹼",
+ "Seguro de buceo": "潜水保险",
+ "Alergias": "过敏"
 }

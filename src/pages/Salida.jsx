@@ -7,10 +7,10 @@ import DepthBar from '../lib/DepthBar'
 import { t, getLang } from '../lib/i18n'
 import { Flags, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
-import { ArrowLeft, Check, MapPin, MessageCircle, Waves, Users, GraduationCap, Clock, Plus } from 'lucide-react'
+import { ArrowLeft, Check, MapPin, MessageCircle, Waves, Users, GraduationCap, Clock, Plus, TriangleAlert } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
-import { MedicalCheck, medicalValid, daysSinceDive } from '../lib/medical'
-import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard } from '../lib/extras'
+import { medicalValid, medicalUntil, medicalLabel, daysSinceDive } from '../lib/medical'
+import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard, hasInsurance } from '../lib/extras'
 import { PayBox, holdEnd } from '../lib/pay'
 import { TripChat, CenterReviews, expName, Approx } from '../lib/plus'
 import { time, dayLabel, manilaDate } from '../lib/format'
@@ -125,7 +125,7 @@ export default function Salida({ id }) {
   }, [id])
 
   useEffect(() => {
-    if (diver) supabase.from('certifications').select('level').eq('diver_id', diver.id).then(({ data }) => setCerts(data || []))
+    if (diver) supabase.from('certifications').select('level, agency').eq('diver_id', diver.id).then(({ data }) => setCerts(data || []))
   }, [diver])
   useEffect(() => {
     if (!diver) return
@@ -307,18 +307,8 @@ export default function Salida({ id }) {
           </Step>
 
           {session && (
-            <Step n={2} title={t('Certificación y salud')}>
-              {!levelOk ? (
-                <div className="msg warn" role="status" style={{ marginTop: 0 }}>
-                  {certs.length === 0 ? t('Añade tu certificación en el perfil para poder reservar.') : t('Esta salida requiere {nivel}.', { nivel: levelName(need) })}{' '}
-                  <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Ir al perfil')}</Link>
-                </div>
-              ) : <p className="small row" style={{ gap: 6, margin: '0 0 8px' }}><Icon icon={Check} size={16} className="ok-ink" /> {course && !need ? t('Este curso no pide certificación previa') : t('Tu certificación cumple el nivel mínimo')}</p>}
-              {sinceDive != null && sinceDive > 365 && (
-                <div className="msg warn" role="status">{t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.')}</div>
-              )}
-              {sinceDive == null && <p className="small muted">{t('Añade en tu perfil la fecha de tu última inmersión: el centro la tiene en cuenta.')} <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Ir al perfil')}</Link></p>}
-              {diver && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
+            <Step n={2} title={t('Tus datos para el centro')}>
+              <ProfileData trip={trip} diver={diver} certs={certs} need={need} course={course} levelOk={levelOk} medical={medical} sinceDive={sinceDive} />
               {diver && <DanCard diver={diver} compact />}
             </Step>
           )}
@@ -356,7 +346,7 @@ export default function Salida({ id }) {
                 <button className="btn block" disabled={busy || !medical || !levelOk} onClick={book} aria-describedby="book-hint">
                   {busy ? t('Reservando…') : t('Continuar al pago')}
                 </button>
-                {levelOk && !medical && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Guarda el cuestionario médico para continuar.')}</p>}
+                {(!levelOk || !medical) && <p id="book-hint" className="small muted" style={{ marginTop: 6 }}>{t('Completa en tu perfil lo que falta en el paso 2 para continuar.')}</p>}
               </>
             )}
           </Step>
@@ -450,7 +440,7 @@ function Espera({ trip, diver, session, wait, setWait, medical, levelOk, refresh
       <p style={{ marginTop: 0 }}><b>{t('Salida completa.')}</b> {trip.waitlist > 0 ? t('{n} personas en la lista de espera.', { n: trip.waitlist }) : t('Nadie en la lista de espera todavía.')}</p>
       <p className="small muted">{t('Si alguien cancela, la plaza se reserva sola para ti 30 minutos y te avisamos por email y en el móvil.')}</p>
       {!levelOk && <div className="msg warn" role="status">{t('Esta salida requiere {nivel}.', { nivel: levelName(trip.kind === 'course' ? trip.course_prereq : trip.min_level) })}</div>}
-      {diver && !medical && <div className="field"><MedicalCheck diver={diver} onSaved={refresh} compact /></div>}
+      {diver && !medical && <div className="msg warn" role="status">{t('Falta el cuestionario médico')} · <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Completar en el perfil')}</Link></div>}
       <div className="row" style={{ gap: 8, alignItems: 'flex-end' }}>
         <div className="field" style={{ margin: 0 }}><label htmlFor="w-seats">{t('Plazas')}</label>
           <select id="w-seats" value={seats} onChange={(e) => setSeats(+e.target.value)} style={{ width: 'auto' }}>{[1, 2, 3, 4].map((n) => <option key={n}>{n}</option>)}</select></div>
@@ -464,5 +454,47 @@ function Espera({ trip, diver, session, wait, setWait, medical, levelOk, refresh
       </div>
       {err && <div className="msg err" role="alert">{err}</div>}
     </div>
+  )
+}
+
+// Paso 2 de la reserva: lo que el centro recibe con la reserva. Se rellena en el Perfil (certificación, cuestionario médico,
+// tallas, seguro, alergias); aquí solo se muestra y, si falta algo obligatorio, se enlaza al Perfil para completarlo.
+function PdRow({ ok, warn, label, children }) {
+  return (
+    <li className="pd-row">
+      <Icon icon={ok ? Check : TriangleAlert} size={16} className={ok ? 'ok-ink' : warn ? 'warn-ink' : 'muted'} />
+      <span><b>{label}</b><br /><span className="small">{children}</span></span>
+    </li>
+  )
+}
+
+function ProfileData({ trip, diver, certs, need, course, levelOk, medical, sinceDive }) {
+  if (!diver) return null
+  const fix = <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Completar en el perfil')}</Link>
+  const best = certs.reduce((m, c) => (!m || levelRank(c.level) > levelRank(m.level) ? c : m), null)
+  const until = medicalUntil(diver)
+  const day = (d) => dayLabel(d, { day: 'numeric', month: 'short', year: 'numeric' })
+  const sizes = [diver.wetsuit_size && t('Traje') + ' ' + diver.wetsuit_size, diver.bcd_size && t('Chaleco') + ' ' + diver.bcd_size, diver.fin_size && t('Aletas') + ' ' + diver.fin_size].filter(Boolean).join(' · ')
+  const ins = hasInsurance(diver)
+  return (
+    <>
+      <p className="small muted" style={{ margin: '0 0 8px' }}>{t('Se envía al centro con tu reserva. Se cambia en tu perfil.')}</p>
+      <ul className="pd-list">
+        <PdRow ok={levelOk} warn label={t('Certificación')}>
+          {best ? (best.agency ? best.agency + ' ' : '') + levelName(best.level) : (course && !need ? t('Este curso no pide certificación previa') : t('Sin certificación'))}
+          {!levelOk && <>{' · '}{best && need ? t('Esta salida requiere {nivel}.', { nivel: levelName(need) }) + ' ' : ''}{fix}</>}
+        </PdRow>
+        <PdRow ok={medical} warn label={t('Cuestionario médico')}>
+          {medical ? <>{medicalLabel(diver)} · {t('hasta el {fecha}', { fecha: day(until) })}</>
+            : <>{until ? t('Tu cuestionario médico caducó') : t('Falta el cuestionario médico')} · {fix}</>}
+        </PdRow>
+        <PdRow ok={sinceDive != null && sinceDive <= 365} label={t('Última inmersión')}>
+          {sinceDive == null ? <>{t('Sin indicar')} · {fix}</> : sinceDive > 365 ? t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.') : day(diver.last_dive_date)}
+        </PdRow>
+        <PdRow ok={!!sizes} label={t('Tallas de equipo')}>{sizes || <>{t('Sin indicar')} · {fix}</>}{diver.nitrox ? ' · Nitrox' : ''}</PdRow>
+        <PdRow ok={ins} label={t('Seguro de buceo')}>{ins ? diver.insurance_provider + (diver.insurance_expiry ? ' · ' + t('hasta el {fecha}', { fecha: day(diver.insurance_expiry) }) : '') : <>{t('Sin indicar')} · {fix}</>}</PdRow>
+        {diver.allergies && <PdRow ok label={t('Alergias')}>{diver.allergies}</PdRow>}
+      </ul>
+    </>
   )
 }

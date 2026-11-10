@@ -261,5 +261,19 @@ export default {
  "Centros": "센터",
  "Perfil": "프로필",
  "Última hora −{n} %": "라스트 미닛 −{n}%",
- "Reserva anticipada −{n} %": "얼리버드 −{n}%"
+ "Reserva anticipada −{n} %": "얼리버드 −{n}%",
+ "Tus datos para el centro": "센터에 보낼 내 정보",
+ "Se envía al centro con tu reserva. Se cambia en tu perfil.": "예약과 함께 센터로 보내집니다. 프로필에서 변경할 수 있습니다.",
+ "Completar en el perfil": "프로필에서 입력",
+ "Completa en tu perfil lo que falta en el paso 2 para continuar.": "계속하려면 2단계에서 빠진 항목을 프로필에서 입력하세요.",
+ "Certificación": "자격증",
+ "Cuestionario médico": "건강 질문서",
+ "Última inmersión": "마지막 다이빙",
+ "Sin indicar": "입력 안 함",
+ "Tallas de equipo": "장비 사이즈",
+ "Traje": "슈트",
+ "Chaleco": "BCD",
+ "Aletas": "핀",
+ "Seguro de buceo": "다이빙 보험",
+ "Alergias": "알레르기"
 }

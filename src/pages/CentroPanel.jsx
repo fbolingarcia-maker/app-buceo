@@ -89,7 +89,7 @@ export default function CentroPanel() {
 
       <div className="kpis">
         <div className="kpi"><span>{t('Salidas hoy')}</span><b>{todays.length}</b></div>
-        <div className="kpi"><span>{t('Buceadores')}</span><b>{todaySeats.booked}<small>/{todaySeats.op}</small></b></div>
+        <div className="kpi"><span>{t('Plazas reservadas hoy')}</span><b>{todaySeats.booked}</b><small>{todays.length === 1 ? t('de {op} en 1 salida', { op: todaySeats.op }) : t('de {op} en {n} salidas', { op: todaySeats.op, n: todays.length })}</small></div>
         <div className="kpi"><span>{t('A bordo')}</span><b>{todayChecked}<small>/{todaySeats.booked}</small></b></div>
         <div className="kpi"><span>{t('Cobrado hoy')}</span><b>{php(todayMoney.paid)}</b><small>{t('pendiente {amount}', { amount: php(todayMoney.pending) })}</small></div>
       </div>
@@ -145,7 +145,7 @@ export default function CentroPanel() {
       <h2>{t('Próximos 7 días')}</h2>
       <div className="card" style={{ padding: 0 }}>
         <table>
-          <thead><tr><th style={{ paddingLeft: 12 }}>{t('Día')}</th><th>{t('Salidas')}</th><th>{t('Ocupación')}</th><th style={{ textAlign: 'right', paddingRight: 12 }}>{t('Reservado')}</th></tr></thead>
+          <thead><tr><th style={{ paddingLeft: 12 }}>{t('Día')}</th><th>{t('Salidas')}</th><th>{t('Ocupación (plazas)')}</th><th style={{ textAlign: 'right', paddingRight: 12 }}>{t('Reservado')}</th></tr></thead>
           <tbody>
             {week.map((w) => (
               <tr key={w.d} onClick={() => go(`/centro/agenda?dia=${w.d}`)} style={{ cursor: 'pointer' }}>

@@ -36,6 +36,7 @@ class Client {
   async raw(method, path, body) {
     const h = { Origin: ORIGIN, 'X-DivingSlot': '1', 'CF-Connecting-IP': this.ip }
     if (this.cookie) h.Cookie = this.cookie
+    if (this.lang) h['X-Lang'] = this.lang
     if (body !== undefined) h['Content-Type'] = 'application/json'
     const res = await handleApi(new Request(ORIGIN + path, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'manual' }), env, { waitUntil: (p) => pending.push(p) })
     await Promise.all(pending.splice(0))
@@ -92,7 +93,7 @@ r = await A.rpc('cancel_my_booking', { p_booking: BA.id })
 ok(r.data?.status === 'cancelled_by_diver', 'A cancela', r)
 const wb = await db.prepare("SELECT w.status, b.status AS bstatus, b.hold_until FROM trip_waitlist w JOIN bookings b ON b.id = w.booking_id WHERE w.trip_id = ?").bind(T).first()
 ok(wb?.status === 'offered' && wb.bstatus === 'pending_payment' && Date.parse(wb.hold_until) - Date.now() > 25 * 60000, 'B recibe la plaza retenida 30 min', wb)
-ok(mails.some((m) => m.to === 'b@x.test' && /Plaza libre/.test(m.subject)), 'y un email', mails)
+ok(mails.some((m) => m.to === 'b@x.test' && /A spot opened up/.test(m.subject)), 'y un email', mails)
 r = await B.rpc('my_waitlist', {})
 ok(r.data?.[0]?.status === 'offered', 'B ve su oferta', r)
 const bB = (await db.prepare("SELECT booking_id FROM trip_waitlist WHERE trip_id = ?").bind(T).first()).booking_id
@@ -175,5 +176,20 @@ pushes.length = 0
 await staff.rpc('post_trip_message', { p_trip: T, p_body: 'Mar en calma' })
 ok(pushes.some((u) => u === sub.endpoint), 'el mensaje del centro llega como aviso a B', pushes)
 
+
+section('idioma de los emails')
+{
+  const D = new Client(); D.lang = 'de'
+  await D.signup('d@x.test', { full_name: 'Dora Schmidt' })
+  ok(/Bestätige/.test(mails.filter((m) => m.to === 'd@x.test')[0]?.subject || ''), 'el email de alta llega en el idioma de la app (alemán)', mails.filter((m) => m.to === 'd@x.test'))
+  ok((await db.prepare("SELECT d.locale FROM divers d JOIN users u ON u.id = d.user_id WHERE u.email = 'd@x.test'").first())?.locale === 'de', 'y el idioma queda guardado en el perfil')
+  D.lang = 'ko'; await D.raw('GET', '/api/auth/session')
+  ok((await db.prepare("SELECT d.locale FROM divers d JOIN users u ON u.id = d.user_id WHERE u.email = 'd@x.test'").first())?.locale === 'ko', 'al cambiar el idioma en la app se actualiza el perfil')
+  const E = new Client()
+  await E.call('POST', '/api/auth/recover', { email: 'd@x.test' })
+  ok(/새 비밀번호/.test(mails.filter((m) => m.to === 'd@x.test').pop()?.subject || ''), 'sin idioma en la petición, usa el del perfil (coreano)')
+  E.lang = 'es'; await E.call('POST', '/api/auth/recover', { email: 'd@x.test' })
+  ok(/Nueva contraseña/.test(mails.filter((m) => m.to === 'd@x.test').pop()?.subject || ''), 'con la app en español, en español')
+}
 console.log('\n' + passes + ' bien, ' + fails + ' mal')
 process.exit(fails ? 1 : 0)

@@ -235,19 +235,21 @@ export default function Reservas() {
           <p className="small muted">{b.pay_on_site ? t('Pagarás el resto ({amount}) en efectivo en el centro.', { amount: php(balance) }) : t('Paga el resto ahora en la app o en efectivo en el centro. 24 h antes te mandamos el enlace de pago.')}</p>
         )}
         {b.status === 'confirmed' && balance > 0 && future && <PayOnSite b={b} onDone={load} />}
-        {b.status === 'confirmed' && future && (
-          <button className="btn small ghost" style={{ marginTop: 8, marginRight: 8 }} onClick={() => addToCalendar(b)}><Icon icon={CalendarPlus} /> {t('Añadir al calendario')}</button>
-        )}
         {active && future && balance > 0 && !b.pay_on_site && <PayBox b={b} mode={mode} onDone={(m, paidId) => { setInfo(m || ''); if (paidId) setJustPaid(paidId); load() }} />}
         {active && future && (
-          <button className="btn small ghost" style={{ marginTop: 8 }} onClick={() => {
+          <div className="bk-actions">
+            {b.status === 'confirmed' && (
+              <button type="button" className="btn small ghost" onClick={() => addToCalendar(b)}><Icon icon={CalendarPlus} /> {t('Añadir al calendario')}</button>
+            )}
+            <button type="button" className="btn small ghost" onClick={() => {
             const h = (new Date(b.trips.departs_at) - now) / 3600000
             const keep = Math.round(b.amount_php * 0.5)
             const txt = b.status === 'pending_payment' ? t('¿Cancelar la reserva?')
               : h >= 24 ? t('¿Cancelar? Se te devolverá todo lo pagado ({amount}).', { amount: php(b.paid_php) })
               : t('¿Cancelar? Quedan menos de 24 h: el centro se queda el 50 % ({keep}). Se te devolverán {refund}.', { keep: php(keep), refund: php(Math.max(0, b.paid_php - keep)) })
             if (window.confirm(txt)) cancel(b)
-          }}>{t('Cancelar reserva')}</button>
+            }}>{t('Cancelar reserva')}</button>
+          </div>
         )}
       </div>
     )

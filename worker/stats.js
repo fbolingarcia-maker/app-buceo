@@ -7,7 +7,7 @@
 //   dailyDigest()     resumen del día anterior por email a las 8:xx de Manila (desde el cron).
 import { json, fail, all, first, run } from './lib/util.js'
 import { sha256, safeEqual } from './lib/crypto.js'
-import { sendEmail } from './email.js'
+import { sendEmail, mailLang } from './email.js'
 import { claimFromSupabase, hasNotifyKey } from './lib/outbox.js'
 import { rateLimit } from './auth.js'
 
@@ -140,11 +140,12 @@ export async function notifyAdmin(env, b = {}) {
     catch (e) { console.error('notify email', e.message) }
     if (emailed) await run(env.DB, 'UPDATE notify_log SET emailed = 1 WHERE id = ?', r.id)
   }
-  // Aviso al centro (p. ej. una reserva nueva): al equipo del centro, en inglés y español
+  // Aviso al centro (p. ej. una reserva nueva): al equipo del centro, en el idioma de cada destinatario
   const to = (Array.isArray(b.to) ? b.to : []).map((x) => String(x).trim().toLowerCase()).filter((x) => EMAIL.test(x)).slice(0, 3)
   let centre = 0
   for (const addr of to) {
-    try { await sendEmail(env, addr, centreEmail(title, lines, link)); centre++ } catch (e) { console.error('notify centre', e.message) }
+    const lang = (await env.DB.prepare('SELECT d.locale FROM users u JOIN divers d ON d.user_id = u.id WHERE u.email = ?').bind(addr).first().catch(() => null))?.locale
+    try { await sendEmail(env, addr, centreEmail(title, lines, link, lang)); centre++ } catch (e) { console.error('notify centre', e.message) }
   }
   return { emailed, centre }
 }
@@ -158,18 +159,29 @@ export function notifyLater(ctxOrEnv, waitUntil, b) {
 }
 
 const EMAIL = /^[^@\s]{1,64}@[^@\s]{1,190}\.[a-z]{2,}$/
-const EN_LABELS = [['Salida: ', 'Trip: '], ['Buceador: ', 'Diver: '], ['Importe: ', 'Amount: '], ['Origen: ', 'Source: ']]
-// Email al centro: el título y las líneas vienen en español desde Supabase; se añade la versión en inglés arriba
-export function centreEmail(title, lines, link) {
+// Email al centro en un solo idioma, el del destinatario (divers.locale). El título y las líneas llegan en español.
+const CENTRE_TXT = {
+  es: { title: (n, c) => `Nueva reserva: ${n} ${n === '1' ? 'plaza' : 'plazas'} en ${c}`, labels: ['Salida: ', 'Buceador: ', 'Importe: ', 'Origen: '], src: { 'tu enlace de reservas': 'tu enlace de reservas', app: 'app' }, btn: 'Abrir la agenda', foot: 'Recibes este email porque gestionas este centro en DivingSlot.' },
+  en: { title: (n, c) => `New booking: ${n} ${n === '1' ? 'spot' : 'spots'} at ${c}`, labels: ['Trip: ', 'Diver: ', 'Amount: ', 'Source: '], src: { 'tu enlace de reservas': 'your booking link', app: 'app' }, btn: 'Open the manifest', foot: 'You get this email because you manage this dive centre on DivingSlot.' },
+  de: { title: (n, c) => `Neue Buchung: ${n} ${n === '1' ? 'Platz' : 'Plätze'} bei ${c}`, labels: ['Ausfahrt: ', 'Taucher: ', 'Betrag: ', 'Herkunft: '], src: { 'tu enlace de reservas': 'dein Buchungslink', app: 'App' }, btn: 'Tagesplan öffnen', foot: 'Du bekommst diese E-Mail, weil du diese Tauchbasis auf DivingSlot verwaltest.' },
+  ko: { title: (n, c) => `새 예약: ${c} ${n}자리`, labels: ['트립: ', '다이버: ', '금액: ', '경로: '], src: { 'tu enlace de reservas': '내 예약 링크', app: '앱' }, btn: '일정 열기', foot: 'DivingSlot에서 이 센터를 관리하고 있어 이 이메일을 받습니다.' },
+  ja: { title: (n, c) => `新しい予約：${c} ${n}席`, labels: ['ツアー：', 'ダイバー：', '金額：', '経路：'], src: { 'tu enlace de reservas': '自社の予約リンク', app: 'アプリ' }, btn: '予定表を開く', foot: 'DivingSlot でこのセンターを管理しているため、このメールが届いています。' },
+  zh: { title: (n, c) => `新预订：${c} ${n} 个位置`, labels: ['行程：', '潜水员：', '金额：', '来源：'], src: { 'tu enlace de reservas': '你的预订链接', app: '应用' }, btn: '打开日程', foot: '你收到这封邮件是因为你在 DivingSlot 上管理这个潜水中心。' },
+}
+export function centreEmail(title, lines, link, lang) {
+  const x = CENTRE_TXT[mailLang(lang)]
   const m = /^Nueva reserva: (\d+) plazas? en (.+)$/.exec(title)
-  const en = m ? `New booking: ${m[1]} ${m[1] === '1' ? 'spot' : 'spots'} at ${m[2]}` : title
-  const enLines = lines.map((l) => { const x = EN_LABELS.find(([es]) => l.startsWith(es)); return x ? x[1] + l.slice(x[0].length) : l })
-  const list = (ls) => `<ul style="padding-left:18px;margin:0 0 12px">${ls.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
-  const body = list(enLines)
-    + (link ? `<p><a href="${esc(link)}" style="display:inline-block;background:#0a5a85;color:#fff;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700">Open the manifest · Abrir la agenda</a></p>` : '')
-    + `<hr style="border:0;border-top:1px solid #e2e8ed;margin:16px 0"><p style="margin:0 0 6px;font-weight:700">${esc(title)}</p>` + list(lines)
-    + '<p style="color:#5b6b77;font-size:13px;margin:0">You get this email because you manage this dive centre on DivingSlot. · Recibes este email porque gestionas este centro en DivingSlot.</p>'
-  return { subject: 'DivingSlot · ' + en, html: box(esc(en), body) }
+  const t = m ? x.title(m[1], m[2]) : title
+  const ls = lines.map((l) => {
+    const i = CENTRE_TXT.es.labels.findIndex((es) => l.startsWith(es))
+    if (i < 0) return l
+    const v = l.slice(CENTRE_TXT.es.labels[i].length)
+    return x.labels[i] + (i === 3 ? (x.src[v] ?? v) : v)
+  })
+  const body = `<ul style="padding-left:18px;margin:0 0 12px">${ls.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
+    + (link ? `<p><a href="${esc(link)}" style="display:inline-block;background:#0a5a85;color:#fff;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700">${x.btn}</a></p>` : '')
+    + `<p style="color:#5b6b77;font-size:13px;margin:0">${x.foot}</p>`
+  return { subject: 'DivingSlot · ' + t, html: box(esc(t), body) }
 }
 
 // Resumen diario: visitas y avisos del día anterior (hora de Manila)

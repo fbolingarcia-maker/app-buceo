@@ -500,3 +500,13 @@ details.fold:not([open]) > summary::after { content: '▸'; }
 .year-card .big { font-size: 26px; }
 .next-trip { border: 2px solid color-mix(in srgb, var(--oceano) 30%, transparent); }
 .add-days summary { cursor: pointer; }
+
+/* Mis reservas: botones de la tarjeta en una fila, misma altura y alineados */
+.bk-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin-top: 10px; }
+.bk-actions .btn { margin: 0; }
+
+/* Reserva, paso 2: datos del perfil que se envían al centro */
+.pd-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 8px; }
+.pd-row { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; }
+.pd-row > svg { margin-top: 2px; }
+.warn-ink { color: var(--warn); }

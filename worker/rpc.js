@@ -250,8 +250,7 @@ export const RPC = {
       await run(ctx.db, 'UPDATE trips SET last_minute_notified_at = ? WHERE id = ?', nowIso(), t.id)
       const unit = Math.floor((t.price_php * (100 - pct)) / 100)
       const url = (ctx.origin || 'https://divingslot.com') + '/app/#/salida/' + t.id
-      const mail = TEMPLATES.lastMinute(t.center_name, t.destination, t.departs_at, free, unit, t.price_php, url)
-      const p = Promise.all(to.map((x) => sendEmail(ctx.env, x.email, mail).catch((e) => console.error('aviso última hora', e.message))))
+      const p = Promise.all(to.map((x) => sendEmail(ctx.env, x.email, TEMPLATES.lastMinute(t.center_name, t.destination, t.departs_at, free, unit, t.price_php, url, x.locale)).catch((e) => console.error('aviso última hora', e.message))))
       ctx.waitUntil ? ctx.waitUntil(p) : await p
       notified = to.length
     }
@@ -457,9 +456,9 @@ export const RPC = {
     await ctx.db.batch(stmts)
     // Aviso por email al responsable del centro (si falla, la revisión queda hecha igualmente)
     if (['verified', 'rejected', 'suspended'].includes(p_decision)) {
-      const owner = await first(ctx.db, "SELECT u.email FROM center_staff s JOIN users u ON u.id = s.user_id WHERE s.center_id = ? ORDER BY s.role = 'owner' DESC LIMIT 1", c.id)
+      const owner = await first(ctx.db, "SELECT u.email, (SELECT locale FROM divers WHERE user_id = u.id) AS locale FROM center_staff s JOIN users u ON u.id = s.user_id WHERE s.center_id = ? ORDER BY s.role = 'owner' DESC LIMIT 1", c.id)
       if (owner?.email) {
-        const p = sendEmail(ctx.env, owner.email, TEMPLATES.centerReviewed(c.name, p_decision, note, ctx.origin + '/app/#/centro')).catch((e) => console.error('email review', e.message))
+        const p = sendEmail(ctx.env, owner.email, TEMPLATES.centerReviewed(c.name, p_decision, note, ctx.origin + '/app/#/centro', owner.locale)).catch((e) => console.error('email review', e.message))
         ctx.waitUntil ? ctx.waitUntil(p) : await p
       }
     }
@@ -642,13 +641,13 @@ async function notifyCentreBooking(ctx, t, seats, id, direct = false) {
   if (!c || c.name.startsWith('Demo')) return
   const b = await first(ctx.db, 'SELECT amount_php FROM bookings WHERE id = ?', id)
   const who = await first(ctx.db, 'SELECT full_name FROM divers WHERE id = ?', ctx.diverId)
-  const staff = await all(ctx.db, 'SELECT u.email FROM center_staff s JOIN users u ON u.id = s.user_id WHERE s.center_id = ? AND u.email IS NOT NULL ORDER BY s.role DESC LIMIT 3', t.center_id)
+  const staff = await all(ctx.db, 'SELECT u.email, (SELECT locale FROM divers WHERE user_id = u.id) AS locale FROM center_staff s JOIN users u ON u.id = s.user_id WHERE s.center_id = ? AND u.email IS NOT NULL ORDER BY s.role DESC LIMIT 3', t.center_id)
   const local = new Date(Date.parse(t.departs_at) + 8 * 36e5).toISOString()
   const title = `Nueva reserva: ${seats} ${seats === 1 ? 'plaza' : 'plazas'} en ${c.name}`
   const lines = [`Salida: ${local.slice(8, 10)}/${local.slice(5, 7)}/${local.slice(0, 4)} ${local.slice(11, 16)}`, `Buceador: ${who?.full_name || '—'}`,
     `Importe: ₱${(b?.amount_php || 0).toLocaleString('en-US')}`, direct ? 'Origen: tu enlace de reservas' : 'Origen: app']
   const link = `${ctx.origin || 'https://divingslot.com'}/app/#/centro/agenda?dia=${local.slice(0, 10)}`
-  for (const s of staff) await sendEmail(ctx.env, s.email, centreEmail(title, lines, link)).catch((e) => console.error('aviso centro', e.message))
+  for (const s of staff) await sendEmail(ctx.env, s.email, centreEmail(title, lines, link, s.locale)).catch((e) => console.error('aviso centro', e.message))
   // Aviso al administrador (como el trigger notify_booking de la migración 030)
   await notifyLater(ctx, null, { kind: 'reserva', title, lines })
 }

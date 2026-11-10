@@ -49,7 +49,7 @@ export async function processWaitlist(env, db, tripId, rpc, waitUntil) {
     return 0
   }
   let free = t.free, offers = 0
-  const queue = await all(db, `SELECT w.*, d.user_id, u.email FROM trip_waitlist w JOIN divers d ON d.id = w.diver_id LEFT JOIN users u ON u.id = d.user_id
+  const queue = await all(db, `SELECT w.*, d.user_id, d.locale, u.email FROM trip_waitlist w JOIN divers d ON d.id = w.diver_id LEFT JOIN users u ON u.id = d.user_id
     WHERE w.trip_id = ? AND w.status = 'waiting' ORDER BY w.created_at`, tripId)
   for (const w of queue) {
     if (free < 1) break
@@ -73,7 +73,7 @@ export async function processWaitlist(env, db, tripId, rpc, waitUntil) {
     const origin = env.APP_ORIGIN || 'https://divingslot.com'
     const p = Promise.all([
       notifyDiver(env, w.diver_id, payload),
-      w.email ? sendEmail(env, w.email, TEMPLATES.waitlistOffer(t.center, t.departs_at, WAITLIST_HOLD_MIN, origin + '/app/#/reservas')) : null,
+      w.email ? sendEmail(env, w.email, TEMPLATES.waitlistOffer(t.center, t.departs_at, WAITLIST_HOLD_MIN, origin + '/app/#/reservas', w.locale)) : null,
     ]).catch((e) => console.error('aviso lista de espera', e.message))
     if (waitUntil) waitUntil(p); else await p
   }
@@ -97,7 +97,7 @@ export async function buddyAlerts(env, db, tripId, bookerDiverId) {
   const t = await first(db, 'SELECT t.id, t.departs_at, c.name AS center, c.destination FROM trips t JOIN centers c ON c.id = t.center_id WHERE t.id = ?', tripId)
   if (!t?.destination) return 0
   const rank = CERT_LEVELS.indexOf(me.level)
-  const cands = await all(db, `SELECT d.id, u.email,
+  const cands = await all(db, `SELECT d.id, d.locale, u.email,
       (SELECT level FROM certifications WHERE diver_id = d.id ORDER BY CASE level ${CERT_LEVELS.map((l, i) => `WHEN '${l}' THEN ${i}`).join(' ')} END DESC LIMIT 1) AS level
     FROM divers d LEFT JOIN users u ON u.id = d.user_id
     WHERE d.seeks_buddy = 1 AND d.id <> ? AND EXISTS (SELECT 1 FROM json_each(d.alert_destinations) j WHERE j.value = ?)
@@ -108,7 +108,7 @@ export async function buddyAlerts(env, db, tripId, bookerDiverId) {
   for (const c of pick) {
     await run(db, 'INSERT OR IGNORE INTO buddy_alerts (trip_id, diver_id) VALUES (?, ?)', t.id, c.id)
     await notifyDiver(env, c.id, { title: 'Buddy disponible · Buddy available', body: `${shortName(me.full_name)} busca buddy en ${t.destination} · ${when(t.departs_at)}`, url: '/salida/' + t.id, tag: 'buddy-' + t.id }).catch(() => 0)
-    if (c.email) await sendEmail(env, c.email, TEMPLATES.buddyAlert(shortName(me.full_name), me.level, t.center, t.destination, t.departs_at, origin + '/app/#/salida/' + t.id)).catch(() => {})
+    if (c.email) await sendEmail(env, c.email, TEMPLATES.buddyAlert(shortName(me.full_name), me.level, t.center, t.destination, t.departs_at, origin + '/app/#/salida/' + t.id, c.locale)).catch(() => {})
   }
   return pick.length
 }

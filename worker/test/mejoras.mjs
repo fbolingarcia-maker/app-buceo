@@ -117,16 +117,25 @@ await C.rpc('book_trip', { p_trip: T, p_seats: 1, p_with_gear: false, p_medical_
 const BC = (await db.prepare('SELECT id FROM bookings WHERE diver_id = ?').bind(await diverOf('c@x.test')).first()).id
 await C.rpc('confirm_payment_demo', { p_booking: BC, p_kind: 'deposit' })
 await db.prepare('UPDATE trips SET departs_at = ? WHERE id = ?').bind(dep(24), T).run()
+await db.prepare("UPDATE divers SET locale = 'es' WHERE id = ?").bind(await diverOf('a@x.test')).run()
+await db.prepare("UPDATE divers SET locale = 'ja' WHERE id = ?").bind(await diverOf('b@x.test')).run()
 mails.length = 0
 let n = await balanceReminders(env, ORIGIN)
-ok(n === 3 && ['a@x.test', 'b@x.test', 'c@x.test'].every((to) => mails.some((m) => m.to === to && /Mañana buceas/.test(m.subject))), 'recordatorio del día antes a todas las reservas confirmadas', mails)
+ok(n === 3 && ['a@x.test', 'b@x.test', 'c@x.test'].every((to) => mails.some((m) => m.to === to)), 'recordatorio del día antes a todas las reservas confirmadas', mails)
+const subj = (to) => mails.find((m) => m.to === to)?.subject || ''
+ok(/^Mañana buceas/.test(subj('a@x.test')) && /^明日は/.test(subj('b@x.test')) && /^Diving tomorrow/.test(subj('c@x.test')), 'cada uno en el idioma de su perfil (sin idioma, inglés)', mails)
 ok((await balanceReminders(env, ORIGIN)) === 0, 'no se repite')
 {
   const base = { center: 'Centro', departs_at: dep(24), seats: 1, num_dives: 2, lat: 9.55, lng: 123.77, phone: '+63 912 345 6789', insured: 0 }
-  const h = (x) => TEMPLATES.tripTomorrow({ ...base, ...x }, ORIGIN + '/app/#/reservas', ORIGIN + '/app/#/perfil?ver=buceo').html
+  const h = (x) => TEMPLATES.tripTomorrow({ ...base, ...x }, ORIGIN + '/app/#/reservas', ORIGIN + '/app/#/perfil?ver=buceo', 'es').html
   ok(/Pagar el resto/.test(h({ due: 500 })) && /efectivo/.test(h({ due: 500, pay_on_site: 1 })) && /Todo pagado/.test(h({ due: 0 })), 'el email dice qué queda por pagar')
   ok(/Mar movido/.test(h({ due: 0, sea: { level: 'rough', wave_m: 1.7, wind_kmh: 18 } })) && /wa\.me\/639123456789/.test(h({ due: 0 })), 'incluye mar previsto y WhatsApp del centro')
   ok(/seguro de buceo/.test(h({ due: 0 })) && !/seguro de buceo/.test(h({ due: 0, insured: 1 })), 'avisa si no tiene seguro')
+  // Un solo idioma por email: el del cliente; sin idioma o con uno no traducido, inglés
+  const es = TEMPLATES.tripTomorrow({ ...base, due: 500 }, 'u', 'p', 'es'), en = TEMPLATES.tripTomorrow({ ...base, due: 500 }, 'u', 'p', 'en')
+  ok(!/Diving tomorrow|Pay the rest|Departs/.test(es.subject + es.html) && !/Mañana|Pagar el resto|Salida/.test(en.subject + en.html), 'cada email va en un solo idioma')
+  ok(/Morgen/.test(TEMPLATES.tripTomorrow(base, 'u', 'p', 'de').subject) && /明天/.test(TEMPLATES.tripTomorrow(base, 'u', 'p', 'zh-CN').subject) && /Diving tomorrow/.test(TEMPLATES.tripTomorrow(base, 'u', 'p', 'fr').subject), 'alemán, chino y, si no hay traducción, inglés')
+  ok(/lang="ko"/.test(TEMPLATES.confirm('u', 'ko').html) && /新しいパスワード/.test(TEMPLATES.recovery('u', 'ja').subject) && /Tu código/.test(TEMPLATES.reauth('123456', 'es').subject), 'emails de la cuenta en el idioma elegido')
 }
 
 section('aviso de caducidad del seguro')
@@ -137,7 +146,7 @@ section('aviso de caducidad del seguro')
   await db.prepare("UPDATE divers SET insurance_provider = 'DAN', insurance_expiry = ? WHERE id = ?").bind(exp, dA).run()
   mails.length = 0
   ok((await insuranceReminders(env, ORIGIN, nine - 2 * 36e5)) === 0, 'fuera de las 9 de Manila no envía')
-  ok((await insuranceReminders(env, ORIGIN, nine)) === 1 && mails.some((m) => m.to === 'a@x.test' && /seguro de buceo caduca/.test(m.subject)), 'avisa 10 días antes', mails)
+  ok((await insuranceReminders(env, ORIGIN, nine)) === 1 && mails.some((m) => m.to === 'a@x.test' && /seguro de buceo caduca/.test(m.subject)), 'avisa 10 días antes, en el idioma de su perfil', mails)
   ok((await insuranceReminders(env, ORIGIN, nine)) === 0, 'una sola vez por fecha')
   await db.prepare("UPDATE divers SET insurance_expiry = ? WHERE id = ?").bind(new Date(nine + 8 * 36e5 + 40 * 864e5).toISOString().slice(0, 10), dA).run()
   ok((await insuranceReminders(env, ORIGIN, nine)) === 0, 'con 40 días aún no avisa')

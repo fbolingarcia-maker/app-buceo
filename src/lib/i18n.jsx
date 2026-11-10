@@ -52,6 +52,8 @@ export function LangProvider({ children }) {
     current = l
     try { localStorage.setItem('lang', l) } catch {}
     setState(l)
+    // Con sesión, el Worker guarda el idioma nuevo en el perfil (los emails llegan solo en ese idioma)
+    if (import.meta.env.VITE_BACKEND === 'cloudflare') fetch('/api/auth/session', { credentials: 'same-origin', headers: { 'X-DivingSlot': '1', 'X-Lang': l } }).catch(() => {})
   }
   // key={lang}: al cambiar de idioma se vuelve a pintar toda la app con el idioma nuevo
   return (

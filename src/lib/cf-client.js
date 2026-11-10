@@ -3,12 +3,15 @@
 // Se usa cuando la app se compila con VITE_BACKEND=cloudflare (ver src/lib/supabase.js).
 // La sesión va en una cookie httpOnly (__Host-ds_session): el JavaScript nunca ve el token.
 
-const HEADERS = { 'Content-Type': 'application/json', 'X-DivingSlot': '1' }
+const BASE_HEADERS = { 'Content-Type': 'application/json', 'X-DivingSlot': '1' }
+// X-Lang: idioma de la app, para que los emails lleguen solo en ese idioma (el Worker lo guarda en el perfil)
+const appLang = () => { try { return localStorage.getItem('lang') || document.documentElement.lang || '' } catch { return '' } }
+const headers = () => ({ ...BASE_HEADERS, 'X-Lang': appLang() })
 
 async function call(path, body, method = 'POST') {
   let res
   try {
-    res = await fetch('/api/' + path, { method, headers: HEADERS, credentials: 'same-origin', body: body === undefined ? undefined : JSON.stringify(body) })
+    res = await fetch('/api/' + path, { method, headers: headers(), credentials: 'same-origin', body: body === undefined ? undefined : JSON.stringify(body) })
   } catch (e) {
     return { error: { message: 'Failed to fetch', code: 'network' }, status: 0 }
   }
@@ -184,7 +187,7 @@ export function createCfClient() {
     async invoke(name, { body } = {}) {
       let res
       try {
-        res = await fetch('/api/functions/' + name, { method: 'POST', headers: HEADERS, credentials: 'same-origin', body: JSON.stringify(body || {}) })
+        res = await fetch('/api/functions/' + name, { method: 'POST', headers: headers(), credentials: 'same-origin', body: JSON.stringify(body || {}) })
       } catch (e) { return { data: null, error: { message: 'Failed to fetch' } } }
       if (!res.ok) return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', context: res } }
       return { data: await res.json().catch(() => null), error: null }

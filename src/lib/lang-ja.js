@@ -261,5 +261,19 @@ export default {
  "Centros": "センター",
  "Perfil": "プロフィール",
  "Última hora −{n} %": "直前割 −{n}%",
- "Reserva anticipada −{n} %": "早割 −{n}%"
+ "Reserva anticipada −{n} %": "早割 −{n}%",
+ "Tus datos para el centro": "センターに送る情報",
+ "Se envía al centro con tu reserva. Se cambia en tu perfil.": "予約と一緒にセンターに送られます。変更はプロフィールで行います。",
+ "Completar en el perfil": "プロフィールで入力",
+ "Completa en tu perfil lo que falta en el paso 2 para continuar.": "続けるには、ステップ2で足りない項目をプロフィールで入力してください。",
+ "Certificación": "認定",
+ "Cuestionario médico": "健康質問票",
+ "Última inmersión": "最後のダイビング",
+ "Sin indicar": "未入力",
+ "Tallas de equipo": "器材サイズ",
+ "Traje": "スーツ",
+ "Chaleco": "BCD",
+ "Aletas": "フィン",
+ "Seguro de buceo": "ダイビング保険",
+ "Alergias": "アレルギー"
 }

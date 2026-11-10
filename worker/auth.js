@@ -3,7 +3,7 @@
 import { ApiError, fail, json, nowIso, uuid, all, first, run, changes, parseCookies, SESSION_COOKIE, sessionCookie } from './lib/util.js'
 import { hashPassword, verifyPassword, randomToken, sha256, encryptSecret, decryptSecret, base32, randomBytes, totpVerify } from './lib/crypto.js'
 import { qrSvgDataUrl } from './lib/qr.js'
-import { sendEmail, TEMPLATES } from './email.js'
+import { sendEmail, TEMPLATES, reqLang } from './email.js'
 import { googleStart, googleCallback } from './google.js'
 import { notifyAdmin } from './stats.js'
 
@@ -96,12 +96,14 @@ function safeRedirect(req, to, fallbackHash = '#/') {
   return origin + '/' + fallbackHash
 }
 
-async function sendToken(env, req, user, kind, redirect) {
+async function sendToken(env, req, user, kind, redirect, lang) {
   const token = randomToken(32)
   await run(env.DB, 'INSERT INTO auth_tokens (id, user_id, kind, redirect, expires_at) VALUES (?, ?, ?, ?, ?)',
     await sha256(token), user.id, kind, redirect ? safeRedirect(req, redirect) : null, new Date(Date.now() + TOKEN_HOURS[kind] * 36e5).toISOString())
   const url = `${new URL(req.url).origin}/api/auth/verify?type=${kind}&token=${token}`
-  try { await sendEmail(env, user.email, TEMPLATES[kind](url)) } catch (e) {
+  // Idioma: el de la app en ese momento (cabecera X-Lang) o el guardado en el perfil
+  lang ||= reqLang(req) || (await first(env.DB, 'SELECT locale FROM divers WHERE user_id = ?', user.id))?.locale
+  try { await sendEmail(env, user.email, TEMPLATES[kind](url, lang)) } catch (e) {
     console.error('email', e.message)
     throw new ApiError('email_send_failed', kind === 'confirm' ? 'Error sending confirmation email' : 'Error sending recovery email', 500)
   }
@@ -137,6 +139,9 @@ export async function handleAuth(req, env, ctx, path) {
   }
 
   if (path === 'session' && req.method === 'GET') {
+    // Guarda el idioma de la app en el perfil para que los emails lleguen en ese idioma
+    const lang = reqLang(req)
+    if (lang && ctx.uid) await run(env.DB, 'UPDATE divers SET locale = ? WHERE user_id = ? AND locale IS NOT ?', lang, ctx.uid, lang).catch(() => {})
     const info = await sessionInfo(ctx)
     return json(info)
   }
@@ -148,6 +153,7 @@ export async function handleAuth(req, env, ctx, path) {
     if (pwProblem(body.password)) return authErr('weak_password', 'Password should be at least 8 characters and contain letters and numbers.')
     const meta = {}
     for (const k of ['full_name', 'account_type', 'center_name', 'center_phone', 'locale']) if (typeof body.data?.[k] === 'string') meta[k] = body.data[k].slice(0, 200)
+    meta.locale ||= reqLang(req) || undefined
     const existing = await first(env.DB, 'SELECT * FROM users WHERE email = ?', email)
     if (existing) {
       // Igual que Supabase: no se revela si el email ya tiene cuenta; si no la confirmó, se reenvía el email
@@ -224,7 +230,8 @@ export async function handleAuth(req, env, ctx, path) {
     await run(env.DB, `INSERT INTO reauth_codes (user_id, code_hash, sent_at, expires_at, attempts) VALUES (?, ?, ?, ?, 0)
       ON CONFLICT(user_id) DO UPDATE SET code_hash = excluded.code_hash, sent_at = excluded.sent_at, expires_at = excluded.expires_at, attempts = 0`,
       ctx.uid, await sha256(ctx.uid + ':' + code), nowIso(), new Date(Date.now() + 10 * 60e3).toISOString())
-    try { await sendEmail(env, ctx.email, TEMPLATES.reauth(code)) } catch (e) {
+    const lang = reqLang(req) || (await first(env.DB, 'SELECT locale FROM divers WHERE user_id = ?', ctx.uid))?.locale
+    try { await sendEmail(env, ctx.email, TEMPLATES.reauth(code, lang)) } catch (e) {
       console.error('email', e.message)
       throw new ApiError('email_send_failed', 'Error sending reauthentication email', 500)
     }

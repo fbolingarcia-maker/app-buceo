@@ -261,5 +261,19 @@ export default {
  "Centros": "Zentren",
  "Perfil": "Profil",
  "Última hora −{n} %": "Last Minute −{n} %",
- "Reserva anticipada −{n} %": "Frühbucher −{n} %"
+ "Reserva anticipada −{n} %": "Frühbucher −{n} %",
+ "Tus datos para el centro": "Deine Angaben für die Basis",
+ "Se envía al centro con tu reserva. Se cambia en tu perfil.": "Wird mit deiner Buchung an die Basis geschickt. Du änderst es in deinem Profil.",
+ "Completar en el perfil": "Im Profil ergänzen",
+ "Completa en tu perfil lo que falta en el paso 2 para continuar.": "Ergänze in deinem Profil, was in Schritt 2 fehlt, um fortzufahren.",
+ "Certificación": "Brevet",
+ "Cuestionario médico": "Medizinischer Fragebogen",
+ "Última inmersión": "Letzter Tauchgang",
+ "Sin indicar": "Nicht angegeben",
+ "Tallas de equipo": "Ausrüstungsgrößen",
+ "Traje": "Anzug",
+ "Chaleco": "Jacket",
+ "Aletas": "Flossen",
+ "Seguro de buceo": "Tauchversicherung",
+ "Alergias": "Allergien"
 }
