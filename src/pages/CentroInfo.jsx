@@ -10,6 +10,8 @@ import { GreenFinsBadge, EcoList, LastMinuteTag, PriceTag } from '../lib/extras'
 import Icon from '../lib/Icon'
 import FavButton from '../lib/FavButton'
 import { CenterReviews } from '../lib/plus'
+import { FollowButton } from '../lib/comunidad'
+import { useAuth } from '../lib/auth'
 import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
@@ -67,6 +69,7 @@ export default function CentroInfo({ id }) {
 
       <div className="card row wrap" style={{ gap: 8 }}>
         <FavButton id={c.id} name={c.name} />
+        <FollowIf id={c.id} />
         {c.phone && <a className="btn small ghost" href={'https://wa.me/' + c.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
         {c.website && <a className="btn small ghost" href={c.website} target="_blank" rel="noreferrer">{t('Web')}</a>}
         {!c.website && c.source_url && <a className="btn small ghost" href={c.source_url} target="_blank" rel="noreferrer">{t('Más información')}</a>}
@@ -126,4 +129,10 @@ function ReviewsEmpty({ centerId }) {
   const [n, setN] = useState(null)
   useEffect(() => { supabase.rpc('center_reviews', { p_center: centerId, p_limit: 1 }).then(({ data }) => setN(data?.count || 0)) }, [centerId])
   return n === 0 ? <span className="small muted">{t('Aún no hay reseñas. Los buceadores pueden valorar el centro después de su salida.')}</span> : null
+}
+
+// Seguir al centro: solo con sesión (sus salidas y avistamientos salen en tu muro)
+function FollowIf({ id }) {
+  const { session, isCenter } = useAuth()
+  return session && !isCenter ? <FollowButton type="center" id={id} /> : null
 }

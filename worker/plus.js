@@ -151,13 +151,13 @@ export const PLUS = {
   async join_waitlist(ctx, { p_trip, p_seats = 1, p_with_gear = false, p_medical_signed = false }) {
     mfa(ctx)
     if (!ctx.diverId) fail('NO_PROFILE', 'crea tu perfil de buceador')
-    if (!p_medical_signed) fail('NO_MEDICAL', 'falta la declaración médica')
     const seats = +p_seats
     if (!Number.isInteger(seats) || seats < 1 || seats > 6) fail('BAD_SEATS', 'número de plazas no válido')
     const t = await first(ctx.db, `SELECT t.*, ${APP_AVAILABLE('t')} AS free FROM trips t WHERE t.id = ?`, p_trip)
     if (!t || t.status !== 'published') fail('NOT_BOOKABLE', 'la salida no está abierta')
+    if (!p_medical_signed && (t.activity || 'scuba') !== 'snorkel') fail('NO_MEDICAL', 'falta la declaración médica')
     const levels = (await all(ctx.db, 'SELECT level FROM certifications WHERE diver_id = ?', ctx.diverId)).map((c) => CERT_LEVELS.indexOf(c.level))
-    const need = t.kind === 'course' ? t.course_prereq : t.min_level
+    const need = ['snorkel', 'freedive', 'try_dive'].includes(t.activity) ? null : t.kind === 'course' ? t.course_prereq : t.min_level
     if (need && (!levels.length || Math.max(...levels) < CERT_LEVELS.indexOf(need))) fail('LEVEL', 'tu certificación no alcanza el mínimo')
     if (t.free >= seats) fail('HAS_SEATS', 'aún quedan plazas: resérvala directamente')
     const dup = await first(ctx.db, `SELECT 1 AS x FROM bookings b WHERE b.trip_id = ? AND b.diver_id = ? AND ${HOLDS('b')}`, t.id, ctx.diverId)

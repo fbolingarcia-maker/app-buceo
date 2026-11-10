@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined) // undefined = cargando
   const [diver, setDiver] = useState(null)
   const [center, setCenter] = useState(null) // centro que gestiona el usuario (o null)
+  const [guideOf, setGuideOf] = useState([]) // centros en los que es guía (11 nov)
   const [recovering, setRecovering] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false) // administrador de la plataforma (valida centros)
   const [pendingCenters, setPendingCenters] = useState(0) // centros esperando validación (solo admin)
@@ -20,7 +21,7 @@ export function AuthProvider({ children }) {
   const [viewCenter, setViewCenter] = useState(null)
 
   const loadProfile = useCallback(async (s) => {
-    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); setNeedsMfa(false); return }
+    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); setNeedsMfa(false); setGuideOf([]); return }
     // Con el segundo paso activado, hasta que no se introduce el código la sesión no vale para nada (mfa_ok() en la base de datos)
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
     const need = aal?.nextLevel === 'aal2' && aal?.currentLevel !== 'aal2'
@@ -36,6 +37,7 @@ export function AuthProvider({ children }) {
       supabase.from('center_staff').select('role, centers(' + CENTER_COLS + ')').eq('user_id', s.user.id).maybeSingle(),
     ])
     setDiver(d || null)
+    supabase.rpc('my_guide_centers', {}).then(({ data }) => setGuideOf(Array.isArray(data) ? data : [])).catch(() => setGuideOf([]))
     // Los datos privados del centro (GCash, nota de la revisión) no están en la lectura pública: se piden aparte
     let priv = null
     if (st?.centers?.id) priv = (await supabase.rpc('center_private', { p_center: st.centers.id })).data?.[0] || null
@@ -91,7 +93,7 @@ export function AuthProvider({ children }) {
   const readOnly = !!(isAdmin && viewAs === 'center' && shownCenter && shownCenter.id !== center?.id)
   const verified = shownCenter?.verification_status === 'verified'
   const value = {
-    session, user: session?.user || null, diver, center: shownCenter, ownCenter: center, isCenter, isAdmin, pendingCenters, verified, recovering, setRecovering,
+    session, user: session?.user || null, diver, center: shownCenter, ownCenter: center, isCenter, isAdmin, guideOf, pendingCenters, verified, recovering, setRecovering,
     needsMfa, adminView, setViewAs, viewCenterId, setViewCenterId, readOnly,
     refresh: () => loadProfile(session),
     signOut: () => supabase.auth.signOut(),

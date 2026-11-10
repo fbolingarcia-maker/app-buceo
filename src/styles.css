@@ -510,3 +510,30 @@ details.fold:not([open]) > summary::after { content: '▸'; }
 .pd-row { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; }
 .pd-row > svg { margin-top: 2px; }
 .warn-ink { color: var(--warn); }
+
+/* 11 nov: equipo, QR, comunidad */
+.modal { position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / .55); display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+.modal-card { position: relative; width: 100%; max-width: 420px; max-height: 90vh; overflow: auto; background: var(--surface); color: var(--ink); border-radius: var(--r-card, 16px); padding: 20px 16px 16px; }
+@media (min-width: 600px) { .modal { align-items: center; } }
+.modal-card > h2 { padding-right: 36px; }
+.modal-x { position: absolute; top: 8px; right: 8px; min-width: 44px; min-height: 44px; border: 0; background: none; color: inherit; cursor: pointer; }
+.qr-img { width: 240px; max-width: 80%; height: auto; background: #fff; padding: 10px; border-radius: 12px; }
+.pass-code { font: 700 28px var(--font-data, monospace); letter-spacing: 4px; margin: 2px 0 8px; }
+.qr-video { width: 100%; border-radius: 12px; background: #000; aspect-ratio: 1; object-fit: cover; }
+.team-list, .sight-list, .challenges, .leader { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.team-list li { padding: 8px 0; border-top: 1px solid var(--line); }
+.team-list li:first-child { border-top: 0; }
+.guide-assign { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; }
+.guide-assign .stack { flex-basis: 100%; }
+.sight-list li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.challenges li { display: flex; gap: 8px; align-items: center; }
+.challenges li.done { color: var(--ok); }
+.leader { padding: 8px 12px; counter-reset: pos; }
+.leader li { display: flex; gap: 6px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); }
+.leader li:first-child { border-top: 0; }
+.leader li::before { counter-increment: pos; content: counter(pos) '.'; min-width: 22px; color: var(--muted); }
+.leader li.me { font-weight: 700; }
+.rank-card .big { font-size: 22px; }
+.pill.act { background: color-mix(in srgb, var(--laguna) 16%, transparent); color: var(--ink); }
+.feed-item { display: grid; gap: 2px; }
+.feed-item .who { font-weight: 700; }

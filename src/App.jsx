@@ -15,7 +15,8 @@ import { lazyPage, prefetchWhenIdle } from './lib/lazyPage'
 import Icon from './lib/Icon'
 import { setVia } from './lib/extras'
 import { OfflineBanner } from './lib/plus'
-import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText } from 'lucide-react'
+import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText, Anchor } from 'lucide-react'
+import { AcceptInvite } from './lib/comunidad'
 
 // Explorar, Salida y Login van en el paquete principal (son la entrada habitual); el resto se carga al abrirlo
 const Reservas = lazyPage(() => import('./pages/Reservas'))
@@ -37,6 +38,9 @@ const Valorar = lazyPage(() => import('./pages/Valorar'))
 const CentroVerificacion = lazyPage(() => import('./pages/CentroVerificacion'))
 const Admin = lazyPage(() => import('./pages/Admin'))
 const Importar = lazyPage(() => import('./pages/Importar'))
+const Guia = lazyPage(() => import('./pages/Guia'))
+const Muro = lazyPage(() => import('./pages/Muro'))
+const Buzo = lazyPage(() => import('./pages/Buzo'))
 
 // Pantallas privadas. Sin sesión: título y frase de lo que hay detrás, y el login debajo.
 // back: ruta a la que volver después de entrar (también la usa el email de confirmación)
@@ -104,8 +108,8 @@ function VerifyBanner() {
 }
 
 // Enlace de reservas propio del centro (divingslot.com/r/<id>): guarda el canal 7 días y abre la ficha del centro
-function Via({ id }) {
-  useEffect(() => { setVia(id); go('/c/' + id) }, [id])
+function Via({ id, trip }) {
+  useEffect(() => { setVia(id); go(trip ? '/salida/' + trip : '/c/' + id) }, [id, trip])
   return <p className="muted center">{t('Cargando…')}</p>
 }
 
@@ -130,7 +134,7 @@ function Flag() {
 
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, signOut } = useAuth()
+  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, signOut, guideOf, refresh } = useAuth()
   const seg = path.split('/').filter(Boolean)
   useEffect(() => { trackView(path) }, [path])
   // Pestañas de su perfil, descargadas en segundo plano para que el cambio de pestaña sea inmediato
@@ -144,7 +148,11 @@ export default function App() {
   let page
   if (session && needsMfa) page = <DosPasosReto />
   else if (recovering) page = <NuevaClave />
-  else if (seg[0] === 'r' && seg[1]) page = <Via id={seg[1]} />
+  else if (seg[0] === 'r' && seg[1]) page = <Via id={seg[1]} trip={seg[2]} />
+  else if (seg[0] === 'equipo' && seg[1] === 'aceptar') page = <NeedLogin title={t('Invitación al equipo')} intro={t('Entra o crea tu cuenta con el email al que llegó la invitación.')} back={window.location.hash.replace(/^#/, '')}><AcceptInvite token={new URLSearchParams(window.location.hash.split('?')[1] || '').get('token') || ''} session={session} onDone={(r) => { refresh(); go(r === 'guide' ? '/guia' : '/centro') }} /></NeedLogin>
+  else if (seg[0] === 'guia') page = <NeedLogin><Guia /></NeedLogin>
+  else if (seg[0] === 'muro') page = <NeedLogin title={t('Muro')} intro={t('Sigue a buceadores y centros y verás aquí sus inmersiones, avistamientos y salidas.')} back="/muro"><Muro /></NeedLogin>
+  else if (seg[0] === 'buzo' && seg[1]) page = <Buzo id={seg[1]} />
   else if (seg[0] === 'salida' && seg[1]) page = <Salida id={seg[1]} />
   else if (seg[0] === 'reservas') page = <NeedLogin title={t('Reservas')} intro={t('Aquí verás tus salidas reservadas y los pagos pendientes. Entra o crea una cuenta para verlas.')} back="/reservas"><Reservas /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1] === 'importar') page = <NeedLogin><Importar /></NeedLogin>
@@ -223,7 +231,8 @@ export default function App() {
             {tab('/', Compass, 'Salidas', home || seg[0] === 'salida')}
             {tab('/centros', MapPin, 'Centros', seg[0] === 'centros' || seg[0] === 'puntos' || seg[0] === 'c' || seg[0] === 'd')}
             {tab('/reservas', Ticket, 'Reservas', seg[0] === 'reservas' || seg[0] === 'valorar')}
-            {tab('/bitacora', BookOpen, 'Bitácora', seg[0] === 'bitacora')}
+            {tab('/bitacora', BookOpen, 'Bitácora', seg[0] === 'bitacora' || seg[0] === 'muro' || seg[0] === 'buzo')}
+            {guideOf?.length > 0 && tab('/guia', Anchor, 'Guía', seg[0] === 'guia')}
             {tab('/perfil', User, 'Perfil', seg[0] === 'perfil' || seg[0] === 'login')}
           </>
         )}

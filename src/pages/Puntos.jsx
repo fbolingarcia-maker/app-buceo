@@ -8,6 +8,7 @@ import SiteCard from '../lib/SiteCard'
 import ZonaSwitch from '../lib/ZonaSwitch'
 import Icon from '../lib/Icon'
 import { LocateFixed, MapPin, X } from 'lucide-react'
+import { Sightings } from '../lib/comunidad'
 
 // Puntos de buceo de toda Filipinas, agrupados por destino (zona) igual que el directorio de centros
 export default function Puntos() {
@@ -56,6 +57,7 @@ export default function Puntos() {
     <>
       <h1>{t('Puntos de buceo')}</h1>
       <ZonaSwitch on="puntos" />
+      <details className="fold"><summary><b>{t('Avistamientos de esta semana')}</b></summary><Sightings days={7} title={false} allowAdd={false} /></details>
       <div className="row" style={{ gap: 8, marginBottom: 10 }}>
         <input type="search" className="grow" placeholder={t('Buscar punto, zona o isla…')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('Buscar punto, zona o isla…')} />
         <button type="button" className={here ? 'btn small' : 'btn small ghost'} style={{ whiteSpace: 'nowrap' }} disabled={locating} onClick={nearMe}>

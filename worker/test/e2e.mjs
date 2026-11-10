@@ -78,7 +78,7 @@ const mfaSecret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
 
 const plan = {
   anon: [null, ['/', '/centros', '/c/c1', '/d/Panglao', '/salida/t1-2', '/login', '/reservas', '/bitacora', '/admin']],
-  diver: ['buzo', ['/', '/salida/t1-2', '/salida/t2-2', '/reservas', '/perfil', '/bitacora', '/bitacora/lg1', '/c/c1', '/admin']],
+  diver: ['buzo', ['/', '/salida/t1-2', '/salida/t2-2', '/reservas', '/perfil', '/bitacora', '/muro', '/d/Panglao', '/puntos', '/bitacora/lg1', '/c/c1', '/admin']],
   center: ['nuevo', ['/', '/perfil', '/centro', '/centro/agenda', '/centro/salidas', '/centro/nueva', '/centro/ajustes', '/centro/informes', '/centro/verificacion']],
   centerv: ['centro', ['/centro', '/perfil', '/centro/agenda', '/centro/salidas', '/centro/salida/t1-4', '/centro/informes', '/centro/informes?ver=cobros', '/centro/informes?ver=clientes', '/centro/informes?ver=movimientos', '/centro/ajustes', '/centro/verificacion']],
   admin: ['admin', ['/', '/admin', '/admin/centers', '/admin/users', '/admin/admins', '/admin/log', '/perfil']],

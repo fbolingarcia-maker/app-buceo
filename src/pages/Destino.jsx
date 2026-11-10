@@ -6,6 +6,8 @@ import SiteCard from '../lib/SiteCard'
 import { loadDestinations, openTripsIn, loadRatings, EXTRA_AREAS } from '../lib/places'
 import Icon from '../lib/Icon'
 import { ArrowLeft } from 'lucide-react'
+import { useAuth } from '../lib/auth'
+import { Sightings, Leaderboard } from '../lib/comunidad'
 
 // Página de un destino: puntos de buceo, centros y acceso a sus salidas
 export default function Destino({ name }) {
@@ -14,6 +16,7 @@ export default function Destino({ name }) {
   const [centers, setCenters] = useState([])
   const [count, setCount] = useState(null)
   const [ratings, setRatings] = useState({})
+  const { session } = useAuth()
 
   useEffect(() => {
     loadDestinations().then((ds) => setDest(ds.find((d) => d.name === name) || false))
@@ -46,6 +49,9 @@ export default function Destino({ name }) {
       {sites === null && <p className="muted">{t('Cargando…')}</p>}
       {sites && sites.length === 0 && <div className="card muted">{t('Aún no hay puntos de buceo registrados en este destino.')}</div>}
       {sites?.map((s) => <SiteCard key={s.id} site={s} sub={s.area !== dest.name ? s.area : null} />)}
+
+      {sites && sites.length > 0 && <Sightings area={dest.name} sites={sites} session={session} />}
+      <Leaderboard area={dest.name} />
 
       <h2>{t('Centros de buceo')} <span className="muted small" style={{ fontWeight: 400 }}>· {centers.length}</span></h2>
       {centers.map((c) => (

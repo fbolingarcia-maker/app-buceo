@@ -12,6 +12,8 @@ export const CERT_LEVELS = ['open_water', 'advanced', 'rescue', 'divemaster', 'i
 export const BOOKING_SOURCES = ['app', 'whatsapp', 'instagram', 'facebook', 'walk_in']
 export const BOOKING_STATUSES = ['pending_payment', 'confirmed', 'cancelled_by_diver', 'cancelled_by_center']
 export const TRIP_STATUSES = ['draft', 'published', 'cancelled_weather', 'completed']
+export const ACTIVITIES = ['scuba', 'snorkel', 'freedive', 'try_dive']
+export const NO_CERT_ACTIVITIES = ['snorkel', 'freedive', 'try_dive']
 
 export const TABLES = {
   // ── Cuentas (sustituyen a auth.users / auth.sessions / auth.mfa_factors de Supabase) ──
@@ -163,6 +165,8 @@ export const TABLES = {
     ['course_name', 'text', { check: 'length(course_name) <= 80' }],
     ['course_days', 'int', { check: 'course_days BETWEEN 1 AND 14' }],
     ['course_prereq', 'text', { check: ENUM('course_prereq', CERT_LEVELS) }],
+    // Actividad (11 nov): buceo, esnórquel, apnea o bautismo. Las tres últimas no piden certificación; el esnórquel tampoco el cuestionario médico
+    ['activity', 'text', { nn: true, def: "'scuba'", check: ENUM('activity', ACTIVITIES) }],
   ] },
   trip_sites: { pk: ['trip_id', 'position'], cols: [
     ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
@@ -201,6 +205,9 @@ export const TABLES = {
     ['insurance_provider', 'text', { check: 'length(insurance_provider) <= 60' }],
     ['insurance_expiry', 'date'],
     ['insurance_reminded_for', 'date'], // caducidad ya avisada por email (14 días antes)
+    // Comunidad (11 nov): perfil público (se le puede seguir y sale en rankings) y método de pago preferido (pago en un toque)
+    ['public_profile', 'bool', { nn: true, def: '0' }],
+    ['pay_method', 'text', { check: ENUM('pay_method', ['gcash', 'paymaya', 'qrph', 'card', 'grab_pay']) }],
   ] },
   certifications: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -372,6 +379,8 @@ export const TABLES = {
     // Firma del centro (el guía confirma la inmersión de una salida en la que hizo check-in): bitácora verificada
     ['signed_by_center', 'uuid'], // sin FK: dive_logs ya enlaza con centers por center_id (si no, la relación sería ambigua)
     ['signed_at', 'ts'],
+    // Compartida en el muro (solo si el perfil es público)
+    ['share_public', 'bool', { nn: true, def: '0' }],
   ] },
   dive_log_photos: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
@@ -392,6 +401,47 @@ export const TABLES = {
     ['safety', 'int', { check: 'safety BETWEEN 1 AND 5' }],
     ['reef', 'int', { check: 'reef BETWEEN 1 AND 5' }],
     ['dive_again', 'bool'],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // ── Equipo del centro (11 nov): invitaciones por email, guías y guías asignados a cada salida ──
+  center_invites: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
+    ['email', 'text', { nn: true }],
+    ['role', 'text', { nn: true, check: ENUM('role', ['manager', 'guide']) }],
+    ['token_hash', 'text', { nn: true, unique: true }],
+    ['invited_by', 'uuid', { ref: 'users(id)', onDelete: 'SET NULL' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+    ['expires_at', 'ts', { nn: true }],
+    ['accepted_at', 'ts'],
+    ['accepted_by', 'uuid', { ref: 'users(id)', onDelete: 'SET NULL' }],
+  ] },
+  center_guides: { pk: ['center_id', 'user_id'], cols: [
+    ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
+    ['user_id', 'uuid', { nn: true, ref: 'users(id)', onDelete: 'CASCADE' }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  trip_guides: { pk: ['trip_id', 'user_id'], cols: [
+    ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
+    ['user_id', 'uuid', { nn: true, ref: 'users(id)', onDelete: 'CASCADE' }],
+    ['assigned_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  // ── Comunidad (11 nov): seguir a buceadores y centros, avistamientos por punto de buceo ──
+  follows: { pk: ['follower_id', 'target_type', 'target_id'], cols: [
+    ['follower_id', 'uuid', { nn: true, ref: 'divers(id)', onDelete: 'CASCADE' }],
+    ['target_type', 'text', { nn: true, check: ENUM('target_type', ['diver', 'center']) }],
+    ['target_id', 'uuid', { nn: true }],
+    ['created_at', 'ts', { nn: true, def: NOW }],
+  ] },
+  sightings: { cols: [
+    ['id', 'uuid', { pk: true, def: UUID }],
+    ['site_id', 'uuid', { nn: true, ref: 'dive_sites(id)', onDelete: 'CASCADE' }],
+    ['species', 'text', { nn: true, check: 'length(species) BETWEEN 2 AND 40' }],
+    ['note', 'text', { check: 'length(note) <= 200' }],
+    ['seen_on', 'date', { nn: true }],
+    ['center_id', 'uuid', { ref: 'centers(id)', onDelete: 'SET NULL' }],
+    ['diver_id', 'uuid', { ref: 'divers(id)', onDelete: 'CASCADE' }],
+    ['user_id', 'uuid', { ref: 'users(id)', onDelete: 'SET NULL' }],
     ['created_at', 'ts', { nn: true, def: NOW }],
   ] },
   platform_admins: { cols: [
@@ -449,7 +499,7 @@ export const VIEWS = {
       ['center_area', 'text'], ['center_locality', 'text'], ['center_lat', 'real'], ['center_lng', 'real'], ['booked_seats', 'int'],
       ['center_destination', 'text'], ['center_province', 'text'], ['center_languages', 'json'], ['center_agencies', 'json'], ['center_course_languages', 'json'],
       ['include_fees', 'bool'], ['fees_php', 'int'], ['last_minute_pct', 'int'], ['center_green_fins', 'text'], ['center_green_fins_verified', 'bool'],
-      ['early_pct', 'int'], ['kind', 'text'], ['course_name', 'text'], ['course_days', 'int'], ['course_prereq', 'text'], ['buddy_seekers', 'json'], ['waitlist', 'int'], ['center_rating', 'real'], ['center_reviews', 'int']],
+      ['early_pct', 'int'], ['kind', 'text'], ['course_name', 'text'], ['course_days', 'int'], ['course_prereq', 'text'], ['buddy_seekers', 'json'], ['waitlist', 'int'], ['center_rating', 'real'], ['center_reviews', 'int'], ['activity', 'text']],
     sql: `SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t.gear_rental_php, c.name AS center_name,
   CASE WHEN bo.show_to_divers THEN bo.name END AS boat_name,
   (SELECT json_group_array(name) FROM (SELECT ds.name FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = t.id ORDER BY ts.position)) AS sites,
@@ -465,7 +515,8 @@ export const VIEWS = {
      FROM bookings b JOIN divers d ON d.id = b.diver_id WHERE b.trip_id = t.id AND ${HOLDS('b')} AND d.seeks_buddy = 1 AND d.show_on_trips = 1) AS buddy_seekers,
   (SELECT count(*) FROM trip_waitlist w WHERE w.trip_id = t.id AND w.status = 'waiting') AS waitlist,
   (SELECT round(avg(r.rating), 1) FROM center_reviews r WHERE r.center_id = c.id) AS center_rating,
-  (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews
+  (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews,
+  t.activity
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified'`,
   },
@@ -500,6 +551,13 @@ export const INDEXES = [
   'CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id)',
   'CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at)',
   'CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id)',
+  'CREATE INDEX IF NOT EXISTS invites_center ON center_invites(center_id)',
+  'CREATE INDEX IF NOT EXISTS guides_user ON center_guides(user_id)',
+  'CREATE INDEX IF NOT EXISTS trip_guides_user ON trip_guides(user_id)',
+  'CREATE INDEX IF NOT EXISTS follows_target ON follows(target_type, target_id)',
+  'CREATE INDEX IF NOT EXISTS sightings_site ON sightings(site_id, seen_on)',
+  'CREATE INDEX IF NOT EXISTS sightings_seen ON sightings(seen_on)',
+  'CREATE INDEX IF NOT EXISTS logs_public ON dive_logs(share_public, created_at)',
 ]
 
 // Relaciones para incrustar tablas en un select: tabla.columna → tabla(col)

@@ -13,6 +13,7 @@ import { useFavs } from '../lib/favs'
 import { CalendarDays, ChevronRight, MapPin, LocateFixed, X, Waves, Heart, SlidersHorizontal, Map as MapIcon, List, GraduationCap, Users } from 'lucide-react'
 import { unitPrice, GreenFinsBadge } from '../lib/extras'
 import { Approx, MapView } from '../lib/plus'
+import { noCert, activityName } from '../lib/comunidad'
 
 const DAYS = 14
 const json = (k) => { try { return JSON.parse(ss(k)) } catch { return null } }
@@ -84,11 +85,11 @@ export default function Explorar() {
 
   // Filtros comunes (todo menos el día)
   const filtered = useMemo(() => (trips || [])
-    .filter((tr) => level === 'all' || levelRank(tr.min_level) <= levelRank(level))
+    .filter((tr) => level === 'all' || noCert(tr) || levelRank(tr.min_level) <= levelRank(level))
     .filter((tr) => !agency || (tr.center_agencies || []).some((a) => a.toUpperCase() === agency.toUpperCase()))
     .filter((tr) => !lang || (tr.center_languages || []).includes(lang) || (tr.center_course_languages || []).includes(lang))
     .filter((tr) => !onlyFav || favs.includes(tr.center_id))
-    .filter((tr) => (kind === 'course' ? tr.kind === 'course' : true))
+    .filter((tr) => (kind === 'course' ? tr.kind === 'course' : kind === 'nocert' ? noCert(tr) || (tr.kind === 'course' && !tr.course_prereq) : true))
     .filter((tr) => !buddy || (tr.buddy_seekers || []).length > 0)
     .filter((tr) => inPlace({ destination: destOf(tr), province: tr.center_province }, place, dests))
     .filter((tr) => {
@@ -214,6 +215,7 @@ export default function Explorar() {
         )}
         <button type="button" className={buddy ? 'filter-btn on' : 'filter-btn'} aria-pressed={buddy} onClick={() => setBuddy(!buddy)}><Icon icon={Users} size={16} />{t('Buscan buddy')}</button>
         <button type="button" className={kind === 'course' ? 'filter-btn on' : 'filter-btn'} aria-pressed={kind === 'course'} onClick={() => setKind(kind === 'course' ? '' : 'course')}><Icon icon={GraduationCap} size={16} />{t('Cursos')}</button>
+        <button type="button" className={kind === 'nocert' ? 'filter-btn on' : 'filter-btn'} aria-pressed={kind === 'nocert'} onClick={() => setKind(kind === 'nocert' ? '' : 'nocert')}><Icon icon={Waves} size={16} />{t('Sin certificación')}</button>
         <button type="button" className="filter-btn" onClick={() => { setView(view === 'map' ? 'list' : 'map'); setPin(null) }} aria-pressed={view === 'map'}><Icon icon={view === 'map' ? List : MapIcon} size={16} />{view === 'map' ? t('Lista') : t('Mapa')}</button>
       </div>
       {panel && (
@@ -313,6 +315,7 @@ export default function Explorar() {
                   <span className="seats" aria-hidden="true">{Array.from({ length: cap }, (_, i) => <i key={i} className={i < free ? 'on' : ''} />)}</span>
                   <small>{label}</small>
                   {tr.kind === 'course' && <small className="slot-course"><Icon icon={GraduationCap} size={12} /> {tr.course_name || t('Curso')}</small>}
+                  {tr.kind !== 'course' && noCert(tr) && <small className="slot-course">{activityName(tr.activity)}</small>}
                   {(tr.buddy_seekers || []).length > 0 && <small className="slot-buddy" title={t('Alguien busca buddy en esta salida')}><Icon icon={Users} size={12} /></small>}
                 </Link>
               )

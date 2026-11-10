@@ -44,7 +44,7 @@ export default function Perfil() {
     if (diver) setForm({
       full_name: diver.full_name || '', languages: diver.languages || [],
       logged_dives: diver.logged_dives ?? '', seeks_buddy: diver.seeks_buddy,
-      country: diver.country || '', bio: diver.bio || '', show_on_trips: diver.show_on_trips ?? true,
+      country: diver.country || '', bio: diver.bio || '', show_on_trips: diver.show_on_trips ?? true, public_profile: !!diver.public_profile,
       wetsuit_size: diver.wetsuit_size || '', bcd_size: diver.bcd_size || '', fin_size: diver.fin_size || '',
       last_dive_date: diver.last_dive_date || '', nitrox: !!diver.nitrox,
       allergies: diver.allergies || '', alert_destinations: diver.alert_destinations || [],
@@ -72,6 +72,7 @@ export default function Perfil() {
       country: form.country.trim() || null,
       bio: form.bio.trim() || null,
       show_on_trips: form.show_on_trips,
+      public_profile: form.public_profile,
       ...(isCenter ? {} : {
         wetsuit_size: form.wetsuit_size || null, bcd_size: form.bcd_size || null, fin_size: form.fin_size.trim() || null,
         last_dive_date: form.last_dive_date || null, nitrox: form.nitrox,
@@ -204,6 +205,9 @@ export default function Perfil() {
             <label className="check field"><input type="checkbox" checked={form.seeks_buddy} onChange={(e) => setForm({ ...form, seeks_buddy: e.target.checked })} /> {t('Busco compañero (buddy) de buceo')}</label>
             <label className="check field"><input type="checkbox" checked={form.show_on_trips} onChange={(e) => setForm({ ...form, show_on_trips: e.target.checked })} />
               <span>{t('Mostrar mi perfil a los demás buceadores de mis salidas')}<br /><span className="small muted">{t('Verán tu nombre y la inicial del apellido, tu nivel, nº de inmersiones, idiomas, país y esta descripción. Nunca tu email ni tu teléfono.')}</span></span>
+            </label>
+            <label className="check field"><input type="checkbox" checked={form.public_profile} onChange={(e) => setForm({ ...form, public_profile: e.target.checked })} />
+              <span>{t('Perfil público: que me puedan seguir y salir en el ranking')}<br /><span className="small muted">{t('Se ve tu rango, tus inmersiones y las que publiques en el muro. ')}{diver?.public_profile && <Link to={'/buzo/' + diver.id}>{t('Ver mi perfil público')}</Link>}</span></span>
             </label>
           </>}
           {tab === 'datos' && show('p')}

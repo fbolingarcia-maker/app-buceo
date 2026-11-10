@@ -23,6 +23,7 @@ import { handleImport } from './import.js'
 import { handleHealth } from './health.js'
 import { withSecrets } from './lib/secrets.js'
 import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits, notifyAdmin } from './stats.js'
+import { handleWidget } from './comunidad.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
@@ -94,8 +95,12 @@ export default {
     const url = new URL(req.url)
     if (url.pathname.startsWith('/api/')) return handleApi(req, env, ectx)
     // Enlace de reservas propio del centro (web, Instagram, Google): divingslot.com/r/<id> → la ficha del centro, sin comisión
-    const ref = /^\/r\/([0-9a-f-]{36})\/?$/.exec(url.pathname)
-    if (ref) return Response.redirect(url.origin + '/app/#/r/' + ref[1], 302)
+    // ?t=<salida>: viene del widget y abre directamente esa salida (con el canal propio del centro)
+    const ref = /^\/r\/([\w-]{2,40})\/?$/.exec(url.pathname)
+    if (ref) { const tr = /^[\w-]{2,40}$/.test(url.searchParams.get('t') || '') ? '/' + url.searchParams.get('t') : ''; return Response.redirect(url.origin + '/app/#/r/' + ref[1] + tr, 302) }
+    // Widget de reservas para insertar en la web del centro (iframe)
+    const wid = /^\/w\/([\w-]{2,40})\/?$/.exec(url.pathname)
+    if (wid && env.DB) return handleWidget(req, env, url, wid[1])
     // Verificación de Google Search Console: se sirve tal cual (Static Assets redirigiría *.html a la ruta sin .html)
     if (url.pathname === '/google3f09e05f2c350262.html') return new Response('google-site-verification: google3f09e05f2c350262.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
     return env.ASSETS.fetch(req)

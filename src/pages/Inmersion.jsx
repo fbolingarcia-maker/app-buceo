@@ -13,7 +13,7 @@ const EMPTY = {
   site_id: '', site_name: '', center_id: null, booking_id: null, dive_date: manilaDate(), entry_time: '',
   max_depth_m: '', avg_depth_m: '', duration_min: '', water_temp_c: '', visibility_m: '',
   gas: 'air', o2_pct: '', tank_start_bar: '', tank_end_bar: '', weights_kg: '', suit: '',
-  buddy: '', conditions: '', marine_life: '', rating: 0, notes: '', share_with_center: false,
+  buddy: '', conditions: '', marine_life: '', rating: 0, notes: '', share_with_center: false, share_public: false,
 }
 const NUM = ['max_depth_m', 'avg_depth_m', 'duration_min', 'water_temp_c', 'visibility_m', 'o2_pct', 'tank_start_bar', 'tank_end_bar', 'weights_kg']
 
@@ -241,6 +241,7 @@ export default function Inmersion({ id }) {
           {f.center_id && (
             <label className="check"><input type="checkbox" checked={f.share_with_center} onChange={set('share_with_center')} /> {t('Compartir esta inmersión y mi valoración con {name}', { name: centerName || t('el centro') })}</label>
           )}
+          <label className="check"><input type="checkbox" checked={!!f.share_public} onChange={set('share_public')} /> <span>{t('Publicarla en el muro')}<br /><span className="small muted">{diver?.public_profile ? t('La verán quienes te siguen y tu perfil público (punto, profundidad, tiempo y vida marina; no tus notas ni fotos).') : t('Necesitas activar el perfil público en tu perfil.')}</span></span></label>
         </div>
 
         <div className="card">

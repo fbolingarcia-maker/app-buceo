@@ -9,14 +9,19 @@ import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
 import { LocateFixed } from 'lucide-react'
 import { CanalPropio, Extras, GreenFins, Packs } from '../lib/centroExtras'
+import { TeamSection, WidgetSection } from '../lib/comunidad'
 
 export default function CentroAjustes() {
   const { center, refresh, readOnly } = useAuth()
   return (
     <>
       <h1>{t('Mi centro')}</h1>
+      <h2 id="equipo">{t('Equipo')}</h2>
+      <TeamSection center={center} readOnly={readOnly} />
       <h2>{t('Tu enlace de reservas')}</h2>
       <CanalPropio center={center} />
+      <h2>{t('Widget de reservas para tu web')}</h2>
+      <WidgetSection center={center} />
       <h2>{t('Extras al reservar')}</h2>
       <Extras center={center} readOnly={readOnly} />
       <h2>{t('Bonos para varios días')}</h2>

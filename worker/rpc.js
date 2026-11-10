@@ -7,6 +7,7 @@ import { sendEmail, TEMPLATES } from './email.js'
 import { centreEmail, notifyLater } from './stats.js'
 import { PLUS, processWaitlist, buddyAlerts, packDiscount, expLevel } from './plus.js'
 import { notifyDiver, notifyCentreStaff } from './push.js'
+import { COMUNIDAD, needsCert, needsMedical } from './comunidad.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -150,7 +151,7 @@ export const RPC = {
     const divers = rows.map((d) => ({
       is_me: d.id === ctx.diverId, name: short(d.full_name), level: d.best_level, verified: !!d.verified, dives: d.dives,
       languages: JSON.parse(d.languages || '[]'), exp: expLevel(d.best_level, d.dives), country: d.country, bio: d.bio, seeks_buddy: !!d.seeks_buddy, fav_site: d.fav_site, seats: seatsBy[d.id],
-      _id: d.id, _buddy: !!d.buddy_ratings_enabled,
+      public_id: d.public_profile ? d.id : null, _id: d.id, _buddy: !!d.buddy_ratings_enabled,
     })).sort((a, b) => (b.is_me - a.is_me) || (b.dives - a.dives))
     for (const d of divers) { d.buddy = d._buddy ? await buddyPublic(ctx.db, d._id) : null; delete d._id; delete d._buddy }
     return { divers, others: total - divers.reduce((s, d) => s + d.seats, 0) }
@@ -165,10 +166,11 @@ export const RPC = {
     const t = await first(ctx.db, `SELECT t.*, ${FEES('t')} AS fees_seat, max(CASE WHEN ${LAST_MINUTE('t')} THEN t.last_minute_pct ELSE 0 END, CASE WHEN ${EARLY('t')} THEN t.early_pct ELSE 0 END) AS lm_pct FROM trips t WHERE t.id = ?`, p_trip)
     if (!t || t.status !== 'published') fail('NOT_BOOKABLE', 'la salida no está abierta')
     if (Date.parse(t.departs_at) - Date.now() < RULES.min_lead_minutes * 60000) fail('TOO_LATE', 'ya no se puede reservar por la app')
-    if (!p_medical_signed) fail('NO_MEDICAL', 'falta la declaración médica')
+    if (!p_medical_signed && needsMedical(t)) fail('NO_MEDICAL', 'falta la declaración médica')
     const levels = (await all(ctx.db, 'SELECT level FROM certifications WHERE diver_id = ?', ctx.diverId)).map((c) => CERT_LEVELS.indexOf(c.level))
-    // Cursos: solo piden el nivel previo del curso (un Open Water no pide nada); salidas: el nivel mínimo
-    const need = t.kind === 'course' ? t.course_prereq : t.min_level
+    // Cursos: solo piden el nivel previo del curso (un Open Water no pide nada); salidas: el nivel mínimo.
+    // Esnórquel, apnea y bautismo: sin certificación
+    const need = !needsCert(t) ? null : t.kind === 'course' ? t.course_prereq : t.min_level
     if (need && (!levels.length || Math.max(...levels) < CERT_LEVELS.indexOf(need))) fail('LEVEL', 'tu certificación no alcanza el mínimo')
     const gear = p_with_gear ? 1 : 0
     // Extras del centro (seguro, curso, fotos…): solo los activos de este centro
@@ -656,7 +658,7 @@ const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
 
 // Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
-Object.assign(RPC, PLUS)
+Object.assign(RPC, PLUS, COMUNIDAD)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

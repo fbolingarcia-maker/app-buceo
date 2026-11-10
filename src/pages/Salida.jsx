@@ -13,6 +13,7 @@ import { medicalValid, medicalUntil, medicalLabel, daysSinceDive } from '../lib/
 import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard, hasInsurance } from '../lib/extras'
 import { PayBox, holdEnd } from '../lib/pay'
 import { TripChat, CenterReviews, expName, Approx } from '../lib/plus'
+import { noCert, noMedical, activityName, Sightings, FollowButton } from '../lib/comunidad'
 import { time, dayLabel, manilaDate } from '../lib/format'
 
 const DRAFT = 'ds_book_draft'
@@ -36,7 +37,7 @@ function QuienVa({ tripId, loggedIn }) {
           <div className="avatar" aria-hidden>{(d.name || '?').charAt(0).toUpperCase()}</div>
           <div className="grow">
             <div className="row between wrap" style={{ gap: 6 }}>
-              <b>{d.name}{d.is_me ? ' · ' + t('Tú') : ''}{d.seats > 1 ? ' ' + (d.seats === 2 ? t('+1 acompañante') : t('+{n} acompañantes', { n: d.seats - 1 })) : ''}</b>
+              <b>{d.public_id && !d.is_me ? <Link to={'/buzo/' + d.public_id}>{d.name}</Link> : d.name}{d.is_me ? ' · ' + t('Tú') : ''}{d.seats > 1 ? ' ' + (d.seats === 2 ? t('+1 acompañante') : t('+{n} acompañantes', { n: d.seats - 1 })) : ''}</b>
               <span className="row" style={{ gap: 4 }}>
                 {d.level
                   ? <span className="pill">{levelName(d.level)}{d.verified && <Icon icon={Check} size={14} aria-label={t('Verificada')} />}</span>
@@ -149,9 +150,11 @@ export default function Salida({ id }) {
 
   const best = certs.reduce((m, c) => Math.max(m, levelRank(c.level)), -1)
   const course = trip.kind === 'course'
-  const need = course ? trip.course_prereq : trip.min_level
+  // Esnórquel, apnea y bautismo: sin certificación; el esnórquel tampoco pide el cuestionario médico
+  const need = noCert(trip) ? null : course ? trip.course_prereq : trip.min_level
   const levelOk = !need || best >= levelRank(need)
-  const medical = medicalValid(diver)
+  const medicalReq = !noMedical(trip)
+  const medical = !medicalReq || medicalValid(diver)
   const sinceDive = daysSinceDive(diver)
   const hasSizes = !!(diver?.wetsuit_size || diver?.bcd_size || diver?.fin_size)
   const unit = unitPrice(trip)
@@ -202,9 +205,10 @@ export default function Salida({ id }) {
       <div className="card stack">
         <div className="row between"><span className="muted">{t('Salida')}</span><b>{dateTime(trip.departs_at)}</b></div>
         {trip.boat_name && <div className="row between"><span className="muted">{t('Barco')}</span><span>{trip.boat_name}</span></div>}
-        <div className="row between"><span className="muted">{t('Inmersiones')}</span><span>{trip.num_dives}</span></div>
+        {noCert(trip) && <div className="row between"><span className="muted">{t('Actividad')}</span><span className="pill act">{activityName(trip.activity)} · {t('sin certificación')}</span></div>}
+        <div className="row between"><span className="muted">{trip.activity === 'snorkel' ? t('Paradas') : t('Inmersiones')}</span><span>{trip.num_dives}</span></div>
         {course && <div className="row between"><span className="muted">{t('Curso')}</span><span className="pill ok"><Icon icon={GraduationCap} size={14} /> {trip.course_name || t('Curso')}{trip.course_days ? ' · ' + (trip.course_days === 1 ? t('1 día') : t('{n} días', { n: trip.course_days })) : ''}</span></div>}
-        {course ? <div className="row between"><span className="muted">{t('Requisito')}</span><span>{trip.course_prereq ? levelName(trip.course_prereq) : t('Ninguno: es para empezar')}</span></div> :
+        {noCert(trip) ? null : course ? <div className="row between"><span className="muted">{t('Requisito')}</span><span>{trip.course_prereq ? levelName(trip.course_prereq) : t('Ninguno: es para empezar')}</span></div> :
         <div className="row between"><span className="muted">{t('Nivel mínimo')}</span><span className="pill lvl"><i style={{ background: levelColor(trip.min_level) }} />{levelName(trip.min_level)}</span></div>}
         <div className="row between"><span className="muted">{t('Precio por buceador')}</span><span><LastMinuteTag trip={trip} /> <PriceTag trip={trip} /></span></div>
         {fees > 0 && <div className="row between"><span className="muted">{t('Tasas de santuarios y parques marinos')}</span><span>{php(fees)} · {t('incluidas en el pago')}</span></div>}
@@ -213,6 +217,7 @@ export default function Salida({ id }) {
       </div>
 
       <SeaCard tripId={trip.id} />
+      {trip.center_destination && <details className="fold"><summary><h2 style={{ display: 'inline' }}>{t('Avistamientos en {destino}', { destino: trip.center_destination })}</h2></summary><Sightings area={trip.center_destination} title={false} allowAdd={false} /></details>}
 
       {trip.sites?.length > 0 && (() => {
         // Regla de 0 a 40 m, o hasta el máximo de la salida redondeado a 10 si algún punto pasa de 40 m
@@ -250,6 +255,7 @@ export default function Salida({ id }) {
             {center?.phone && <a className="btn small ghost" href={'https://wa.me/' + center.phone.replace(/\D/g, '')} target="_blank" rel="noreferrer">WhatsApp</a>}
             <a className="btn small ghost" href={'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(trip.center_name + ' ' + (center?.destination || trip.center_destination || ''))} target="_blank" rel="noreferrer">{t('Mapa')}</a>
             <button type="button" className="btn small ghost" onClick={share}>{t('Compartir')}</button>
+            {session && !isCenter && <FollowButton type="center" id={trip.center_id} />}
           </div>
         </div>
         {shared && <div className="msg ok" role="status">{shared}</div>}
@@ -308,7 +314,7 @@ export default function Salida({ id }) {
 
           {session && (
             <Step n={2} title={t('Tus datos para el centro')}>
-              <ProfileData trip={trip} diver={diver} certs={certs} need={need} course={course} levelOk={levelOk} medical={medical} sinceDive={sinceDive} />
+              <ProfileData trip={trip} diver={diver} certs={certs} need={need} course={course} levelOk={levelOk} medical={medical} medicalReq={medicalReq} sinceDive={sinceDive} />
               {diver && <DanCard diver={diver} compact />}
             </Step>
           )}
@@ -468,7 +474,7 @@ function PdRow({ ok, warn, label, children }) {
   )
 }
 
-function ProfileData({ trip, diver, certs, need, course, levelOk, medical, sinceDive }) {
+function ProfileData({ trip, diver, certs, need, course, levelOk, medical, medicalReq, sinceDive }) {
   if (!diver) return null
   const fix = <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Completar en el perfil')}</Link>
   const best = certs.reduce((m, c) => (!m || levelRank(c.level) > levelRank(m.level) ? c : m), null)
@@ -481,11 +487,11 @@ function ProfileData({ trip, diver, certs, need, course, levelOk, medical, since
       <p className="small muted" style={{ margin: '0 0 8px' }}>{t('Se envía al centro con tu reserva. Se cambia en tu perfil.')}</p>
       <ul className="pd-list">
         <PdRow ok={levelOk} warn label={t('Certificación')}>
-          {best ? (best.agency ? best.agency + ' ' : '') + levelName(best.level) : (course && !need ? t('Este curso no pide certificación previa') : t('Sin certificación'))}
+          {noCert(trip) ? t('No hace falta para esta actividad') : best ? (best.agency ? best.agency + ' ' : '') + levelName(best.level) : (course && !need ? t('Este curso no pide certificación previa') : t('Sin certificación'))}
           {!levelOk && <>{' · '}{best && need ? t('Esta salida requiere {nivel}.', { nivel: levelName(need) }) + ' ' : ''}{fix}</>}
         </PdRow>
         <PdRow ok={medical} warn label={t('Cuestionario médico')}>
-          {medical ? <>{medicalLabel(diver)} · {t('hasta el {fecha}', { fecha: day(until) })}</>
+          {!medicalReq ? t('No hace falta para el esnórquel') : medical ? <>{medicalLabel(diver)} · {t('hasta el {fecha}', { fecha: day(until) })}</>
             : <>{until ? t('Tu cuestionario médico caducó') : t('Falta el cuestionario médico')} · {fix}</>}
         </PdRow>
         <PdRow ok={sinceDive != null && sinceDive <= 365} label={t('Última inmersión')}>

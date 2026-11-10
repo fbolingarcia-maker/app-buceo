@@ -197,6 +197,15 @@ ${button(url, r.due > 0 && !r.pay_on_site ? s.payBtn : s.viewBtn)}${foot(s.forec
     const who = b(name) + (level ? ' (' + esc(String(level).replace('_', ' ')) + ')' : '')
     return { subject: s.buddySubj(name, dest), html: wrap(l, `<h2>DivingSlot 🤿</h2><p>${s.buddyBody(who, b(center), esc(when(departs, l)))}</p>${button(url, s.tripBtn)}${foot(s.buddyFoot)}`) }
   },
+  // Invitación al equipo de un centro (11 nov): responsable o guía. Español o inglés (el resto de idiomas, inglés)
+  teamInvite: (center, role, url, lang) => {
+    const l = mailLang(lang) === 'es' ? 'es' : 'en'
+    const T = {
+      es: { s: `Te invitan al equipo de ${center} en DivingSlot`, b: `${b(center)} te invita a su equipo en DivingSlot como ${role === 'guide' ? '<b>guía</b>: verás las salidas que te asignen, el manifiesto y podrás hacer el check-in con QR' : '<b>responsable</b>: podrás gestionar salidas, reservas y cobros del centro'}.`, btn: 'Aceptar la invitación', f: 'Entra o crea tu cuenta con este mismo email. La invitación caduca en 7 días.' },
+      en: { s: `You're invited to join ${center} on DivingSlot`, b: `${b(center)} invites you to its team on DivingSlot as ${role === 'guide' ? 'a <b>guide</b>: you will see the trips assigned to you, the manifest, and check divers in with a QR code' : 'a <b>manager</b>: you will manage the centre\'s trips, bookings and payments'}.`, btn: 'Accept the invitation', f: 'Log in or sign up with this same email. The invitation expires in 7 days.' },
+    }[l]
+    return { subject: T.s, html: wrap(l, `<h2>DivingSlot 🤿</h2><p>${T.b}</p>${button(url, T.btn)}${foot(T.f)}`) }
+  },
   // Plazas de última hora en un destino que el buceador sigue
   lastMinute: (center, dest, departs, free, unit, price, url, lang) => {
     const [l, s] = L(lang)

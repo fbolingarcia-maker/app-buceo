@@ -19,9 +19,14 @@ const store = {
 }
 const isNetErr = (error) => !navigator.onLine || /fetch|network|conexi|Load failed/i.test(error?.message || '')
 
+import { GuideAssign, QrCheckin, activityName } from '../lib/comunidad'
+
 export default function CentroAgenda() {
-  const { center, verified } = useAuth()
+  const { center, verified, readOnly } = useAuth()
   const today = manilaDate()
+  // Equipo y guías asignados (11 nov)
+  const [team, setTeam] = useState([])
+  const [tg, setTg] = useState([])
   const [day, setDay] = useState(() => hashParam('dia') || today)
   const [trips, setTrips] = useState(null)
   const [msg, setMsg] = useState(null)
@@ -49,6 +54,12 @@ export default function CentroAgenda() {
     if (day === today) for (const n of [1, 2]) fetchDay(addDays(today, n)).catch(() => {})
   }, [center.id, day, fetchDay, today])
   useEffect(() => { setTrips(null); load() }, [load])
+  const loadGuides = useCallback(() => {
+    const [from, to] = dayRange(day)
+    supabase.rpc('trip_guides_list', { p_center: center.id, p_from: from, p_to: to }).then(({ data }) => setTg(Array.isArray(data) ? data : []))
+  }, [center.id, day])
+  useEffect(() => { loadGuides() }, [loadGuides])
+  useEffect(() => { supabase.rpc('team_list', { p_center: center.id }).then(({ data }) => setTeam(data?.members || [])) }, [center.id])
   useEffect(() => () => clearTimeout(timer.current), [])
   // Al volver la red: envía los check-in pendientes
   useEffect(() => {
@@ -98,9 +109,9 @@ export default function CentroAgenda() {
 
   return (
     <>
-      <div className="row between">
+      <div className="row between wrap" style={{ gap: 8 }}>
         <h1>{t('Agenda')}</h1>
-        <Link to="/centro/nueva" className="btn small">{t('+ Salida')}</Link>
+        <span className="row wrap" style={{ gap: 6 }}>{!readOnly && <QrCheckin onDone={() => load()} />}<Link to="/centro/nueva" className="btn small">{t('+ Salida')}</Link></span>
       </div>
       <div className="days" role="group" aria-label={t('Día')}>
         {Array.from({ length: 17 }, (_, i) => addDays(today, i - 3)).map((d) => (
@@ -114,7 +125,8 @@ export default function CentroAgenda() {
       {trips === null && <p className="muted">{t('Cargando…')}</p>}
       {trips === false && <div className="msg err" role="alert">{t('No se pudo cargar la agenda.')} <button type="button" className="linkish" onClick={() => { setTrips(null); load() }}>{t('Reintentar')}</button></div>}
       {trips?.length === 0 && <div className="card muted center">{t('No hay salidas este día.')} <Link to="/centro/nueva">{t('Crear una')}</Link></div>}
-      {trips && trips.map((tr) => <TripCard key={tr.id} t={tr} center={center} verified={verified} run={run} busy={busy} defaultOpen={trips.length === 1} offline={!!offline} offlineCheckin={offlineCheckin} />)}
+      {trips && trips.map((tr) => <TripCard key={tr.id} t={tr} center={center} verified={verified} run={run} busy={busy} defaultOpen={trips.length === 1} offline={!!offline} offlineCheckin={offlineCheckin}
+        guides={<GuideAssign trip={tr} team={team} assigned={tg.filter((g) => g.trip_id === tr.id)} onSaved={loadGuides} readOnly={readOnly} />} />)}
       {msg && (
         <div className={msg.ok ? 'toast' : 'toast err'} role={msg.ok ? 'status' : 'alert'} aria-live="polite">
           <span>{msg.text}</span>
@@ -158,7 +170,7 @@ function LastMinute({ trip, run, busy, free }) {
   )
 }
 
-function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, offlineCheckin }) {
+function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, offlineCheckin, guides }) {
   const [open, setOpen] = useState(defaultOpen)
   const [printing, setPrinting] = useState(false)
   const donePrint = useCallback(() => setPrinting(false), [])
@@ -195,7 +207,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
         style={{ width: '100%', color: 'inherit', alignItems: 'flex-start' }}>
         <div>
           <div className="big">{time(trip.departs_at)} · {trip.boats?.name}</div>
-          <div className="small muted">{t('{n} inm.', { n: trip.num_dives })} · {t('mín. {level}', { level: levelName(trip.min_level) })} · {php(trip.price_php)} · {sites.join(', ') || t('sin puntos')}</div>
+          <div className="small muted">{trip.activity && trip.activity !== 'scuba' ? activityName(trip.activity) : <>{t('{n} inm.', { n: trip.num_dives })} · {t('mín. {level}', { level: levelName(trip.min_level) })}</>} · {php(trip.price_php)} · {sites.join(', ') || t('sin puntos')}</div>
         </div>
         <span className="row wrap" style={{ gap: 6, justifyContent: 'flex-end' }}>{!started && !offline && <SeaChip tripId={trip.id} />}{trip.last_minute_pct > 0 && !started && <span className="pill lastmin">−{trip.last_minute_pct} %</span>}<span className={statusCls}>{TRIP_STATUS[trip.status]}</span><span className="small muted" aria-hidden>{open ? '▲' : '▼'}</span></span>
       </button>
@@ -207,6 +219,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
         <span>{t('Libres en app')} <b>{s.appFree}</b></span>
         <span>{t('Check-in')} <b>{checked}/{s.booked}</b></span>
       </div>
+      {guides}
 
       {open && (
         <>

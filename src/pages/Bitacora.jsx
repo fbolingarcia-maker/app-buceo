@@ -9,6 +9,7 @@ import Icon from '../lib/Icon'
 import DepthBar from '../lib/DepthBar'
 import { ChevronRight, PencilLine, Star, Waves } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
+import { ProgressCard } from '../lib/comunidad'
 
 // Descarga la bitácora como CSV (se abre en Excel / Google Sheets)
 function exportCsv(logs) {
@@ -110,6 +111,10 @@ export default function Bitacora() {
 
   return (
     <>
+      <div className="seg" role="group" aria-label={t('Bitácora')} style={{ marginBottom: 10 }}>
+        <Link to="/bitacora" className="on" aria-current="page">{t('Mi bitácora')}</Link>
+        <Link to="/muro">{t('Muro')}</Link>
+      </div>
       <div className="row between wrap" style={{ gap: 8, marginBottom: 12 }}>
         <h1 style={{ margin: 0 }}>{t('Mi bitácora')}</h1>
         <div className="row" style={{ gap: 6 }}>
@@ -119,6 +124,7 @@ export default function Bitacora() {
         </div>
       </div>
       {error && <div className="msg err" role="alert">{error}</div>}
+      <ProgressCard />
 
       <div className="card log-stats">
         <div className="statrow">

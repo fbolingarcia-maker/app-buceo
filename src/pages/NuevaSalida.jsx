@@ -15,7 +15,7 @@ export default function NuevaSalida({ id }) {
     boat_id: '', date: addDays(manilaDate(), 1), hour: '07:30', num_dives: 3, min_level: 'open_water',
     price_php: 5500, gear_rental_php: 800, guides: 2, divers_per_guide: center?.default_divers_per_guide || 4,
     seat_override: '', blocked_seats: 0, sites: ['', '', ''], publish: true, include_fees: false, fees_per_diver: '',
-    early_pct: 0, early_days: 14, kind: 'fun', course_name: '', course_days: '', course_prereq: '', repeat: 0,
+    early_pct: 0, early_days: 14, kind: 'fun', activity: 'scuba', course_name: '', course_days: '', course_prereq: '', repeat: 0,
   })
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function NuevaSalida({ id }) {
         sites: Array.from({ length: data.num_dives }, (_, i) => ts.find((x) => x.position === i + 1)?.site_id || ''),
         publish: data.status !== 'draft', status: data.status,
         include_fees: !!data.include_fees, fees_per_diver: data.fees_per_diver ?? '',
-        early_pct: data.early_pct || 0, early_days: data.early_days || 14, kind: data.kind || 'fun', course_name: data.course_name || '', course_days: data.course_days ?? '', course_prereq: data.course_prereq || '', repeat: 0,
+        early_pct: data.early_pct || 0, early_days: data.early_days || 14, kind: data.kind || 'fun', activity: data.activity || 'scuba', course_name: data.course_name || '', course_days: data.course_days ?? '', course_prereq: data.course_prereq || '', repeat: 0,
       })
       setHasBookings((data.bookings || []).some((b) => ['pending_payment', 'confirmed'].includes(b.status)))
       setLoaded(true)
@@ -72,7 +72,7 @@ export default function NuevaSalida({ id }) {
       price_php: f.price_php, gear_rental_php: f.gear_rental_php || 0, guides: f.guides, divers_per_guide: f.divers_per_guide,
       seat_override: f.seat_override === '' ? null : f.seat_override, blocked_seats: f.blocked_seats || 0,
       include_fees: !!f.include_fees, fees_per_diver: f.include_fees && f.fees_per_diver !== '' ? +f.fees_per_diver : null,
-      early_pct: +f.early_pct || 0, early_days: +f.early_days || 14, kind: f.kind,
+      early_pct: +f.early_pct || 0, early_days: +f.early_days || 14, kind: f.kind, activity: f.kind === 'course' ? 'scuba' : f.activity,
       course_name: f.kind === 'course' ? f.course_name.trim() || null : null, course_days: f.kind === 'course' && f.course_days !== '' ? +f.course_days : null,
       course_prereq: f.kind === 'course' ? f.course_prereq || null : null,
     }
@@ -110,9 +110,13 @@ export default function NuevaSalida({ id }) {
       ) : (
         <form className="card" onSubmit={save}>
           <div className="seg" role="group" aria-label={t('Tipo')}>
-            <button type="button" className={f.kind === 'fun' ? 'on' : ''} aria-pressed={f.kind === 'fun'} onClick={() => setF({ ...f, kind: 'fun' })}>{t('Salida de buceo')}</button>
-            <button type="button" className={f.kind === 'course' ? 'on' : ''} aria-pressed={f.kind === 'course'} onClick={() => setF({ ...f, kind: 'course', num_dives: Math.min(f.num_dives, 2) })}>{t('Curso')}</button>
+            <button type="button" className={f.kind === 'fun' && f.activity === 'scuba' ? 'on' : ''} aria-pressed={f.kind === 'fun' && f.activity === 'scuba'} onClick={() => setF({ ...f, kind: 'fun', activity: 'scuba' })}>{t('Salida de buceo')}</button>
+            <button type="button" className={f.kind === 'course' ? 'on' : ''} aria-pressed={f.kind === 'course'} onClick={() => setF({ ...f, kind: 'course', activity: 'scuba', num_dives: Math.min(f.num_dives, 2) })}>{t('Curso')}</button>
+            {[['snorkel', 'Esnórquel'], ['freedive', 'Apnea'], ['try_dive', 'Bautismo']].map(([k, n]) => (
+              <button key={k} type="button" className={f.kind === 'fun' && f.activity === k ? 'on' : ''} aria-pressed={f.kind === 'fun' && f.activity === k} onClick={() => setF({ ...f, kind: 'fun', activity: k, num_dives: k === 'try_dive' ? 1 : f.num_dives })}>{t(n)}</button>
+            ))}
           </div>
+          {f.kind === 'fun' && f.activity !== 'scuba' && <p className="small muted">{f.activity === 'snorkel' ? t('Esnórquel: no pide certificación ni cuestionario médico. Ideal para acompañantes.') : f.activity === 'freedive' ? t('Apnea: no pide certificación de buceo; sí el cuestionario médico.') : t('Bautismo (Discover Scuba Diving): para quien no tiene certificación. Pide el cuestionario médico.')}</p>}
           {f.kind === 'course' && (
             <div className="grid3">
               <div className="field"><label htmlFor="ns-cn">{t('Nombre del curso')}</label><input id="ns-cn" required maxLength={80} placeholder={t('p. ej. Open Water, Advanced, Nitrox')} value={f.course_name} onChange={set('course_name')} /></div>
@@ -124,10 +128,10 @@ export default function NuevaSalida({ id }) {
             <div className="field"><label htmlFor="nuevasalida-1">{t('Día')}</label><input id="nuevasalida-1" type="date" required value={f.date} min={id ? undefined : manilaDate()} onChange={set('date')} /></div>
             <div className="field"><label htmlFor="nuevasalida-2">{t('Hora (Manila)')}</label><input id="nuevasalida-2" type="time" required value={f.hour} onChange={set('hour')} /></div>
             <div className="field"><label htmlFor="nuevasalida-3">{t('Barco')}</label><select id="nuevasalida-3" value={f.boat_id} onChange={set('boat_id')}>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.capacity})</option>)}</select></div>
-            <div className="field"><label htmlFor="nuevasalida-4">{t('Inmersiones')}</label><select id="nuevasalida-4" value={f.num_dives} onChange={(e) => {
+            <div className="field"><label htmlFor="nuevasalida-4">{f.activity === 'snorkel' ? t('Paradas') : t('Inmersiones')}</label><select id="nuevasalida-4" value={f.num_dives} onChange={(e) => {
               const n = +e.target.value; setF({ ...f, num_dives: n, sites: Array.from({ length: n }, (_, i) => f.sites[i] || '') })
             }}>{[1, 2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}</select></div>
-            <div className="field"><label htmlFor="nuevasalida-5">{t('Nivel mínimo')}</label><select id="nuevasalida-5" value={f.min_level} onChange={set('min_level')}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>
+            {f.activity === 'scuba' && <div className="field"><label htmlFor="nuevasalida-5">{t('Nivel mínimo')}</label><select id="nuevasalida-5" value={f.min_level} onChange={set('min_level')}>{LEVELS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></div>}
             <div className="field"><label htmlFor="nuevasalida-6">{t('Precio (₱/buceador)')}</label><input id="nuevasalida-6" type="number" inputMode="numeric" min="1" required value={f.price_php} onChange={set('price_php', true)} /></div>
             <div className="field"><label htmlFor="nuevasalida-7">{t('Alquiler equipo (₱)')}</label><input id="nuevasalida-7" type="number" inputMode="numeric" min="0" value={f.gear_rental_php} onChange={set('gear_rental_php', true)} /></div>
             <div className="field"><label htmlFor="nuevasalida-8">{t('Guías')}</label><input id="nuevasalida-8" type="number" inputMode="numeric" min="1" max="15" required value={f.guides} onChange={set('guides', true)} /></div>

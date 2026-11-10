@@ -6,6 +6,7 @@ import { php } from './format'
 import { t } from './i18n'
 import Icon from './Icon'
 import { Lock } from 'lucide-react'
+import { useAuth } from './auth'
 
 export const HOLD_MIN = 15
 
@@ -28,7 +29,11 @@ export function PayBox({ b, bs, mode, onDone }) {
   const sum = (f) => list.reduce((n, x) => n + f(x), 0)
   const balance = sum((x) => x.amount_php - x.paid_php)
   const [kind, setKind] = useState(pending ? 'deposit' : 'balance')
-  const [method, setMethod] = useState(() => { try { return localStorage.getItem(METHOD_KEY) || 'gcash' } catch (e) { return 'gcash' } })
+  // Pago en un toque (11 nov): el método preferido se guarda en el perfil; con él, un solo botón y «Cambiar»
+  const { diver } = useAuth()
+  const saved = (() => { try { return diver?.pay_method || localStorage.getItem(METHOD_KEY) } catch (e) { return diver?.pay_method || null } })()
+  const [method, setMethod] = useState(saved || 'gcash')
+  const [choosing, setChoosing] = useState(!saved)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const amount = kind === 'deposit' ? sum((x) => Math.max(0, x.deposit_php - x.paid_php)) : balance
@@ -45,6 +50,7 @@ export function PayBox({ b, bs, mode, onDone }) {
       return onDone(null, list[0].id)
     }
     try { localStorage.setItem(METHOD_KEY, method) } catch (e) { /* sin almacenamiento */ }
+    if (diver && diver.pay_method !== method) supabase.rpc('set_pay_method', { p_method: method }).then(() => {}, () => {})
     const { data, error } = await supabase.functions.invoke('crear-pago', {
       body: { booking_id: list[0].id, booking_ids: list.map((x) => x.id), kind, method, return_url: siteUrl() },
     })
@@ -61,7 +67,10 @@ export function PayBox({ b, bs, mode, onDone }) {
           <button className={kind === 'full' ? 'on' : ''} onClick={() => setKind('full')}>{t('Todo · {amount}', { amount: php(balance) })}</button>
         </div>
       ) : null}
-      {mode !== 'demo' && (
+      {mode !== 'demo' && !choosing && (
+        <p className="small" style={{ margin: '0 0 6px' }}>{t('Pagas con {metodo}.', { metodo: method === 'card' ? t('tarjeta') : label })} <button type="button" className="linkish small" onClick={() => setChoosing(true)}>{t('Cambiar método')}</button></p>
+      )}
+      {mode !== 'demo' && choosing && (
         <div className="seg" role="group" aria-label={t('Método de pago')}>
           {METHODS.map(([k, n]) => <button key={k} className={method === k ? 'on' : ''} aria-pressed={method === k} onClick={() => setMethod(k)}>{k === 'card' ? t(n) : n}</button>)}
         </div>

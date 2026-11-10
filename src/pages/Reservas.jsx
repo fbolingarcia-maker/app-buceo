@@ -11,6 +11,7 @@ import { PendingBuddyRatings } from '../lib/buddy'
 import { DanCard, SeaChip } from '../lib/extras'
 import { NoFlyBanner, ReviewForm, TripChat, InstallButton } from '../lib/plus'
 import { PayBox, fnError, holdEnd } from '../lib/pay'
+import { CheckinPass } from '../lib/comunidad'
 
 function addToCalendar(b) {
   const a = document.createElement('a')
@@ -238,6 +239,7 @@ export default function Reservas() {
         {active && future && balance > 0 && !b.pay_on_site && <PayBox b={b} mode={mode} onDone={(m, paidId) => { setInfo(m || ''); if (paidId) setJustPaid(paidId); load() }} />}
         {active && future && (
           <div className="bk-actions">
+            {b.status === 'confirmed' && <CheckinPass booking={b} />}
             {b.status === 'confirmed' && (
               <button type="button" className="btn small ghost" onClick={() => addToCalendar(b)}><Icon icon={CalendarPlus} /> {t('Añadir al calendario')}</button>
             )}

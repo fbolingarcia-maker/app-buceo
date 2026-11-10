@@ -157,7 +157,8 @@ CREATE TABLE IF NOT EXISTS trips (
   kind TEXT NOT NULL DEFAULT 'fun' CHECK (kind IN ('fun', 'course')),
   course_name TEXT CHECK (length(course_name) <= 80),
   course_days INTEGER CHECK (course_days BETWEEN 1 AND 14),
-  course_prereq TEXT CHECK (course_prereq IN ('open_water', 'advanced', 'rescue', 'divemaster', 'instructor'))
+  course_prereq TEXT CHECK (course_prereq IN ('open_water', 'advanced', 'rescue', 'divemaster', 'instructor')),
+  activity TEXT NOT NULL DEFAULT 'scuba' CHECK (activity IN ('scuba', 'snorkel', 'freedive', 'try_dive'))
 );
 
 CREATE TABLE IF NOT EXISTS trip_sites (
@@ -194,7 +195,9 @@ CREATE TABLE IF NOT EXISTS divers (
   alert_destinations TEXT NOT NULL DEFAULT '[]',
   insurance_provider TEXT CHECK (length(insurance_provider) <= 60),
   insurance_expiry TEXT,
-  insurance_reminded_for TEXT
+  insurance_reminded_for TEXT,
+  public_profile INTEGER NOT NULL DEFAULT 0,
+  pay_method TEXT CHECK (pay_method IN ('gcash', 'paymaya', 'qrph', 'card', 'grab_pay'))
 );
 
 CREATE TABLE IF NOT EXISTS certifications (
@@ -369,7 +372,8 @@ CREATE TABLE IF NOT EXISTS dive_logs (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   signed_by_center TEXT,
-  signed_at TEXT
+  signed_at TEXT,
+  share_public INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS dive_log_photos (
@@ -395,6 +399,53 @@ CREATE TABLE IF NOT EXISTS buddy_ratings (
   UNIQUE (trip_id, rater_id, rated_id),
   CHECK (rater_id <> rated_id),
   CHECK (coalesce(buoyancy, air, awareness, safety, reef) IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS center_invites (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',1+(abs(random())%4),1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))),
+  center_id TEXT NOT NULL REFERENCES centers(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('manager', 'guide')),
+  token_hash TEXT NOT NULL UNIQUE,
+  invited_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  expires_at TEXT NOT NULL,
+  accepted_at TEXT,
+  accepted_by TEXT REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS center_guides (
+  center_id TEXT NOT NULL REFERENCES centers(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  PRIMARY KEY (center_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS trip_guides (
+  trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assigned_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  PRIMARY KEY (trip_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id TEXT NOT NULL REFERENCES divers(id) ON DELETE CASCADE,
+  target_type TEXT NOT NULL CHECK (target_type IN ('diver', 'center')),
+  target_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  PRIMARY KEY (follower_id, target_type, target_id)
+);
+
+CREATE TABLE IF NOT EXISTS sightings (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',1+(abs(random())%4),1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))),
+  site_id TEXT NOT NULL REFERENCES dive_sites(id) ON DELETE CASCADE,
+  species TEXT NOT NULL CHECK (length(species) BETWEEN 2 AND 40),
+  note TEXT CHECK (length(note) <= 200),
+  seen_on TEXT NOT NULL,
+  center_id TEXT REFERENCES centers(id) ON DELETE SET NULL,
+  diver_id TEXT REFERENCES divers(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
 CREATE TABLE IF NOT EXISTS platform_admins (
@@ -464,7 +515,8 @@ SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t
      FROM bookings b JOIN divers d ON d.id = b.diver_id WHERE b.trip_id = t.id AND (b.status = 'confirmed' OR (b.status = 'pending_payment' AND max(strftime('%Y-%m-%dT%H:%M:%fZ', b.created_at, '+15 minutes'), coalesce(b.hold_until, '')) > (strftime('%Y-%m-%dT%H:%M:%fZ','now')))) AND d.seeks_buddy = 1 AND d.show_on_trips = 1) AS buddy_seekers,
   (SELECT count(*) FROM trip_waitlist w WHERE w.trip_id = t.id AND w.status = 'waiting') AS waitlist,
   (SELECT round(avg(r.rating), 1) FROM center_reviews r WHERE r.center_id = c.id) AS center_rating,
-  (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews
+  (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews,
+  t.activity
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified';
 
@@ -523,5 +575,19 @@ CREATE INDEX IF NOT EXISTS docs_center ON center_documents(center_id);
 CREATE INDEX IF NOT EXISTS audit_at ON admin_audit(at);
 
 CREATE INDEX IF NOT EXISTS extras_center ON center_extras(center_id);
+
+CREATE INDEX IF NOT EXISTS invites_center ON center_invites(center_id);
+
+CREATE INDEX IF NOT EXISTS guides_user ON center_guides(user_id);
+
+CREATE INDEX IF NOT EXISTS trip_guides_user ON trip_guides(user_id);
+
+CREATE INDEX IF NOT EXISTS follows_target ON follows(target_type, target_id);
+
+CREATE INDEX IF NOT EXISTS sightings_site ON sightings(site_id, seen_on);
+
+CREATE INDEX IF NOT EXISTS sightings_seen ON sightings(seen_on);
+
+CREATE INDEX IF NOT EXISTS logs_public ON dive_logs(share_public, created_at);
 
 INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');
