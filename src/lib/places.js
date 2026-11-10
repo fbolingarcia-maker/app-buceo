@@ -46,6 +46,9 @@ export const EXTRA_AREAS = {
   'Puerto Galera': ['Verde Island'],
   'Sogod Bay': ['Southern Leyte'],
   'Puerto Princesa': ['Tubbataha'],
+  // Apo Reef se bucea desde Sablayan y desde Pandan Island; la Manta Bowl (Ticao Pass), desde Ticao y desde Donsol
+  'Apo Reef': ['Pandan Island'],
+  'Ticao Island': ['Donsol'],
 }
 
 // Destino desde el que se bucea una zona de puntos de buceo
