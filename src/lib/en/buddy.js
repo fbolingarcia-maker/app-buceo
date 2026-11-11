@@ -50,7 +50,7 @@ export default {
   // Valorar
   'Valora a tus buddies': 'Rate your buddies',
   'Tu valoración es anónima': 'Your rating is anonymous',
-  'Nadie ve quién ha valorado ni tus notas sueltas: solo la media, cuando tenga al menos 3 valoraciones. Se suma cuando los dos hayáis valorado o al cerrar el plazo.': "Nobody sees who rated or your individual scores: only the average, once there are at least 3 ratings. It counts when you've both rated each other or when the window closes.",
+  'Nadie ve quién ha valorado ni tus notas sueltas: solo la media, cuando le hayan valorado al menos 3 buceadores distintos. Se suma cuando los dos hayáis valorado o al cerrar el plazo.': "Nobody sees who rated or your individual scores: only the average, once at least 3 different divers have rated. It counts when you've both rated each other or when the window closes.",
   'Queda 1 día para valorar.': '1 day left to rate.',
   'Quedan {n} días para valorar.': '{n} days left to rate.',
   'No hay compañeros que valorar en esta salida. Solo se puede valorar a quien tiene activadas las valoraciones y estuvo a bordo (check-in), en los {n} días siguientes.': 'There are no buddies to rate on this trip. You can only rate divers who have ratings turned on and were on board (checked in), within {n} days.',

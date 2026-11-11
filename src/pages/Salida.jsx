@@ -198,8 +198,15 @@ export default function Salida({ id }) {
       <h1 style={{ marginTop: 8 }}>{trip.center_name}</h1>
       {trip.available_seats > 0 && !isCenter && (
         <div className="row between" style={{ gap: 8, marginBottom: 12 }}>
-          <span className="muted small">{t('{n} plazas', { n: trip.available_seats })} · <PriceTag trip={trip} /> <LastMinuteTag trip={trip} /></span>
+          <span className="muted small">{t('{n} plazas', { n: trip.available_seats })} · <PriceTag trip={trip} />{fees > 0 && <> + {php(fees)} {t('de tasas')}</>} <LastMinuteTag trip={trip} /></span>
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
+        </div>
+      )}
+      {/* Lo que impide reservar se dice arriba, no solo junto al botón de pago del final */}
+      {session && diver && !isCenter && !booked && trip.available_seats > 0 && (!levelOk || !medical) && (
+        <div className="msg warn" role="status" style={{ marginTop: 0 }}>
+          <b>{t('Antes de reservar')}:</b> {[!levelOk && t('certificación {nivel} o superior', { nivel: levelName(need) }), !medical && t('cuestionario médico al día')].filter(Boolean).join(' · ')}
+          {' · '}<Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Completar en el perfil')}</Link>
         </div>
       )}
       <div className="card stack facts">
@@ -268,7 +275,7 @@ export default function Salida({ id }) {
 
       {ctaVisible && trip.available_seats > 0 && !isCenter && !booked && (
         <div className="sticky-cta">
-          <span><span className="small muted">{t('Total')}</span> <b>{php(total)}</b> <span className="small muted">· {seats > 1 ? t('{n} plazas', { n: seats }) : t('{n} plaza', { n: 1 })}</span></span>
+          <span><span className="small muted">{t('Total')}</span> <b>{php(total)}</b> <span className="small muted">· {seats > 1 ? t('{n} plazas', { n: seats }) : t('{n} plaza', { n: 1 })}{fees > 0 && <> · {t('tasas incluidas')}</>}</span></span>
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
         </div>
       )}

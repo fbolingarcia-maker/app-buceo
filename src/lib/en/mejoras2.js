@@ -210,4 +210,17 @@ export default {
   'Plaza retenida {n} min': 'Spot held for {n} min',
   'Paga al menos la señal del 50 % ({amount}) para confirmarla.': 'Pay at least the 50% deposit ({amount}) to confirm it.',
   'También puedes pagarla más tarde en': 'You can also pay later in',
+  // Revisión del 11 nov: precio con tasas, qué falta para reservar, nivel aplicado y valoraciones de buddies
+  'de tasas': 'in fees',
+  'tasas incluidas': 'fees included',
+  'Antes de reservar': 'Before you book',
+  'certificación {nivel} o superior': '{nivel} certification or higher',
+  'cuestionario médico al día': 'an up-to-date medical questionnaire',
+  'Salidas para nivel {nivel}': 'Trips for {nivel} level',
+  'Ver todas': 'Show all',
+  '¿Quieres que tus buddies te valoren también?': 'Want your buddies to rate you too?',
+  'Con 3 buceadores distintos que te valoren, los centros y otros buceadores ven tu media. Nadie ve quién te ha valorado.': 'Once 3 different divers have rated you, centres and other divers see your average. Nobody sees who rated you.',
+  'Activar mis valoraciones': 'Turn on my ratings',
+  'Listo: tus próximos compañeros de salida podrán valorarte. Lo cambias en el perfil.': 'Done: your next dive buddies can rate you. You can change this in your profile.',
 }
+

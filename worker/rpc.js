@@ -93,9 +93,12 @@ const onBoard = async (db, trip, diver) => !!(await first(db,
   "SELECT 1 AS x FROM bookings WHERE trip_id = ? AND diver_id = ? AND checked_in_at IS NOT NULL AND status = 'confirmed'", trip, diver))
 const r2 = (x) => (x == null ? null : Math.round(x * 100) / 100)
 async function buddyStats(db, diver) {
-  const rows = await all(db, `SELECT r.*, (t.departs_at < ? OR EXISTS (SELECT 1 FROM buddy_ratings x WHERE x.trip_id = r.trip_id AND x.rater_id = r.rated_id AND x.rated_id = r.rater_id)) AS shown
+  const rows = await all(db, `SELECT r.*, t.departs_at AS _at, (t.departs_at < ? OR EXISTS (SELECT 1 FROM buddy_ratings x WHERE x.trip_id = r.trip_id AND x.rater_id = r.rated_id AND x.rated_id = r.rater_id)) AS shown
     FROM buddy_ratings r JOIN trips t ON t.id = r.trip_id WHERE r.rated_id = ?`, addDays(nowIso(), -BUDDY_DAYS), diver)
-  const shown = rows.filter((r) => r.shown)
+  // Una sola valoración por buceador (la más reciente): un mismo amigo en 3 salidas no desbloquea la media pública
+  const latest = new Map()
+  for (const r of rows.filter((x) => x.shown)) { const p = latest.get(r.rater_id); if (!p || r._at > p._at) latest.set(r.rater_id, r) }
+  const shown = [...latest.values()]
   const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
   const scores = {}
   for (const k of BUDDY_KEYS) { const a = avg(shown.map((r) => r[k]).filter((v) => v != null)); if (a != null) scores[k] = r2(a) }
@@ -104,7 +107,7 @@ async function buddyStats(db, diver) {
     count: shown.length, raters: new Set(shown.map((r) => r.rater_id)).size,
     overall: r2(avg(shown.flatMap((r) => BUDDY_KEYS.map((k) => r[k]).filter((v) => v != null)))),
     scores, dive_again: again.length ? r2(avg(again.map((r) => (r.dive_again ? 1 : 0)))) : null,
-    pending_reveal: rows.length - shown.length,
+    pending_reveal: rows.filter((x) => !x.shown).length,
   }
 }
 async function buddyPublic(db, diver) {

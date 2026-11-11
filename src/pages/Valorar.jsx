@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { Link } from '../lib/router'
+import { useAuth } from '../lib/auth'
 import { t } from '../lib/i18n'
 import { levelName, dateTime } from '../lib/format'
 import { CRITERIA, ScaleInput, WINDOW_DAYS } from '../lib/buddy'
@@ -31,7 +32,7 @@ export default function Valorar({ tripId }) {
           <Icon icon={EyeOff} size={18} />
           <div className="small">
             <b>{t('Tu valoración es anónima')}</b>
-            <div className="muted">{t('Nadie ve quién ha valorado ni tus notas sueltas: solo la media, cuando tenga al menos 3 valoraciones. Se suma cuando los dos hayáis valorado o al cerrar el plazo.')}</div>
+            <div className="muted">{t('Nadie ve quién ha valorado ni tus notas sueltas: solo la media, cuando le hayan valorado al menos 3 buceadores distintos. Se suma cuando los dos hayáis valorado o al cerrar el plazo.')}</div>
             {daysLeft != null && <div style={{ marginTop: 4 }}>{daysLeft === 1 ? t('Queda 1 día para valorar.') : t('Quedan {n} días para valorar.', { n: daysLeft })}</div>}
           </div>
         </div>
@@ -41,7 +42,33 @@ export default function Valorar({ tripId }) {
         <div className="card muted">{t('No hay compañeros que valorar en esta salida. Solo se puede valorar a quien tiene activadas las valoraciones y estuvo a bordo (check-in), en los {n} días siguientes.', { n: WINDOW_DAYS })}</div>
       )}
       {d?.divers.map((b, i) => <BuddyForm key={b.diver_id} tripId={tripId} b={b} startOpen={i === 0} />)}
+      {d && <OptIn />}
     </>
+  )
+}
+
+// Quien valora es quien más probablemente quiera recibir valoraciones: se le ofrece aquí, sin ir al perfil
+function OptIn() {
+  const { diver, refresh } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+  if (!diver || (diver.buddy_ratings_enabled && !done)) return null
+  if (done) return <div className="msg ok" role="status">{t('Listo: tus próximos compañeros de salida podrán valorarte. Lo cambias en el perfil.')}</div>
+  async function enable() {
+    setBusy(true); setError('')
+    const { error } = await supabase.from('divers').update({ buddy_ratings_enabled: true }).eq('id', diver.id)
+    setBusy(false)
+    if (error) return setError(errMsg(error))
+    setDone(true); refresh()
+  }
+  return (
+    <div className="card" style={{ marginTop: 12 }}>
+      <b>{t('¿Quieres que tus buddies te valoren también?')}</b>
+      <p className="small muted" style={{ margin: '4px 0 10px' }}>{t('Con 3 buceadores distintos que te valoren, los centros y otros buceadores ven tu media. Nadie ve quién te ha valorado.')}</p>
+      <button type="button" className="btn small ghost" disabled={busy} onClick={enable}>{t('Activar mis valoraciones')}</button>
+      {error && <div className="msg err" role="alert">{error}</div>}
+    </div>
   )
 }
 

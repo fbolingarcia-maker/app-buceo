@@ -218,6 +218,12 @@ export default function Explorar() {
         <button type="button" className={kind === 'nocert' ? 'filter-btn on' : 'filter-btn'} aria-pressed={kind === 'nocert'} onClick={() => setKind(kind === 'nocert' ? '' : 'nocert')}><Icon icon={Waves} size={16} />{t('Sin certificación')}</button>
         <button type="button" className="filter-btn" onClick={() => { setView(view === 'map' ? 'list' : 'map'); setPin(null) }} aria-pressed={view === 'map'}><Icon icon={view === 'map' ? List : MapIcon} size={16} />{view === 'map' ? t('Lista') : t('Mapa')}</button>
       </div>
+      {/* El nivel se pone solo con la certificación del buceador: se dice cuál es y cómo quitarlo */}
+      {level !== 'all' && !panel && (
+        <p className="small muted" style={{ margin: '-4px 0 8px' }}>
+          {t('Salidas para nivel {nivel}', { nivel: levelName(level) })} · <button type="button" className="linkish" onClick={() => { setLevel('all'); ssSet('levelSet', '1') }}>{t('Ver todas')}</button>
+        </p>
+      )}
       {panel && (
         <div className="card filter-panel">
           <div className="field"><label htmlFor="f-level">{t('Tu nivel')}</label>
