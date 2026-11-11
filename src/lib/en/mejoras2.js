@@ -222,5 +222,15 @@ export default {
   'Con 3 buceadores distintos que te valoren, los centros y otros buceadores ven tu media. Nadie ve quién te ha valorado.': 'Once 3 different divers have rated you, centres and other divers see your average. Nobody sees who rated you.',
   'Activar mis valoraciones': 'Turn on my ratings',
   'Listo: tus próximos compañeros de salida podrán valorarte. Lo cambias en el perfil.': 'Done: your next dive buddies can rate you. You can change this in your profile.',
+  // Seguridad del 11 nov: dos pasos obligatorios, anti-bots y copias de seguridad
+  'Activa la verificación en dos pasos': 'Turn on two-step verification',
+  'Tu cuenta gestiona un centro o la plataforma y puede ver datos médicos, seguros y cobros de los buceadores. Para protegerlos, la verificación en dos pasos es obligatoria. Tarda un minuto.': "Your account manages a centre or the platform and can see divers' medical data, insurance and payments. To protect them, two-step verification is required. It takes a minute.",
+  'Copia hecha: {n} filas en {k} tablas.': 'Backup done: {n} rows in {k} tables.',
+  'Copia de seguridad': 'Backup',
+  'última: {fecha}, {n} filas': 'last: {fecha}, {n} rows',
+  'aún no hay ninguna': 'none yet',
+  'cada lunes de madrugada, se guardan 12 semanas': 'every Monday early morning, kept for 12 weeks',
+  'Copiando…': 'Backing up…',
+  'Hacer copia ahora': 'Back up now',
+  'La comprobación anti-bots no ha funcionado. Espera unos segundos y vuelve a intentarlo.': "The anti-bot check didn't work. Wait a few seconds and try again.",
 }
-

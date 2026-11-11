@@ -15,17 +15,19 @@ export function AuthProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false) // administrador de la plataforma (valida centros)
   const [pendingCenters, setPendingCenters] = useState(0) // centros esperando validación (solo admin)
   const [needsMfa, setNeedsMfa] = useState(false) // contraseña correcta, falta el código de dos pasos
+  const [mfaSetup, setMfaSetup] = useState(false) // administrador o equipo de centro sin dos pasos: tiene que activarlos
   // Administrador: «Ver como» admin | diver | center (y qué centro mira, en solo lectura)
   const [viewAs, setViewAsState] = useState(() => { try { return localStorage.getItem('adminView') || 'admin' } catch (e) { return 'admin' } })
   const [viewCenterId, setViewCenterIdState] = useState(() => { try { return localStorage.getItem('adminCenter') || '' } catch (e) { return '' } })
   const [viewCenter, setViewCenter] = useState(null)
 
   const loadProfile = useCallback(async (s) => {
-    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); setNeedsMfa(false); setGuideOf([]); return }
+    if (!s) { setDiver(null); setCenter(null); setIsAdmin(false); setNeedsMfa(false); setMfaSetup(false); setGuideOf([]); return }
     // Con el segundo paso activado, hasta que no se introduce el código la sesión no vale para nada (mfa_ok() en la base de datos)
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
     const need = aal?.nextLevel === 'aal2' && aal?.currentLevel !== 'aal2'
     setNeedsMfa(need)
+    setMfaSetup(!need && !!aal?.setupRequired)
     if (need) { setDiver(null); setCenter(null); setIsAdmin(false); return }
     supabase.rpc('is_platform_admin').then(({ data }) => {
       setIsAdmin(data === true)
@@ -94,7 +96,7 @@ export function AuthProvider({ children }) {
   const verified = shownCenter?.verification_status === 'verified'
   const value = {
     session, user: session?.user || null, diver, center: shownCenter, ownCenter: center, isCenter, isAdmin, guideOf, pendingCenters, verified, recovering, setRecovering,
-    needsMfa, adminView, setViewAs, viewCenterId, setViewCenterId, readOnly,
+    needsMfa, mfaSetup, adminView, setViewAs, viewCenterId, setViewCenterId, readOnly,
     refresh: () => loadProfile(session),
     signOut: () => supabase.auth.signOut(),
   }

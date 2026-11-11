@@ -51,8 +51,22 @@ export function DosPasosReto() {
   )
 }
 
+// Administradores y equipo de un centro: la verificación en dos pasos es obligatoria (sin ella el servidor no les da
+// acceso a datos médicos, seguros ni cobros). Hasta activarla solo ven esta pantalla.
+export function DosPasosObligatoria() {
+  const { signOut } = useAuth()
+  return (
+    <div style={{ maxWidth: 480, margin: '0 auto' }}>
+      <h1><Icon icon={Lock} size={26} /> {t('Activa la verificación en dos pasos')}</h1>
+      <p className="muted">{t('Tu cuenta gestiona un centro o la plataforma y puede ver datos médicos, seguros y cobros de los buceadores. Para protegerlos, la verificación en dos pasos es obligatoria. Tarda un minuto.')}</p>
+      <DosPasos required />
+      <button type="button" className="btn ghost" style={{ marginTop: 12 }} onClick={() => signOut()}>{t('Salir')}</button>
+    </div>
+  )
+}
+
 // Tarjeta del perfil: activar o desactivar el segundo paso
-export default function DosPasos({ recommend }) {
+export default function DosPasos({ recommend, required }) {
   const { refresh } = useAuth()
   const [factor, setFactor] = useState(undefined) // undefined = cargando, null = desactivada
   const [setup, setSetup] = useState(null) // { id, qr, secret } mientras se activa
@@ -114,8 +128,8 @@ export default function DosPasos({ recommend }) {
         {recommend && !factor && <> <b>{t('Muy recomendable para cuentas de administrador.')}</b></>}
       </p>
       {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
-      {factor === null && !setup && <button type="button" className="btn ghost" disabled={busy} onClick={start}>{t('Activar')}</button>}
-      {factor && <button type="button" className="btn ghost" disabled={busy} onClick={disable}>{t('Desactivar')}</button>}
+      {factor === null && !setup && <button type="button" className={required ? 'btn' : 'btn ghost'} disabled={busy} onClick={start}>{t('Activar')}</button>}
+      {factor && !required && <button type="button" className="btn ghost" disabled={busy} onClick={disable}>{t('Desactivar')}</button>}
       {setup && (
         <form onSubmit={confirm} className="stack">
           <ol className="small" style={{ paddingLeft: 18, margin: 0 }}>

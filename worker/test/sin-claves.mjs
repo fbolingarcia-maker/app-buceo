@@ -9,7 +9,7 @@ import { _resetSecretsCache } from '../lib/secrets.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
-const env = { DB: db, EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', NOTIFY_TO: 'admin@divingslot.test', HEALTH_DETAIL_PUBLIC: '1' }
+const env = { DB: db, EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', STAFF_MFA_OPTIONAL: '1', NOTIFY_TO: 'admin@divingslot.test', HEALTH_DETAIL_PUBLIC: '1' }
 _resetSecretsCache()
 let fails = 0, passes = 0
 const ok = (c, name, extra) => { if (c) passes++; else { fails++; console.log('  ✗', name, extra !== undefined ? JSON.stringify(extra).slice(0, 400) : '') } }

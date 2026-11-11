@@ -10,7 +10,7 @@ import { run } from '../lib/util.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
-const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', GOOGLE_CLIENT_ID: 'cid.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'csecret', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2(),
+const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', GOOGLE_CLIENT_ID: 'cid.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'csecret', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', STAFF_MFA_OPTIONAL: '1', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2(),
   PAYMONGO_SECRET_KEY: 'sk_test_x', PAYMONGO_WEBHOOK_SECRET: 'whsk_x' }
 
 let fails = 0, passes = 0

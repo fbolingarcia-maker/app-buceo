@@ -24,6 +24,7 @@ import { handleHealth } from './health.js'
 import { withSecrets } from './lib/secrets.js'
 import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits, notifyAdmin } from './stats.js'
 import { handleWidget } from './comunidad.js'
+import { backupD1, BACKUP_CRON } from './backup.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
@@ -108,6 +109,8 @@ export default {
   async scheduled(event, env, ectx) {
     env = await withSecrets(env).catch(() => env)
     const onFail = (what) => (e) => { console.error(what, e?.message); alertError(env, ectx, 'la tarea programada (' + what + ')', e) }
+    // Copia de seguridad semanal de D1 en R2 (backup.js); si falla, aviso al administrador
+    if (event?.cron === BACKUP_CRON) return ectx.waitUntil(backupD1(env).then((r) => console.log('backup', JSON.stringify(r))).catch(onFail('copia de seguridad')))
     // Cada 10 min: solo la lista de espera (las ofertas de plaza caducan a los 30 min)
     ectx.waitUntil(processAllWaitlists(env, RPC).catch(onFail('lista de espera')))
     if (event?.cron === '*/10 * * * *') return

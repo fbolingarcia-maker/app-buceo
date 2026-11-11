@@ -9,7 +9,9 @@ const SUPABASE = 'https://tosgzcpnkpsrrkfqctgy.supabase.co'
 const CSP = [
   "default-src 'self'",
   // Cloudflare inserta su analítica (Web Analytics) en las páginas: se permite solo ese script y su envío
-  "script-src 'self' https://static.cloudflareinsights.com",
+  // …y Cloudflare Turnstile (comprobación anti-bots al entrar y crear cuenta), que carga su script y un iframe
+  "script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+  'frame-src https://challenges.cloudflare.com',
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://flagcdn.com https://lh3.googleusercontent.com https://tile.openstreetmap.org " + SUPABASE,
   "connect-src 'self' https://cloudflareinsights.com " + SUPABASE + ' ' + SUPABASE.replace('https://', 'wss://'),

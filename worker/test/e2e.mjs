@@ -33,7 +33,7 @@ fs.writeFileSync(OUT + '/index.html', '<!doctype html><html><head><meta charset=
 const db = new D1(path.join(APP, 'worker/schema.sql'))
 await seed(db)
 const mails = []
-const env = { DB: db, AUTH_SECRET: 'e2e-secreto-de-prueba-0123456789', GOOGLE_CLIENT_ID: 'e2e.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'e2e', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2() }
+const env = { DB: db, AUTH_SECRET: 'e2e-secreto-de-prueba-0123456789', GOOGLE_CLIENT_ID: 'e2e.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'e2e', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', STAFF_MFA_OPTIONAL: '1', DIVE_PHOTOS: new R2(), CENTER_DOCS: new R2() }
 const log = console.log
 console.log = (...a) => { if (a[0] === 'EMAIL (modo prueba)') mails.push(a); else log(...a) }
 // Google simulado para el acceso con Google (el Worker cambia el código por el id_token)

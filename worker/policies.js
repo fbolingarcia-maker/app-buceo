@@ -37,7 +37,7 @@ const hasBookingOn = (ctx, col) => (ctx.diverId ? P(`${col} IN (SELECT trip_id F
 export const POLICIES = {
   destinations: { select: () => YES },
   dive_sites: { select: () => YES },
-  app_config: { select: () => YES },
+  app_config: { select: (c, a) => or(P(`${a}.key <> 'last_backup'`), admin(c)) }, // la última copia de seguridad solo la ve el administrador
   published_trips: { select: () => YES },
   boats: { select: () => YES, ops: ['insert', 'update', 'delete'],
     write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },

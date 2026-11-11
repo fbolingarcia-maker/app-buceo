@@ -34,6 +34,9 @@ export async function loadCtx(req, env) {
     ctx.isAdmin = !!adm.results?.length
     ctx.diverId = dv.results?.[0]?.id || null
     ctx.staff = (st.results || []).map((r) => r.center_id)
+    // Administradores y equipo de un centro ven datos médicos, seguros y cobros: sin verificación en dos pasos
+    // no tienen esos permisos (entran como buceador) y la app les pide activarla (aal.setupRequired). STAFF_MFA_OPTIONAL = '1' solo en pruebas
+    if (!ctx.hasFactor && (ctx.isAdmin || ctx.staff.length) && env.STAFF_MFA_OPTIONAL !== '1') { ctx.mfaSetupRequired = true; ctx.isAdmin = false; ctx.staff = [] }
   }
   // Sesión deslizante: se renueva como mucho una vez al día
   if (Date.parse(s.last_seen_at) < Date.now() - 864e5) {
@@ -60,7 +63,7 @@ async function sessionInfo(ctx) {
   const factors = await all(ctx.db, 'SELECT id, status, friendly_name, created_at FROM mfa_factors WHERE user_id = ?', ctx.uid)
   return {
     session: { user: userJson(u), aal: ctx.aal, recovery: !!ctx.session.recovery, expires_at: ctx.session.expires_at },
-    aal: { currentLevel: ctx.aal, nextLevel: ctx.hasFactor ? 'aal2' : 'aal1' },
+    aal: { currentLevel: ctx.aal, nextLevel: ctx.hasFactor ? 'aal2' : 'aal1', setupRequired: !!ctx.mfaSetupRequired },
     factors: factors.map((f) => ({ id: f.id, factor_type: 'totp', status: f.status, friendly_name: f.friendly_name, created_at: f.created_at })),
   }
 }
@@ -127,6 +130,21 @@ function notifyNewAccount(env, user, { full_name, account_type, provider }, wait
   return p
 }
 
+// Comprobación anti-bots (Cloudflare Turnstile) en alta, entrada y emails de cuenta. Se activa sola cuando el Worker
+// tiene TURNSTILE_SITE_KEY (vars de wrangler.jsonc) y el secreto TURNSTILE_SECRET (panel de Cloudflare).
+export const captchaKey = (env) => (env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET ? env.TURNSTILE_SITE_KEY : null)
+async function checkCaptcha(env, body, ip) {
+  if (!captchaKey(env)) return
+  const token = String(body.captcha_token || '')
+  if (!token) throw new ApiError('captcha_failed', 'Completa la comprobación anti-bots y vuelve a intentarlo.', 400)
+  const f = new FormData()
+  f.append('secret', env.TURNSTILE_SECRET); f.append('response', token)
+  if (ip && ip !== 'local') f.append('remoteip', ip)
+  const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: f }).then((x) => x.json()).catch(() => null)
+  // Si Cloudflare no responde no se bloquea a nadie: siguen los límites por IP y por email
+  if (r && r.success === false) throw new ApiError('captcha_failed', 'La comprobación anti-bots no ha funcionado. Vuelve a intentarlo.', 400)
+}
+
 export async function handleAuth(req, env, ctx, path) {
   const ip = req.headers.get('CF-Connecting-IP') || 'local'
   const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
@@ -143,11 +161,12 @@ export async function handleAuth(req, env, ctx, path) {
     const lang = reqLang(req)
     if (lang && ctx.uid) await run(env.DB, 'UPDATE divers SET locale = ? WHERE user_id = ? AND locale IS NOT ?', lang, ctx.uid, lang).catch(() => {})
     const info = await sessionInfo(ctx)
-    return json(info)
+    return json({ ...info, captcha: captchaKey(env) })
   }
 
   if (path === 'signup') {
     await rateLimit(env, 'signup:' + ip, 10, 3600)
+    await checkCaptcha(env, body, ip)
     const email = normEmail(body.email)
     if (!validEmail(email)) return authErr('validation_failed', 'Unable to validate email address: invalid format')
     if (pwProblem(body.password)) return authErr('weak_password', 'Password should be at least 8 characters and contain letters and numbers.')
@@ -173,6 +192,7 @@ export async function handleAuth(req, env, ctx, path) {
     const email = normEmail(body.email)
     await rateLimit(env, 'login:' + ip, 30, 900)
     await rateLimit(env, 'login:' + email, 10, 900)
+    await checkCaptcha(env, body, ip)
     const u = await first(env.DB, 'SELECT * FROM users WHERE email = ?', email)
     const check = u ? await verifyPassword(String(body.password || ''), u.password_hash) : (await verifyPassword('x', 'pbkdf2$' + (+(env.PBKDF2_ITER || 100000)) + '$AAAAAAAAAAAAAAAAAAAAAA==$AAAA'), { ok: false })
     if (!u || !check.ok) return authErr('invalid_credentials', 'Invalid login credentials')
@@ -191,6 +211,7 @@ export async function handleAuth(req, env, ctx, path) {
   if (path === 'resend' || path === 'recover') {
     const email = normEmail(body.email)
     await rateLimit(env, 'mailip:' + ip, 10, 3600)
+    await checkCaptcha(env, body, ip)
     const u = validEmail(email) && await first(env.DB, 'SELECT * FROM users WHERE email = ?', email)
     if (u) {
       await rateLimit(env, 'mail:' + email, 3, 3600).catch(() => { throw new ApiError('over_email_send_rate_limit', 'email rate limit exceeded', 429) })

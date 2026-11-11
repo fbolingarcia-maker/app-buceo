@@ -9,6 +9,7 @@ const plan = {
   admind: ['/', '/perfil', '/reservas', '/admin'],
   adminc: ['/', '/centro', '/centro/agenda', '/centro/informes', '/perfil'],
   mfa: ['/', '/perfil', '/reservas'],
+  mfasetup: ['/', '/centro', '/perfil'],
   vacio: ['/', '/d/Panglao', '/puntos'],
 }
 const shots = process.argv[2] === 'shots'

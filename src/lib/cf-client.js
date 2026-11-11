@@ -69,7 +69,7 @@ export function createCfClient() {
   const emit = (event) => { for (const cb of listeners) { try { cb(event, state?.session || null) } catch (e) { console.error(e) } } }
   const refresh = async () => {
     const r = await call('auth/session', undefined, 'GET')
-    state = r.error ? { session: null, aal: null, factors: [] } : { session: r.session || null, aal: r.aal || null, factors: r.factors || [] }
+    state = r.error ? { session: null, aal: null, factors: [], captcha: state?.captcha || null } : { session: r.session || null, aal: r.aal || null, factors: r.factors || [], captcha: r.captcha || null }
     return state
   }
   let first = null
@@ -77,6 +77,8 @@ export function createCfClient() {
 
   const auth = {
     async getSession() { await ensure(); return { data: { session: state.session }, error: null } },
+    // Clave pública de Cloudflare Turnstile si el Worker la tiene activada (si no, null y no hay comprobación anti-bots)
+    async captchaKey() { await ensure(); return state.captcha || null },
     async getUser() { await ensure(); return { data: { user: state.session?.user || null }, error: null } },
     onAuthStateChange(cb) {
       listeners.add(cb)
@@ -84,14 +86,14 @@ export function createCfClient() {
       ensure().then(() => { if (listeners.has(cb)) cb(state.session?.recovery ? 'PASSWORD_RECOVERY' : 'INITIAL_SESSION', state.session) })
       return { data: { subscription: { unsubscribe: () => listeners.delete(cb) } } }
     },
-    async signInWithPassword({ email, password }) {
-      const r = await call('auth/login', { email, password })
+    async signInWithPassword({ email, password, options = {} }) {
+      const r = await call('auth/login', { email, password, captcha_token: options.captchaToken })
       if (r.error) return { data: { user: null, session: null }, error: r.error }
       await refresh(); emit('SIGNED_IN')
       return { data: { user: state.session?.user, session: state.session }, error: null }
     },
     async signUp({ email, password, options = {} }) {
-      const r = await call('auth/signup', { email, password, data: options.data, redirect: options.emailRedirectTo })
+      const r = await call('auth/signup', { email, password, data: options.data, redirect: options.emailRedirectTo, captcha_token: options.captchaToken })
       return r.error ? { data: { user: null, session: null }, error: r.error } : { data: { user: r.user, session: null }, error: null }
     },
     // Acceso con Google: el Worker hace el OAuth (worker/google.js) y vuelve a la app con la sesión abierta
@@ -102,11 +104,11 @@ export function createCfClient() {
       return { data: { provider, url: '/api/auth/oauth/google?' + q }, error: null }
     },
     async resend({ email, options = {} }) {
-      const r = await call('auth/resend', { email, redirect: options.emailRedirectTo })
+      const r = await call('auth/resend', { email, redirect: options.emailRedirectTo, captcha_token: options.captchaToken })
       return { data: {}, error: r.error }
     },
     async resetPasswordForEmail(email, opts = {}) {
-      const r = await call('auth/recover', { email, redirect: opts.redirectTo })
+      const r = await call('auth/recover', { email, redirect: opts.redirectTo, captcha_token: opts.captchaToken })
       return { data: {}, error: r.error }
     },
     async reauthenticate() {
@@ -121,7 +123,7 @@ export function createCfClient() {
     },
     async signOut() {
       await call('auth/logout', {})
-      state = { session: null, aal: null, factors: [] }
+      state = { session: null, aal: null, factors: [], captcha: state?.captcha || null }
       emit('SIGNED_OUT')
       return { error: null }
     },

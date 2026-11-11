@@ -46,6 +46,7 @@ export default function AdminResumen({ go }) {
       <label className="check small" style={{ marginTop: 8 }}><input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} /> {t('Incluir centros de demostración')}</label>
 
       <Visitas days={days} />
+      <Backup />
 
       {err && <div className="msg err" role="alert">{err}</div>}
       {!r && !err && <p className="muted">{t('Cargando…')}</p>}
@@ -125,6 +126,34 @@ export default function AdminResumen({ go }) {
 
 // Visitas de la web comercial y de la app (las cuenta el Worker en /api/hit; ver worker/stats.js)
 const PAGE = { '/': 'Web comercial', '/app': 'App: Salidas' }
+// Copia de seguridad semanal de la base de datos en R2 (worker/backup.js): cuándo fue la última y hacer una ahora
+function Backup() {
+  const [s, setS] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+  const load = () => supabase.rpc('admin_backup_status', {}).then(({ data }) => setS(data || null))
+  useEffect(() => { load() }, [])
+  if (!s) return null
+  const last = s.last
+  const old = !last || Date.now() - Date.parse(last.at) > 8 * 864e5
+  async function now() {
+    setBusy(true); setMsg(null)
+    const { data, error } = await supabase.rpc('admin_backup_now', {})
+    setBusy(false)
+    setMsg(error ? { ok: false, text: errMsg(error) } : { ok: true, text: t('Copia hecha: {n} filas en {k} tablas.', { n: data.rows, k: data.tables }) })
+    load()
+  }
+  return (
+    <div className={old ? 'msg warn' : 'card'} style={{ marginTop: 10 }}>
+      <div className="row between wrap" style={{ gap: 8 }}>
+        <span className="small"><b>{t('Copia de seguridad')}</b> · {last ? t('última: {fecha}, {n} filas', { fecha: dateTime(last.at), n: last.rows }) : t('aún no hay ninguna')} · {t('cada lunes de madrugada, se guardan 12 semanas')}</span>
+        <button type="button" className="btn small ghost" disabled={busy || !s.enabled} onClick={now}>{busy ? t('Copiando…') : t('Hacer copia ahora')}</button>
+      </div>
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
+    </div>
+  )
+}
+
 function Visitas({ days }) {
   const [v, setV] = useState(null)
   const [err, setErr] = useState('')

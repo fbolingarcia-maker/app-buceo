@@ -96,6 +96,12 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Idiomas: además de EN/ES, alemán, coreano, japonés y chino (`src/lib/lang-*.js`) solo para las pantallas del buceador (buscar, salida, reservar, pagar, reservas, entrar); lo que falta sale en inglés. Para traducir más, añade claves a esos ficheros.
 - No hecho por depender de terceros: sincronización automática con Garmin Connect/Suunto (requiere el programa de desarrolladores de Garmin), Apple Pay/Google Pay y tarjeta guardada (dependen de la cuenta de PayMongo en producción), verificación automática de eCards PADI/SSI (no hay API pública).
 
+## Seguridad del 11 nov 2026 (revisión previa al piloto)
+- Dos pasos obligatorios para administradores y equipo de un centro (`center_staff`): sin factor TOTP verificado, `loadCtx` les quita `isAdmin`/`staff` (entran como buceador) y `auth/session` devuelve `aal.setupRequired`; la app muestra solo `DosPasosObligatoria` (src/pages/DosPasos.jsx) y no deja desactivarlos desde el perfil. En pruebas, `env.STAFF_MFA_OPTIONAL = '1'`.
+- Anti-bots (Cloudflare Turnstile) en alta, entrada, reenviar confirmación y recuperar contraseña: `checkCaptcha` en worker/auth.js y `useCaptcha` (src/lib/Captcha.jsx, modo «interaction-only»). Se activa solo con `TURNSTILE_SITE_KEY` en vars de wrangler.jsonc + secreto `TURNSTILE_SECRET` en el panel; `auth/session` devuelve `captcha` (clave pública). CSP: `challenges.cloudflare.com` en script-src y frame-src.
+- Copias de seguridad: cron semanal `41 19 * * 0` → `backupD1` (worker/backup.js) al bucket R2 `divingslot-backups` (binding `BACKUPS`, 12 semanas); `admin_backup_status`/`admin_backup_now` y tarjeta en el Resumen de administración; restaurar con `tools/backup/restore.mjs` (ver tools/backup/README.md). Prueba: `node --no-warnings worker/test/backup.mjs`.
+- Valoraciones de buddy: cuenta una por buceador (la más reciente); la media pública necesita 3 buceadores distintos.
+
 ## Pagos
 - Señal mínima del 50 % (`deposit_php`) para confirmar la reserva; el resto se paga en la app o en efectivo en el centro (`record_cash_payment`).
 - Todo cobro pasa por la tabla `payments` y se aplica con `settle_payment()` (solo service_role).

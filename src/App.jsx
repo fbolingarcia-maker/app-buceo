@@ -8,7 +8,7 @@ import Salida from './pages/Salida'
 import Login from './pages/Login'
 import NuevaClave from './pages/NuevaClave'
 import { BUDDY_RATINGS } from './lib/buddy'
-import { DosPasosReto } from './pages/DosPasos'
+import { DosPasosReto, DosPasosObligatoria } from './pages/DosPasos'
 import AdminBar, { AdminCenterPicker } from './lib/AdminBar'
 import ErrorBoundary from './lib/ErrorBoundary'
 import { lazyPage, prefetchWhenIdle } from './lib/lazyPage'
@@ -134,7 +134,7 @@ function Flag() {
 
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, signOut, guideOf, refresh } = useAuth()
+  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, mfaSetup, signOut, guideOf, refresh } = useAuth()
   const seg = path.split('/').filter(Boolean)
   useEffect(() => { trackView(path) }, [path])
   // Pestañas de su perfil, descargadas en segundo plano para que el cambio de pestaña sea inmediato
@@ -147,6 +147,7 @@ export default function App() {
 
   let page
   if (session && needsMfa) page = <DosPasosReto />
+  else if (session && mfaSetup) page = <DosPasosObligatoria />
   else if (recovering) page = <NuevaClave />
   else if (seg[0] === 'r' && seg[1]) page = <Via id={seg[1]} trip={seg[2]} />
   else if (seg[0] === 'equipo' && seg[1] === 'aceptar') page = <NeedLogin title={t('Invitación al equipo')} intro={t('Entra o crea tu cuenta con el email al que llegó la invitación.')} back={window.location.hash.replace(/^#/, '')}><AcceptInvite token={new URLSearchParams(window.location.hash.split('?')[1] || '').get('token') || ''} session={session} onDone={(r) => { refresh(); go(r === 'guide' ? '/guia' : '/centro') }} /></NeedLogin>

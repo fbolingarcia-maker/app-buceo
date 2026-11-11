@@ -9,7 +9,7 @@ import { seaLevel } from '../sea.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
-const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', PAYMONGO_SECRET_KEY: 'sk_test_x', PAYMONGO_WEBHOOK_SECRET: 'whsk_x', ASSETS: { fetch: () => new Response('app') } }
+const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', STAFF_MFA_OPTIONAL: '1', PAYMONGO_SECRET_KEY: 'sk_test_x', PAYMONGO_WEBHOOK_SECRET: 'whsk_x', ASSETS: { fetch: () => new Response('app') } }
 let fails = 0, passes = 0
 const ok = (c, name, extra) => { if (c) passes++; else { fails++; console.log('  ✗', name, extra !== undefined ? JSON.stringify(extra).slice(0, 400) : '') } }
 const section = (s) => console.log('·', s)

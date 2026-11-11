@@ -6,7 +6,7 @@ import worker, { handleApi } from '../index.js'
 
 const ORIGIN = 'https://divingslot.test'
 const db = new D1(new URL('../schema.sql', import.meta.url).pathname)
-const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', ASSETS: { fetch: () => new Response('app') } }
+const env = { DB: db, AUTH_SECRET: 'prueba-secreto-de-32-caracteres-x', EMAIL_DEV_LOG: '1', PBKDF2_ITER: '1000', STAFF_MFA_OPTIONAL: '1', ASSETS: { fetch: () => new Response('app') } }
 let fails = 0, passes = 0
 const ok = (c, name, extra) => { if (c) passes++; else { fails++; console.log('  ✗', name, extra !== undefined ? JSON.stringify(extra).slice(0, 500) : '') } }
 const section = (s) => console.log('·', s)
@@ -192,6 +192,41 @@ ok(r.data?.[0]?.name === 'A P.' && r.data[0].dives === 2 && r.data.length === 1,
 await G.rpc('team_remove', { p_center: 'c1', p_user: guid }).then((x) => ok(code(x) === 'FORBIDDEN', 'el guía no quita a nadie'))
 r = await owner.rpc('team_remove', { p_center: 'c1', p_user: guid })
 ok(r.data?.removed === 1 && !(await db.prepare('SELECT 1 AS x FROM trip_guides WHERE user_id = ?').bind(guid).first()), 'el titular quita al guía y sus salidas futuras', r)
+
+section('dos pasos obligatorios para el equipo del centro')
+env.STAFF_MFA_OPTIONAL = ''
+r = await owner.call('GET', '/api/auth/session')
+ok(r.aal?.setupRequired === true, 'el titular sin dos pasos tiene que activarlos', r.aal)
+r = await owner.rpc('team_list', { p_center: 'c1' })
+ok(code(r) === 'FORBIDDEN', 'y mientras no lo haga no gestiona el centro', r)
+r = await A.call('GET', '/api/auth/session')
+ok(r.aal?.setupRequired === false, 'a un buceador no se le exige', r.aal)
+env.STAFF_MFA_OPTIONAL = '1'
+
+section('comprobación anti-bots (Turnstile)')
+r = await anon.call('GET', '/api/auth/session')
+ok(r.captcha === null, 'sin claves no hay comprobación', r)
+Object.assign(env, { TURNSTILE_SITE_KEY: '0xSITE', TURNSTILE_SECRET: '0xSECRET' })
+const realFetch = globalThis.fetch
+globalThis.fetch = async (u, o) => {
+  if (String(u).includes('turnstile/v0/siteverify')) return new Response(JSON.stringify({ success: o.body.get('secret') === '0xSECRET' && o.body.get('response') === 'buen-token' }))
+  return realFetch(u, o)
+}
+r = await anon.call('GET', '/api/auth/session')
+ok(r.captcha === '0xSITE', 'la app recibe la clave pública', r)
+const L = new Client()
+r = await L.call('POST', '/api/auth/login', { email: 'a@x.test', password: 'Clave1234' })
+ok(r.error?.code === 'captcha_failed', 'sin token no se entra', r)
+r = await L.call('POST', '/api/auth/login', { email: 'a@x.test', password: 'Clave1234', captcha_token: 'malo' })
+ok(r.error?.code === 'captcha_failed', 'con un token falso tampoco', r)
+r = await L.call('POST', '/api/auth/login', { email: 'a@x.test', password: 'Clave1234', captcha_token: 'buen-token' })
+ok(!r.error && r.user?.email === 'a@x.test', 'con el token de Cloudflare sí', r)
+r = await L.call('POST', '/api/auth/recover', { email: 'a@x.test' })
+ok(r.error?.code === 'captcha_failed', 'también en «He olvidado la contraseña»', r)
+r = await L.call('POST', '/api/auth/signup', { email: 'nuevo@x.test', password: 'Clave1234' })
+ok(r.error?.code === 'captcha_failed', 'y al crear cuenta', r)
+globalThis.fetch = realFetch
+delete env.TURNSTILE_SITE_KEY; delete env.TURNSTILE_SECRET
 
 log(`\n${passes} bien, ${fails} mal`)
 process.exit(fails ? 1 : 0)

@@ -6,7 +6,7 @@ try {
   if (rawRole === 'adminc') localStorage.setItem('adminCenter', '4ec918c7-1b17-477e-acb7-2c33276224ac'); else localStorage.removeItem('adminCenter')
 } catch { /* sin almacenamiento */ }
 // vacio: visitante sin sesión en una semana sin salidas publicadas
-const role = rawRole.startsWith('admin') ? 'admin' : rawRole === 'mfa' ? 'diver' : rawRole === 'vacio' ? 'anon' : rawRole
+const role = rawRole.startsWith('admin') ? 'admin' : rawRole === 'mfa' ? 'diver' : rawRole === 'mfasetup' ? 'centerv' : rawRole === 'vacio' ? 'anon' : rawRole
 const H = 3600e3, D = 24 * H
 const now = Date.now()
 const iso = (ms) => new Date(ms).toISOString()
@@ -135,7 +135,7 @@ export function createClient() {
       reauthenticate: () => Promise.resolve({ data: {}, error: null }),
       refreshSession: () => Promise.resolve({ data: { session } }), resend: () => Promise.resolve({ error: null }), signInWithOAuth: () => Promise.resolve({ error: null }),
       mfa: {
-        getAuthenticatorAssuranceLevel: () => Promise.resolve({ data: { currentLevel: 'aal1', nextLevel: rawRole === 'mfa' ? 'aal2' : 'aal1' } }),
+        getAuthenticatorAssuranceLevel: () => Promise.resolve({ data: { currentLevel: 'aal1', nextLevel: rawRole === 'mfa' ? 'aal2' : 'aal1', setupRequired: rawRole === 'mfasetup' } }),
         listFactors: () => Promise.resolve({ data: { all: [], totp: rawRole === 'mfa' ? [{ id: 'f1', status: 'verified', factor_type: 'totp' }] : [] } }),
         enroll: () => Promise.resolve({ data: { id: 'f2', totp: { qr_code: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>', secret: 'JBSWY3DPEHPK3PXP' } } }),
         challengeAndVerify: () => Promise.resolve({ error: { message: 'Invalid TOTP code entered', code: 'mfa_verification_failed' } }),

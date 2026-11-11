@@ -4,6 +4,7 @@ import { t, useLang } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { Languages, Ship, Waves } from 'lucide-react'
 import GoogleButton, { GOOGLE_LOGIN } from '../lib/GoogleButton'
+import { useCaptcha } from '../lib/Captcha'
 
 // Página a la que volver tras entrar (la guarda la ficha de la salida)
 function afterLogin() {
@@ -28,13 +29,14 @@ export default function Login({ embedded }) {
   const [info, setInfo] = useState('')
   const [resend, setResend] = useState(false) // mostrar «Reenviar email de confirmación»
   const [resent, setResent] = useState(false)
+  const captcha = useCaptcha()
 
   // Vuelve a enviar el email de confirmación (si el primero no llegó)
   async function resendEmail() {
     setBusy(true); setError('')
     const back = afterLogin()
-    const { error: re } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: siteUrl() + (back ? '#' + back : '') } })
-    setBusy(false)
+    const { error: re } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: siteUrl() + (back ? '#' + back : ''), captchaToken: await captcha.get() } })
+    captcha.reset(); setBusy(false)
     if (re) return setError(errMsg(re))
     setResent(true); setInfo(t('Te hemos vuelto a enviar el email de confirmación a {email}. Revisa también la carpeta de spam o promociones.', { email }))
   }
@@ -44,20 +46,21 @@ export default function Login({ embedded }) {
     if (mode === 'signup' && pwProblem(password)) return setError(pwProblem(password))
     setBusy(true); setError(''); setInfo(''); setResend(false); setResent(false)
     let res
+    const captchaToken = await captcha.get()
     if (mode === 'login') {
-      res = await supabase.auth.signInWithPassword({ email, password })
+      res = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
     } else if (mode === 'signup') {
       const back = afterLogin()
       res = await supabase.auth.signUp({ email, password, options: {
         data: { full_name: name, account_type: type, ...(type === 'center' ? { center_name: centerName, center_phone: centerPhone } : {}) },
-        emailRedirectTo: siteUrl() + (back && type === 'diver' ? '#' + back : ''),
+        emailRedirectTo: siteUrl() + (back && type === 'diver' ? '#' + back : ''), captchaToken,
       } })
       if (!res.error && !res.data.session) { setInfo(t('Te hemos enviado un email a {email} para confirmar tu cuenta. Ábrelo y pulsa el enlace (mira también en spam o promociones).', { email })); setResend(true) }
     } else {
-      res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: siteUrl() })
+      res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: siteUrl(), captchaToken })
       if (!res.error) setInfo(t('Si el email existe, recibirás un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.'))
     }
-    setBusy(false)
+    captcha.reset(); setBusy(false)
     if (res.error) {
       setError(errMsg(res.error))
       if (res.error.code === 'email_not_confirmed' || /email not confirmed/i.test(res.error.message || '')) setResend(true)
@@ -112,6 +115,7 @@ export default function Login({ embedded }) {
             {mode === 'signup' && <span id="pw-hint" className="small muted hint">{t('Mínimo 8 caracteres, con letras y números')}</span>}
           </div>
         )}
+        {captcha.box}
         {error && <div className="msg err" role="alert">{error}</div>}
         {info && <div className="msg ok" role="status">{info}</div>}
         {resend && !resent && (

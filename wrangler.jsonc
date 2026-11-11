@@ -24,18 +24,23 @@
   // Asia-Pacífico (APAC) para que carguen rápido en Filipinas.
   "r2_buckets": [
     { "binding": "DIVE_PHOTOS", "bucket_name": "divingslot-photos" },
-    { "binding": "CENTER_DOCS", "bucket_name": "divingslot-docs" }
+    { "binding": "CENTER_DOCS", "bucket_name": "divingslot-docs" },
+    // Copias de seguridad semanales de D1 (worker/backup.js, lunes 3:41 en Manila; se guardan 12 semanas)
+    { "binding": "BACKUPS", "bucket_name": "divingslot-backups" }
   ],
   // Valores públicos (los secretos van en el panel: GOOGLE_CLIENT_SECRET y, si se usa, SMTP_*/RESEND_API_KEY)
   "vars": {
     "GOOGLE_CLIENT_ID": "607421255103-95p23bfnoe8v6beaehct5n41dbeahijl.apps.googleusercontent.com",
     // A quién llegan los avisos al administrador (altas, reservas, centros por validar) y el resumen diario
     "NOTIFY_TO": "divingslot@gmail.com"
+    // Anti-bots al entrar y crear cuenta (Cloudflare Turnstile): añade aquí "TURNSTILE_SITE_KEY": "<clave del sitio>"
+    // y en el panel del Worker el secreto TURNSTILE_SECRET. Con las dos, se activa solo (worker/auth.js, src/lib/Captcha.jsx).
   },
   // Emails sin claves con Cloudflare Email Service (Workers Paid contratado el 3 nov 2026). Envía desde
   // EMAIL_FROM o no-reply@divingslot.com: divingslot.com tiene que estar dado de alta en Email Service → Email Sending.
   "send_email": [{ "name": "EMAIL" }],
-  // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados, cierre de la importación) y lista de espera cada 10 min
-  "triggers": { "crons": ["17 * * * *", "*/10 * * * *"] },
+  // Limpieza cada hora (sesiones caducadas, enlaces usados, pagos abandonados, cierre de la importación), lista de espera
+  // cada 10 min y copia de seguridad de D1 en R2 los domingos a las 19:41 UTC (BACKUP_CRON en worker/backup.js)
+  "triggers": { "crons": ["17 * * * *", "*/10 * * * *", "41 19 * * 0"] },
   "observability": { "enabled": true }
 }

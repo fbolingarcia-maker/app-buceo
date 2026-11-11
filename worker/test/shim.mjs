@@ -44,4 +44,11 @@ export class R2 {
   async get(k) { const o = this.m.get(k); return o ? { body: o.body, httpMetadata: o.httpMetadata } : null }
   async head(k) { return this.m.has(k) ? {} : null }
   async delete(ks) { for (const k of [].concat(ks)) this.m.delete(k) }
+  async list({ prefix = '', delimiter } = {}) {
+    const keys = [...this.m.keys()].filter((k) => k.startsWith(prefix)).sort()
+    if (!delimiter) return { objects: keys.map((key) => ({ key })), truncated: false, delimitedPrefixes: [] }
+    const pre = new Set(), objects = []
+    for (const k of keys) { const i = k.indexOf(delimiter, prefix.length); if (i >= 0) pre.add(k.slice(0, i + 1)); else objects.push({ key: k }) }
+    return { objects, truncated: false, delimitedPrefixes: [...pre] }
+  }
 }

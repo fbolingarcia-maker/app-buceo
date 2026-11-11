@@ -8,6 +8,7 @@ import { centreEmail, notifyLater } from './stats.js'
 import { PLUS, processWaitlist, buddyAlerts, packDiscount, expLevel } from './plus.js'
 import { notifyDiver, notifyCentreStaff } from './push.js'
 import { COMUNIDAD, needsCert, needsMedical } from './comunidad.js'
+import { BACKUP_RPC } from './backup.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -661,7 +662,7 @@ const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
 
 // Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
-Object.assign(RPC, PLUS, COMUNIDAD)
+Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

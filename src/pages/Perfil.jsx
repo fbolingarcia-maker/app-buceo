@@ -111,7 +111,7 @@ export default function Perfil() {
   const account = (
     <>
       <h2>{t('Seguridad')}</h2>
-      <DosPasos recommend={isAdmin} />
+      <DosPasos recommend={isAdmin} required={isAdmin || !!center} />
       <CambiarClave />
     </>
   )
