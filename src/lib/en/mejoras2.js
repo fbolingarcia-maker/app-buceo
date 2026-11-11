@@ -57,6 +57,12 @@ export default {
   'Fotos de la salida': 'Trip photos',
   'Vídeo de la salida': 'Trip video',
   'Nitrox (por inmersión)': 'Nitrox (per dive)',
+  // Extras de los centros de demostración
+  'Fotos de los pecios': 'Wreck photos',
+  'EAN32, necesita certificación nitrox': 'EAN32, nitrox certification required',
+  'GoPro 4K, entregado el mismo día': 'GoPro 4K, delivered the same day',
+  'Unas 40 fotos editadas': 'About 40 edited photos',
+  '5 inmersiones en 2 días, con certificación': '5 dives over 2 days, with certification',
   'Aún no ofreces extras. Los buceadores los ven al reservar y se suman al pago.': 'You don\'t offer any extras yet. Divers see them when booking and they are added to the payment.',
   'por persona': 'per person',
   'por reserva': 'per booking',

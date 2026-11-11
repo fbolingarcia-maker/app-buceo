@@ -4,6 +4,7 @@ import { t } from './i18n'
 import { levelName, dateTime, manilaDate, time, php } from './format'
 import { medicalValid, daysSinceDive } from './medical'
 import { downloadCsv } from './csv'
+import { extraName } from './extras'
 
 // Manifiesto de la salida para imprimir o descargar (lo que piden el capitán, el guía y la Coast Guard antes de zarpar):
 // buceadores, certificación, médico, última inmersión, tallas si alquila equipo, alergias, extras, pago y huecos para check-in y firma.
@@ -26,7 +27,7 @@ export function manifestRows(active) {
       gear: b.with_gear ? (sizes || t('Sí, sin tallas')) : t('No'),
       allergies: d?.allergies || '',
       insurance: !d ? '' : d.insurance_provider ? d.insurance_provider + (d.insurance_expiry ? ' · ' + d.insurance_expiry : '') : t('Sin seguro'),
-      extras: (b.booking_extras || []).map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')).join(', '),
+      extras: (b.booking_extras || []).map((e) => extraName(e) + (e.qty > 1 ? ' ×' + e.qty : '')).join(', '),
       pay: b.paid_php >= b.amount_php ? t('Pagado') : t('Falta {amount}', { amount: php(b.amount_php - b.paid_php) }) + (b.pay_on_site ? ' · ' + t('efectivo') : ''),
       onboard: b.checked_in_at ? t('Sí') : '',
     }

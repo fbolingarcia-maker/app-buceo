@@ -10,7 +10,7 @@ import Icon from '../lib/Icon'
 import { ArrowLeft, Check, MapPin, MessageCircle, Waves, Users, GraduationCap, Clock, Plus, TriangleAlert } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
 import { medicalValid, medicalUntil, medicalLabel, daysSinceDive } from '../lib/medical'
-import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, GreenFinsBadge, SeaCard, DanCard, hasInsurance } from '../lib/extras'
+import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, extraName, extraDesc, GreenFinsBadge, SeaCard, DanCard, hasInsurance } from '../lib/extras'
 import { PayBox, holdEnd } from '../lib/pay'
 import { TripChat, CenterReviews, expName, Approx } from '../lib/plus'
 import { noCert, noMedical, activityName, Sightings, FollowButton } from '../lib/comunidad'
@@ -302,7 +302,7 @@ export default function Salida({ id }) {
                 {extras.map((e) => (
                   <label key={e.id} className="check">
                     <input type="checkbox" checked={chosen.includes(e.id)} onChange={() => setChosen((c) => (c.includes(e.id) ? c.filter((x) => x !== e.id) : [...c, e.id]))} />
-                    <span><b>{e.name}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ''} <span className="muted small">({extraKind(e.kind)})</span>{e.description && <><br /><span className="small muted">{e.description}</span></>}</span>
+                    <span><b>{extraName(e)}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ''} <span className="muted small">({extraKind(e.kind)})</span>{extraDesc(e) && <><br /><span className="small muted">{extraDesc(e)}</span></>}</span>
                   </label>
                 ))}
               </fieldset>

@@ -7,7 +7,7 @@ import { seatsSummary, hashParam, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
 import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
 import { ManifestSheet, manifestCsv } from '../lib/manifest'
-import { SeaChip } from '../lib/extras'
+import { SeaChip, extraName } from '../lib/extras'
 import { TripChat } from '../lib/plus'
 
 // Sin cobertura en el barco: la agenda de cada día se guarda en el móvil y los check-in se encolan hasta que vuelva la red
@@ -253,7 +253,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
                     {b.divers?.logged_dives ? ' · ' + t('{n} inm.', { n: b.divers.logged_dives }) : ''}
                   </div>
                   {b.divers && <DiverReady d={b.divers} gear={b.with_gear} />}
-                  {b.booking_extras?.length > 0 && <div className="small muted">{t('Extras')}: {b.booking_extras.map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')).join(', ')}</div>}
+                  {b.booking_extras?.length > 0 && <div className="small muted">{t('Extras')}: {b.booking_extras.map((e) => extraName(e) + (e.qty > 1 ? ' ×' + e.qty : '')).join(', ')}</div>}
                   {b.divers?.certifications?.map((c) => (
                     <div key={c.id} className="small row wrap" style={{ gap: 6 }}>
                       <span>{c.agency} {levelName(c.level)} {c.verified_at ? '✓' : ''}</span>

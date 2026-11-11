@@ -42,6 +42,9 @@ export function PriceTag({ trip, approx = true }) {
 // Sin seguros: los centros no los venden (el seguro se contrata con DAN, ver DanCard)
 export const EXTRA_KINDS = [['course', 'Curso'], ['photo', 'Fotos'], ['video', 'Vídeo'], ['nitrox', 'Nitrox'], ['other', 'Otro']]
 export const extraKind = (k) => t((EXTRA_KINDS.find(([x]) => x === k) || [, k])[1])
+// Nombre y descripción del extra en el idioma de la app: los nombres tipo (presets) y los de las demos tienen traducción; el resto sale como lo escribió el centro
+export const extraName = (e) => (e.name ? t(e.name) : '')
+export const extraDesc = (e) => (e.description ? t(e.description) : '')
 export const extrasTotal = (extras, chosen, seats) => extras.filter((e) => chosen.includes(e.id)).reduce((s, e) => s + e.price_php * (e.per_seat ? seats : 1), 0)
 
 // ── Green Fins y prácticas ecológicas ──

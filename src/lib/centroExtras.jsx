@@ -5,7 +5,7 @@ import { t } from './i18n'
 import { php } from './format'
 import Icon from './Icon'
 import { Check, Copy } from 'lucide-react'
-import { bookingLink, EXTRA_KINDS, extraKind, GREEN_FINS, ECO } from './extras'
+import { bookingLink, EXTRA_KINDS, extraKind, extraName, GREEN_FINS, ECO } from './extras'
 
 function CopyBtn({ text, label }) {
   const [done, setDone] = useState(false)
@@ -54,7 +54,7 @@ export function Extras({ center, readOnly }) {
       {list === null ? <p className="muted">{t('Cargando…')}</p> : list.length === 0 && <p className="small muted" style={{ marginTop: 0 }}>{t('Aún no ofreces extras. Los buceadores los ven al reservar y se suman al pago.')}</p>}
       {list?.map((e) => (
         <div key={e.id} className="doc-row row between" style={{ gap: 8 }}>
-          <span className={e.active ? '' : 'muted'}><b>{e.name}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ' ' + t('por reserva')} <span className="small muted">({extraKind(e.kind)})</span></span>
+          <span className={e.active ? '' : 'muted'}><b>{extraName(e)}</b> · {php(e.price_php)}{e.per_seat ? ' ' + t('por persona') : ' ' + t('por reserva')} <span className="small muted">({extraKind(e.kind)})</span></span>
           {!readOnly && <span className="row" style={{ gap: 4 }}>
             <button type="button" className="btn small ghost" onClick={() => run(supabase.from('center_extras').update({ active: !e.active }).eq('id', e.id), t('Extra actualizado'))}>{e.active ? t('Ocultar') : t('Mostrar')}</button>
           </span>}

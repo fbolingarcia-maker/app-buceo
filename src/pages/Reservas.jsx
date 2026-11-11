@@ -8,7 +8,7 @@ import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
 import { CalendarPlus, Check, Share2, X, Navigation, MessageCircle, Clock } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
-import { DanCard, SeaChip } from '../lib/extras'
+import { DanCard, SeaChip, extraName } from '../lib/extras'
 import { NoFlyBanner, ReviewForm, TripChat, InstallButton } from '../lib/plus'
 import { PayBox, fnError, holdEnd } from '../lib/pay'
 import { CheckinPass } from '../lib/comunidad'
@@ -205,7 +205,7 @@ export default function Reservas() {
         {(b.fees_php > 0 || b.booking_extras?.length > 0 || b.discount_php > 0) && (
           <div className="small muted" style={{ marginTop: 2 }}>
             {[b.fees_php > 0 && t('Tasas de santuarios incluidas ({amount})', { amount: php(b.fees_php) }),
-              ...(b.booking_extras || []).map((e) => e.name + (e.qty > 1 ? ' ×' + e.qty : '')),
+              ...(b.booking_extras || []).map((e) => extraName(e) + (e.qty > 1 ? ' ×' + e.qty : '')),
               b.discount_php > 0 && t('Descuento de última hora −{amount}', { amount: php(b.discount_php) })].filter(Boolean).join(' · ')}
           </div>
         )}
