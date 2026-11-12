@@ -25,6 +25,7 @@ import { withSecrets } from './lib/secrets.js'
 import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits, notifyAdmin } from './stats.js'
 import { handleWidget } from './comunidad.js'
 import { backupD1, BACKUP_CRON } from './backup.js'
+import { purgeChats } from './chat.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
@@ -116,6 +117,7 @@ export default {
     if (event?.cron === '*/10 * * * *') return
     ectx.waitUntil(updateFx(env).catch((e) => console.error('fx', e.message)))
     ectx.waitUntil(cleanup(env).catch(onFail('limpieza')))
+    ectx.waitUntil(purgeChats(env).catch(onFail('borrado de mensajes antiguos')))
     ectx.waitUntil(pruneVisits(env).catch(onFail('visitas')))
     ectx.waitUntil(dailyDigest(env).catch(onFail('resumen diario')))
     ectx.waitUntil(balanceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('recordatorios de pago')))

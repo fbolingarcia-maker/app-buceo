@@ -15,5 +15,6 @@ import mejoras2 from './en/mejoras2'
 import plus from './en/plus'
 import reserva10 from './en/reserva10'
 import comunidad from './en/comunidad'
+import chat from './en/chat'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad, ...chat }

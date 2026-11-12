@@ -9,6 +9,7 @@ import { PLUS, processWaitlist, buddyAlerts, packDiscount, expLevel } from './pl
 import { notifyDiver, notifyCentreStaff } from './push.js'
 import { COMUNIDAD, needsCert, needsMedical } from './comunidad.js'
 import { BACKUP_RPC } from './backup.js'
+import { CHAT, deleteDiverChats } from './chat.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -623,6 +624,7 @@ export const RPC = {
     }
     s.push(db.prepare('DELETE FROM center_staff WHERE user_id = ?').bind(ctx.uid))
     if (d) {
+      s.push(...(await deleteDiverChats(db, d.id))) // mensajes privados con los centros: se borran, no se anonimizan
       s.push(db.prepare('DELETE FROM dive_logs WHERE diver_id = ?').bind(d.id))
       s.push(db.prepare('DELETE FROM certifications WHERE diver_id = ?').bind(d.id))
       if (await first(db, 'SELECT 1 AS x FROM bookings WHERE diver_id = ?', d.id)) {
@@ -662,7 +664,7 @@ const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
 
 // Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
-Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC)
+Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

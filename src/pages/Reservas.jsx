@@ -6,10 +6,11 @@ import { BOOKING_STATUS, dateTime, php, manilaDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
-import { CalendarPlus, Check, Share2, X, Navigation, MessageCircle, Clock } from 'lucide-react'
+import { CalendarPlus, Check, Share2, X, Navigation, MessageCircle, Clock, MessageSquare } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
 import { DanCard, SeaChip, extraName } from '../lib/extras'
 import { NoFlyBanner, ReviewForm, TripChat, InstallButton } from '../lib/plus'
+import { useChatUnread } from '../lib/chatUnread'
 import { PayBox, fnError, holdEnd } from '../lib/pay'
 import { CheckinPass } from '../lib/comunidad'
 
@@ -110,6 +111,7 @@ export default function Reservas() {
   const [waits, setWaits] = useState([])
   const [reviews, setReviews] = useState({})
   const [chatFor, setChatFor] = useState(null)
+  const unread = useChatUnread()
 
   const load = useCallback(async () => {
     if (!diver) return
@@ -221,6 +223,12 @@ export default function Reservas() {
             <div style={{ marginTop: 6 }}><Link to="/">{t('Buscar otra salida')}</Link></div>
           </div>
         ) : b.refund_php > 0 && <div className="msg ok" role="status">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
+        {/* Mensajes privados con el centro (solo el buceador y el centro), hasta 30 días después de la salida */}
+        {(unread.bookings[b.id] > 0 || new Date(b.trips?.departs_at) > now - 30 * 864e5) && (
+          <Link to={'/mensajes/' + b.id} className="btn small ghost" style={{ marginTop: 8, marginRight: 8 }}>
+            <Icon icon={MessageSquare} /> {t('Mensajes con el centro')}{unread.bookings[b.id] > 0 && <span className="badge">{unread.bookings[b.id]}</span>}
+          </Link>
+        )}
         {active && future && (
           <button type="button" className="btn small ghost" style={{ marginTop: 8, marginRight: 8 }} onClick={() => setChatFor(chatFor === b.trip_id ? null : b.trip_id)}><Icon icon={MessageCircle} /> {t('Chat de la salida')}</button>
         )}

@@ -15,7 +15,8 @@ import { lazyPage, prefetchWhenIdle } from './lib/lazyPage'
 import Icon from './lib/Icon'
 import { setVia } from './lib/extras'
 import { OfflineBanner } from './lib/plus'
-import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText, Anchor } from 'lucide-react'
+import { Compass, MapPin, Ticket, BookOpen, User, ShieldCheck, Eye, LayoutDashboard, CalendarDays, Ship, ChartLine, Settings, Users, UserCog, ScrollText, Anchor, MessageSquare } from 'lucide-react'
+import { useChatUnread } from './lib/chatUnread'
 import { AcceptInvite } from './lib/comunidad'
 
 // Explorar, Salida y Login van en el paquete principal (son la entrada habitual); el resto se carga al abrirlo
@@ -41,6 +42,8 @@ const Importar = lazyPage(() => import('./pages/Importar'))
 const Guia = lazyPage(() => import('./pages/Guia'))
 const Muro = lazyPage(() => import('./pages/Muro'))
 const Buzo = lazyPage(() => import('./pages/Buzo'))
+const Mensajes = lazyPage(() => import('./pages/Mensajes'))
+const CentroMensajes = lazyPage(() => import('./pages/Mensajes').then((m) => ({ default: m.CentroMensajes })))
 
 // Pantallas privadas. Sin sesión: título y frase de lo que hay detrás, y el login debajo.
 // back: ruta a la que volver después de entrar (también la usa el email de confirmación)
@@ -132,9 +135,19 @@ function Flag() {
   )
 }
 
+// Centro: mensajes de los buceadores (bandeja), con cuántos hay sin leer
+function InboxButton({ on }) {
+  const u = useChatUnread()
+  return (
+    <Link to="/centro/mensajes" className={on ? 'btn small ghost icon-only on' : 'btn small ghost icon-only'} title={t('Mensajes')} aria-label={u.center > 0 ? t('Mensajes ({n} sin leer)', { n: u.center }) : t('Mensajes')} aria-current={on ? 'page' : undefined}>
+      <Icon icon={MessageSquare} />{u.center > 0 && <span className="badge">{u.center}</span>}
+    </Link>
+  )
+}
+
 export default function App() {
   const path = useRoute()
-  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, mfaSetup, signOut, guideOf, refresh } = useAuth()
+  const { session, isCenter, isAdmin, adminView, pendingCenters, recovering, needsMfa, mfaSetup, signOut, guideOf, refresh, readOnly } = useAuth()
   const seg = path.split('/').filter(Boolean)
   useEffect(() => { trackView(path) }, [path])
   // Pestañas de su perfil, descargadas en segundo plano para que el cambio de pestaña sea inmediato
@@ -164,6 +177,8 @@ export default function App() {
   else if (seg[0] === 'login') page = session ? <AfterLogin /> : <Login />
   else if (seg[0] === 'centro' && seg[1] === 'nueva') page = <NeedCenter><NuevaSalida /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'salida' && seg[2]) page = <NeedCenter><NuevaSalida id={seg[2]} /></NeedCenter>
+  else if (seg[0] === 'centro' && seg[1] === 'mensajes') page = <NeedCenter><CentroMensajes id={seg[2]} /></NeedCenter>
+  else if (seg[0] === 'mensajes' && seg[1]) page = <NeedLogin><Mensajes id={seg[1]} /></NeedLogin>
   else if (seg[0] === 'centro' && seg[1] === 'agenda') page = <NeedCenter><CentroAgenda /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'salidas') page = <NeedCenter><CentroSalidas /></NeedCenter>
   else if (seg[0] === 'centro' && seg[1] === 'informes') page = <NeedCenter><CentroInformes /></NeedCenter>
@@ -200,6 +215,7 @@ export default function App() {
           {isAdmin && adminView !== 'admin' && <Link to="/admin" className="btn small ghost" title={t('Administración')} aria-label={t('Administración')}><Icon icon={ShieldCheck} />{pendingCenters > 0 && <span className="badge">{pendingCenters}</span>}</Link>}
           {session === null && <Link to="/login" className="btn small ghost">{t('Entrar')}</Link>}
           {/* Con sesión, «Salir» está en Perfil → Cuenta; el centro (y el admin viéndolo como centro) llega a su perfil desde aquí: su barra ya tiene 5 pestañas */}
+          {session && isCenter && !readOnly && <InboxButton key={path} on={seg[0] === 'centro' && seg[1] === 'mensajes'} />}
           {session && isCenter && (
             <Link to="/perfil" className={seg[0] === 'perfil' ? 'btn small ghost icon-only on' : 'btn small ghost icon-only'} title={t('Tu perfil')} aria-label={t('Tu perfil')} aria-current={seg[0] === 'perfil' ? 'page' : undefined}><Icon icon={User} /></Link>
           )}

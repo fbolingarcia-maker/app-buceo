@@ -52,6 +52,18 @@ export async function decryptSecret(authSecret, boxed) {
   return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, key, unb64(ct)))
 }
 export const signingKey = (authSecret, purpose) => derived(authSecret, purpose, 'bits')
+// Cifrado de datos guardados con una clave propia por uso (p. ej. 'chat': mensajes privados). Formato «v1.<iv>.<ct>».
+export async function encryptFor(authSecret, purpose, plain) {
+  const key = await derived(authSecret, purpose, 'aes')
+  const iv = randomBytes(12)
+  return 'v1.' + b64(iv) + '.' + b64(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plain)))
+}
+export async function decryptFor(authSecret, purpose, boxed) {
+  const [v, iv, ct] = String(boxed).split('.')
+  if (v !== 'v1' || !iv || !ct) throw new Error('formato cifrado desconocido')
+  const key = await derived(authSecret, purpose, 'aes')
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, key, unb64(ct)))
+}
 
 // ── Contraseñas ──
 // Formato: pbkdf2$<iteraciones>$<sal b64>$<hash b64>. Workers admite como máximo 100 000 iteraciones.

@@ -253,6 +253,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
                     {b.divers?.logged_dives ? ' · ' + t('{n} inm.', { n: b.divers.logged_dives }) : ''}
                   </div>
                   {b.divers && <DiverReady d={b.divers} gear={b.with_gear} />}
+                  {!readOnly && b.source === 'app' && b.diver_id && <Link to={'/centro/mensajes/' + b.id} className="small">{t('Mensajes')}</Link>}
                   {b.booking_extras?.length > 0 && <div className="small muted">{t('Extras')}: {b.booking_extras.map((e) => extraName(e) + (e.qty > 1 ? ' ×' + e.qty : '')).join(', ')}</div>}
                   {b.divers?.certifications?.map((c) => (
                     <div key={c.id} className="small row wrap" style={{ gap: 6 }}>

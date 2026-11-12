@@ -560,3 +560,21 @@ details.fold:not([open]) > summary::after { content: '▸'; }
   background: var(--surface); border-top: 1px solid var(--line); border-radius: 0 0 var(--r-card) var(--r-card); }
 .captcha:empty { display: none; }
 .captcha { margin: 4px 0 10px; }
+
+/* Mensajes privados buceador–centro (12 nov): bandeja del centro y hilo */
+.chat-list.tall { max-height: 55vh; min-height: 160px; }
+.chat textarea { resize: vertical; min-height: 44px; }
+.inbox { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.inbox-list, .inbox-thread { min-width: 0; }
+.inbox-row { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden; color: inherit; text-decoration: none; padding: 10px 12px; }
+.inbox-row.unread b { color: var(--oceano); }
+.inbox-row.on { outline: 2px solid var(--oceano); }
+.inbox.has-thread .inbox-list { display: none; }
+@media (min-width: 900px) {
+  .inbox.has-thread { grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); align-items: start; }
+  .inbox.has-thread .inbox-list { display: block; }
+  .inbox-back { display: none; }
+}
+.warn-text { color: var(--warn); display: inline-flex; align-items: center; gap: 4px; }
+.btn.icon-only { position: relative; }
+.btn.icon-only .badge { position: absolute; top: -6px; right: -6px; margin: 0; }

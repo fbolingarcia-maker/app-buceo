@@ -69,6 +69,19 @@ const RPC = {
   trip_messages: [{ id: 'm1', author: 'Demo · Centro Alona', is_staff: true, body: 'Quedamos a las 7:00 en el muelle de Alona', created_at: iso(now - H), mine: false }],
   book_trip: { id: 'nb1', trip_id: 't1-1', status: 'pending_payment', seats: 1, amount_php: 5800, paid_php: 0, deposit_php: 2900, created_at: iso(now), hold_until: null },
   is_platform_admin: role === 'admin', center_ratings: [{ center_id: C1, rating: 4.7, reviews: 12 }],
+  // Mensajes privados de una reserva (worker/chat.js)
+  chat_unread: { bookings: role === 'diver' ? { bk1: 1 } : {}, center: role.startsWith('center') ? 2 : 0 },
+  chat_inbox: [{ booking_id: 'bk1', status: 'confirmed', seats: 1, departs_at: iso(day0 + 7.5 * H), trip_id: 'mt0', diver_name: 'Ana López', last_body: '¿Puedo llevar mi ordenador de buceo? Y voy con nitrox', last_sender: 'diver', last_at: iso(day0 - 2 * H), unread: 2 }],
+  booking_chat: {
+    side: role.startsWith('center') || role === 'adminc' ? 'center' : 'diver', read_only: role === 'adminc', closed: false, other_read_at: iso(day0 - H),
+    messages: [
+      { id: 'm1', sender: 'diver', author: 'Ana López', body: '¿Puedo llevar mi ordenador de buceo?', created_at: iso(day0 - 3 * H), mine: !role.startsWith('center') },
+      { id: 'm2', sender: 'center', author: 'Azul Divers', body: 'Sí, claro. Te esperamos a las 7:30 en el muelle de Alona.', created_at: iso(day0 - 2 * H), mine: role.startsWith('center') },
+    ],
+    trip: { id: 'mt0', departs_at: iso(day0 + 7.5 * H), num_dives: 3, status: 'published', kind: 'fun', center_name: 'Azul Divers', center_phone: '+63 900 000 0000', boat_name: 'Banca Uno', sites: ['Napaling', 'Balicasag'] },
+    booking: { id: 'bk1', status: 'confirmed', seats: 1, with_gear: true, amount_php: 5800, paid_php: 2900, deposit_php: 2900, pay_on_site: false, checked_in_at: null, extras: [{ name: 'Nitrox (por inmersión)', qty: 3 }] },
+    diver: role.startsWith('center') ? { id: 'dv2', full_name: 'Ana López', email: 'ana@example.com', country: 'Filipinas', languages: ['en', 'es'], dives: 42, nitrox: true, last_dive_date: '2025-06-01', medical_done_at: null, medical_result: null, allergies: 'Penicilina', insurance_provider: 'DAN', insurance_expiry: '2027-03-01', wetsuit_size: 'M', bcd_size: 'S', fin_size: '38', certifications: [{ agency: 'PADI', level: 'advanced', verified: true }] } : null,
+  },
   delete_my_account: { ok: role !== 'centerv', blockers: role === 'centerv' ? ['Tu centro tiene 2 reserva(s) en salidas futuras. Cancélalas o avisa a los buceadores antes de eliminar la cuenta.'] : [], centers: role.startsWith('center') ? [C1] : [], dive_logs: 3, bookings_kept: 2 },
   center_private: [{ gcash_number: '0917 000 0000', review_note: role === 'centerr' ? 'Falta el permiso de negocio' : null, notes: null }],
   admin_users: [
