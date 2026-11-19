@@ -10,6 +10,7 @@ import Icon from '../lib/Icon'
 import { LocateFixed } from 'lucide-react'
 import { CanalPropio, Extras, GreenFins, Packs } from '../lib/centroExtras'
 import { TeamSection, WidgetSection } from '../lib/comunidad'
+import { CenterGuideRatings } from '../lib/guides'
 
 export default function CentroAjustes() {
   const { center, refresh, readOnly } = useAuth()
@@ -18,6 +19,7 @@ export default function CentroAjustes() {
       <h1>{t('Mi centro')}</h1>
       <h2 id="equipo">{t('Equipo')}</h2>
       <TeamSection center={center} readOnly={readOnly} />
+      {!readOnly && <CenterGuideRatings centerId={center.id} staff />}
       <h2>{t('Tu enlace de reservas')}</h2>
       <CanalPropio center={center} />
       <h2>{t('Widget de reservas para tu web')}</h2>

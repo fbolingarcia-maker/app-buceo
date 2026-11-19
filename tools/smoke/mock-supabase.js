@@ -120,6 +120,15 @@ const RPC = {
     { diver_id: 'd3', name: 'Marco R.', level: 'open_water', dives: 12, rated: false },
   ] },
   rate_buddy: { ok: true },
+  // Valoraciones de guías
+  guide_rating_targets: { open: true, closes_at: iso(now + 12 * D), guides: [{ user_id: 'g1', name: 'Gabi R.', rated: false }, { user_id: 'g2', name: 'Hugo L.', rated: true }] },
+  my_pending_guide_ratings: [{ trip_id: 't1-1', departs_at: iso(now - 2 * D + 7.5 * H), center_name: 'Demo · Centro Alona', pending: 1 }],
+  rate_guide: { ok: true },
+  guide_ratings: [
+    { user_id: 'g1', name: 'Gabi R.', raters: 7, overall: 4.8, scores: { briefing: 4.9, safety: 4.7, spotting: 5, friendly: 4.6 }, comments: [{ comment: 'Encontró dos peces rana y un caballito pigmeo. Briefing muy claro.', overall: 5, at: iso(now - 3 * D) }] },
+    { user_id: 'g2', name: 'Hugo L.', raters: 2, overall: 4.5, scores: { safety: 4.5 }, comments: [] },
+  ],
+  my_guide_ratings: { raters: 4, overall: 4.6, scores: { briefing: 4.5, safety: 4.8, spotting: 4.4, friendly: 4.9 }, public: true, comments: [{ comment: 'Muy paciente con mi primera inmersión de noche.', overall: 5, at: iso(now - 5 * D) }] },
 }
 function builder(table) {
   let rows = T[table] ? [...T[table]] : []

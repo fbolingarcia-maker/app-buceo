@@ -4,6 +4,7 @@ import { supabase, errMsg } from '../lib/supabase'
 import { t } from '../lib/i18n'
 import { time, dayLabel, manilaDate, addDays, levelName } from '../lib/format'
 import { QrCheckin, activityName } from '../lib/comunidad'
+import { MyGuideRatings } from '../lib/guides'
 import Icon from '../lib/Icon'
 import { Check } from 'lucide-react'
 
@@ -60,6 +61,7 @@ export default function Guia() {
           </div>
         )
       })}
+      <MyGuideRatings />
     </>
   )
 }

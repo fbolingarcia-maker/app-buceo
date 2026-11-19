@@ -4,7 +4,8 @@ import { Link } from '../lib/router'
 import { useAuth } from '../lib/auth'
 import { t } from '../lib/i18n'
 import { levelName, dateTime } from '../lib/format'
-import { CRITERIA, ScaleInput, WINDOW_DAYS } from '../lib/buddy'
+import { CRITERIA, ScaleInput, WINDOW_DAYS, BUDDY_RATINGS } from '../lib/buddy'
+import { GuideRatingForms } from '../lib/guides'
 import Icon from '../lib/Icon'
 import { ArrowLeft, EyeOff, Check } from 'lucide-react'
 
@@ -12,7 +13,9 @@ import { ArrowLeft, EyeOff, Check } from 'lucide-react'
 export default function Valorar({ tripId }) {
   const [d, setD] = useState(null)
   const [error, setError] = useState('')
+  const [guides, setGuides] = useState(null)
   useEffect(() => {
+    if (!BUDDY_RATINGS) return setD({ divers: [] })
     supabase.rpc('buddy_rating_targets', { p_trip: tripId }).then(({ data, error }) => {
       if (error) setError(errMsg(error)); else setD(data || { divers: [] })
     })
@@ -22,12 +25,14 @@ export default function Valorar({ tripId }) {
   return (
     <>
       <Link to="/reservas" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Reservas')}</Link>
-      <h1 style={{ marginTop: 8, marginBottom: 4 }}>{t('Valora a tus buddies')}</h1>
+      <h1 style={{ marginTop: 8, marginBottom: 4 }}>{t('Valora tu salida')}</h1>
       {d?.departs_at && <p className="muted" style={{ marginTop: 0 }}>{d.center_name} · {dateTime(d.departs_at)}</p>}
       {error && <div className="msg err" role="alert">{error}</div>}
       {!d && !error && <p className="muted">{t('Cargando…')}</p>}
 
-      {d && (
+      <GuideRatingForms tripId={tripId} onLoaded={setGuides} />
+      {d && BUDDY_RATINGS && (d.divers.length > 0 || !guides?.guides?.length) && <h2 style={{ marginBottom: 8 }}>{t('Tus buddies')}</h2>}
+      {d && BUDDY_RATINGS && (d.divers.length > 0 || !guides?.guides?.length) && (
         <div className="callout">
           <Icon icon={EyeOff} size={18} />
           <div className="small">
@@ -38,11 +43,11 @@ export default function Valorar({ tripId }) {
         </div>
       )}
 
-      {d && d.divers.length === 0 && (
+      {d && BUDDY_RATINGS && d.divers.length === 0 && !guides?.guides?.length && (
         <div className="card muted">{t('No hay compañeros que valorar en esta salida. Solo se puede valorar a quien tiene activadas las valoraciones y estuvo a bordo (check-in), en los {n} días siguientes.', { n: WINDOW_DAYS })}</div>
       )}
       {d?.divers.map((b, i) => <BuddyForm key={b.diver_id} tripId={tripId} b={b} startOpen={i === 0} />)}
-      {d && <OptIn />}
+      {d && BUDDY_RATINGS && <OptIn />}
     </>
   )
 }

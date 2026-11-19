@@ -8,6 +8,7 @@ import Icon from '../lib/Icon'
 import { calendarFile } from '../lib/ics'
 import { CalendarPlus, Check, Share2, X, Navigation, MessageCircle, Clock, MessageSquare } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
+import { PendingGuideRatings } from '../lib/guides'
 import { DanCard, SeaChip, extraName } from '../lib/extras'
 import { NoFlyBanner, ReviewForm, TripChat, InstallButton } from '../lib/plus'
 import { useChatUnread } from '../lib/chatUnread'
@@ -271,6 +272,7 @@ export default function Reservas() {
       {error && <div className="msg err" role="alert">{error}</div>}
       {info && <div className="msg ok" role="status">{info}</div>}
       {paid && <Confirmada b={paid} diver={diver} onClose={() => setJustPaid(null)} />}
+      <PendingGuideRatings />
       <PendingBuddyRatings />
       <NoFlyBanner lastDiveEnd={lastEnd} />
       {next && <NextTrip b={next} />}

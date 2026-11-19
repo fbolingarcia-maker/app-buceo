@@ -7,7 +7,6 @@ import Explorar from './pages/Explorar'
 import Salida from './pages/Salida'
 import Login from './pages/Login'
 import NuevaClave from './pages/NuevaClave'
-import { BUDDY_RATINGS } from './lib/buddy'
 import { DosPasosReto, DosPasosObligatoria } from './pages/DosPasos'
 import AdminBar, { AdminCenterPicker } from './lib/AdminBar'
 import ErrorBoundary from './lib/ErrorBoundary'
@@ -172,7 +171,7 @@ export default function App() {
   else if (seg[0] === 'bitacora' && seg[1] === 'importar') page = <NeedLogin><Importar /></NeedLogin>
   else if (seg[0] === 'bitacora' && seg[1]) page = <NeedLogin><Inmersion id={seg[1]} /></NeedLogin>
   else if (seg[0] === 'bitacora') page = <NeedLogin title={t('Bitácora')} intro={t('Guarda cada inmersión con profundidad, tiempo, fauna y fotos. Entra o crea una cuenta para empezar.')} back="/bitacora"><Bitacora /></NeedLogin>
-  else if (seg[0] === 'valorar' && seg[1] && BUDDY_RATINGS) page = <NeedLogin><Valorar tripId={seg[1]} /></NeedLogin>
+  else if (seg[0] === 'valorar' && seg[1]) page = <NeedLogin><Valorar tripId={seg[1]} /></NeedLogin>
   else if (seg[0] === 'perfil') page = <NeedLogin><Perfil /></NeedLogin>
   else if (seg[0] === 'login') page = session ? <AfterLogin /> : <Login />
   else if (seg[0] === 'centro' && seg[1] === 'nueva') page = <NeedCenter><NuevaSalida /></NeedCenter>

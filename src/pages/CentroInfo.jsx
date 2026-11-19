@@ -10,6 +10,7 @@ import { GreenFinsBadge, EcoList, LastMinuteTag, PriceTag } from '../lib/extras'
 import Icon from '../lib/Icon'
 import FavButton from '../lib/FavButton'
 import { CenterReviews } from '../lib/plus'
+import { CenterGuideRatings } from '../lib/guides'
 import { FollowButton } from '../lib/comunidad'
 import { useAuth } from '../lib/auth'
 import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
@@ -108,6 +109,7 @@ export default function CentroInfo({ id }) {
       {!allDays && byDay.length > 3 && <button type="button" className="btn ghost block" onClick={() => setAllDays(true)}>{t('Ver más días ({n})', { n: byDay.length - 3 })}</button>}
       <h2>{t('Reseñas')}</h2>
       <div className="card"><CenterReviews centerId={id} limit={10} />{' '}<ReviewsEmpty centerId={id} /></div>
+      <CenterGuideRatings centerId={id} />
     </>
   )
 }
