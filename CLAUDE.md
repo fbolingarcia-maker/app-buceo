@@ -109,6 +109,12 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Frontend: `src/lib/bookingChat.jsx` (`ChatThread` refresca cada 6 s con `p_after` mientras está a la vista, `DiverCard`, `TripCard`), `src/lib/chatUnread.js` (`useChatUnread`, cada minuto), página `src/pages/Mensajes.jsx` (`#/mensajes/<reserva>` para el buceador; `#/centro/mensajes[/<reserva>]` bandeja + hilo, lado a lado desde 900 px). Entradas: botón «Mensajes con el centro» en cada reserva (con sin leer), icono de mensajes en la cabecera del centro (con sin leer) y enlace «Mensajes» en cada reserva de la Agenda. Textos en `src/lib/en/chat.js`. Pruebas: `node --no-warnings worker/test/chat.mjs`.
 - Sin WebSockets a propósito: con el volumen de un centro, consultar cada 6 s con el hilo abierto es más simple y barato; si hiciera falta tiempo real, se cambia `ChatThread` por un Durable Object sin tocar las tablas.
 
+## Valoraciones de guías / divemasters (17 nov 2026)
+- `worker/guides.js` (RPC sumadas en rpc.js), tabla `guide_ratings` creada sola por `ensureGuideRatings` (UNIQUE salida+guía+buceador; no se lee por REST). Guías de la salida = `trip_guides` (los asigna el centro en la Agenda).
+- Valora quien estuvo a bordo (reserva confirmada con check-in), desde que sale el barco hasta 14 días después: nota general 1–5 obligatoria, cuatro criterios opcionales (`briefing`, `safety`, `spotting`, `friendly`) y comentario privado (≤500). RPC: `guide_rating_targets(p_trip)`, `rate_guide`, `my_pending_guide_ratings`, `guide_ratings(p_center)`, `my_guide_ratings`.
+- Visibilidad (decisión de Fernando, 17 nov): media pública en la ficha del centro con al menos 3 buceadores distintos (cuenta la última de cada uno, últimos 12 meses), con nombre corto. El equipo del centro (`center_staff`, en Ajustes) ve a todos sus guías y los comentarios; el guía ve los suyos en `#/guia`. Nadie ve quién valoró. Se borran al eliminar la cuenta del buceador o del guía.
+- Frontend: `src/lib/guides.jsx` (`GuideRatingForms` en `#/valorar/<salida>` antes de los buddies, `PendingGuideRatings` en Reservas, `CenterGuideRatings` en CentroInfo y Ajustes, `MyGuideRatings` en Guía). Textos en `src/lib/en/guides.js`. Pruebas: `node --no-warnings worker/test/guias.mjs`.
+
 ## Pagos
 - Señal mínima del 50 % (`deposit_php`) para confirmar la reserva; el resto se paga en la app o en efectivo en el centro (`record_cash_payment`).
 - Todo cobro pasa por la tabla `payments` y se aplica con `settle_payment()` (solo service_role).

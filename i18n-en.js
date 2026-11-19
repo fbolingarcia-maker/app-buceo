@@ -1,0 +1,21 @@
+// Diccionario español -> inglés, repartido por zonas de la app
+import core from './en/core'
+import cuenta from './en/cuenta'
+import buceador from './en/buceador'
+import centro from './en/centro'
+import verificacion from './en/verificacion'
+import ux from './en/ux'
+import seguridad from './en/seguridad'
+import mfa from './en/mfa'
+import diseno from './en/diseno'
+import buddy from './en/buddy'
+import perfil from './en/perfil'
+import mejoras from './en/mejoras'
+import mejoras2 from './en/mejoras2'
+import plus from './en/plus'
+import reserva10 from './en/reserva10'
+import comunidad from './en/comunidad'
+import chat from './en/chat'
+import guides from './en/guides'
+
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad, ...chat, ...guides }
