@@ -105,7 +105,9 @@ export default {
     const wid = /^\/w\/([\w-]{2,40})\/?$/.exec(url.pathname)
     if (wid && env.DB) return handleWidget(req, env, url, wid[1])
     // Verificación de Google Search Console: se sirve tal cual (Static Assets redirigiría *.html a la ruta sin .html)
-    if (url.pathname === '/google3f09e05f2c350262.html') return new Response('google-site-verification: google3f09e05f2c350262.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    // Verificación de Google Search Console (una por cuenta de Google: divingslot@ y fbolingarcia@)
+    const gsv = { '/google3f09e05f2c350262.html': 1, '/googlea8444a2009de39fb.html': 1 }
+    if (gsv[url.pathname]) return new Response('google-site-verification: ' + url.pathname.slice(1), { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
     return env.ASSETS.fetch(req)
   },
   async scheduled(event, env, ectx) {
