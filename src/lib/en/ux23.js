@@ -11,4 +11,7 @@ export default {
   'Cambiar la foto': 'Change the photo',
   'Subir una foto': 'Upload a photo',
   'Quitar': 'Remove',
+  'Ya descontada del pago online': 'Already deducted from the online payment',
+  'Pendiente de liquidar': 'Still to settle',
+  'La comisión se descuenta del pago que el buceador hace en la app al reservar (la señal ya la cubre), así que lo que te paga en efectivo en el centro es íntegro para ti. La comisión de la pasarela de pago va aparte. Las salidas que cancelas no pagan comisión.': 'The commission is deducted from the payment the diver makes in the app when booking (the deposit always covers it), so whatever they pay you in cash at the centre is all yours. The payment gateway fee is separate. Trips you cancel pay no commission.',
 }

@@ -91,7 +91,7 @@ export async function expireUnpaidWithMoney(env) {
   const rows = await all(env.DB, `SELECT b.id, b.paid_php FROM bookings b WHERE b.status = 'pending_payment' AND b.paid_php > 0
     AND max(strftime('%Y-%m-%dT%H:%M:%fZ', b.created_at, '+15 minutes'), coalesce(b.hold_until, '')) < ? LIMIT 50`, nowIso())
   for (const r of rows) {
-    const u = await env.DB.prepare(`UPDATE bookings SET status = 'cancelled_by_diver', refund_php = paid_php, commission_php = 0, cancelled_at = ?
+    const u = await env.DB.prepare(`UPDATE bookings SET status = 'cancelled_by_diver', refund_php = paid_php, commission_php = 0, commission_paid_php = 0, cancelled_at = ?
       WHERE id = ? AND status = 'pending_payment'`).bind(nowIso(), r.id).run()
     if (u?.meta?.changes) await notifyAdmin(env, { kind: 'reembolso', title: 'Reembolso pendiente: ₱' + r.paid_php.toLocaleString('en-US'),
       lines: ['Reserva ' + r.id.slice(0, 8) + ' caducó sin completar la señal.', 'Devuelve lo pagado desde PayMongo.'] }).catch(() => {})

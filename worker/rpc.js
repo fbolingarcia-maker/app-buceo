@@ -37,6 +37,8 @@ function paymentAmount(b, kind) {
 
 // Sentencias que aplican un pago (port de settle_payment). Van en el mismo batch que el alta del pago si la hay.
 // Solo actúan si el pago aún no estaba pagado: idempotente aunque llegue dos veces (webhook + vuelta a la app).
+// La comisión de DivingSlot se retiene del primer dinero que entra por la app (la señal la cubre siempre):
+// commission_paid_php sube con cada pago online hasta commission_php; el efectivo en el centro no cuenta.
 export function settleStatements(db, paymentId, bookingId, amount, now = nowIso()) {
   const live = "status NOT IN ('cancelled_by_diver', 'cancelled_by_center')" // un pago que llega tarde a una reserva cancelada se suma al reembolso
   return [
@@ -45,7 +47,9 @@ export function settleStatements(db, paymentId, bookingId, amount, now = nowIso(
         refund_php = CASE WHEN ${live} THEN refund_php ELSE refund_php + ?1 END,
         status = CASE WHEN status = 'pending_payment' AND paid_php + ?1 >= deposit_php THEN 'confirmed' ELSE status END,
         paid_at = CASE WHEN ${live} THEN coalesce(paid_at, CASE WHEN paid_php + ?1 >= deposit_php THEN ?2 END) ELSE paid_at END,
-        balance_paid_at = CASE WHEN ${live} AND paid_php + ?1 >= amount_php THEN ?2 ELSE balance_paid_at END
+        balance_paid_at = CASE WHEN ${live} AND paid_php + ?1 >= amount_php THEN ?2 ELSE balance_paid_at END,
+        commission_paid_php = CASE WHEN ${live} AND (SELECT method FROM payments WHERE id = ?4) <> 'cash'
+          THEN min(commission_php, commission_paid_php + ?1) ELSE commission_paid_php END
       WHERE id = ?3 AND EXISTS (SELECT 1 FROM payments WHERE id = ?4 AND status <> 'paid')`).bind(amount, now, bookingId, paymentId),
     db.prepare("UPDATE payments SET status = 'paid', paid_at = ?1 WHERE id = ?2 AND status <> 'paid'").bind(now, paymentId),
   ]
@@ -201,7 +205,7 @@ export const RPC = {
     // Alta atómica: solo entra si la salida sigue publicada, el centro verificado, quedan plazas y no hay reserva duplicada
     const r = await run(ctx.db, `INSERT INTO bookings (id, trip_id, diver_id, seats, with_gear, source, status, amount_php, commission_php, medical_signed, deposit_php, created_at,
         channel, fees_php, extras_php, discount_php)
-      SELECT ?1, t.id, ?2, ?3, ?4, 'app', 'pending_payment', ?5, ?6, 1, CAST((?5 * ?7 + 99) / 100 AS INTEGER), ?8, ?10, ?11, ?12, ?13
+      SELECT ?1, t.id, ?2, ?3, ?4, 'app', 'pending_payment', ?5, ?6, 1, max(CAST((?5 * ?7 + 99) / 100 AS INTEGER), ?6), ?8, ?10, ?11, ?12, ?13
       FROM trips t JOIN centers c ON c.id = t.center_id
       WHERE t.id = ?9 AND t.status = 'published' AND c.verification_status = 'verified'
         AND t.departs_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+${RULES.min_lead_minutes} minutes')
@@ -288,7 +292,8 @@ export const RPC = {
     // round(amount × 0,5) = (amount + 1) / 2 en enteros
     const r = await run(ctx.db, `UPDATE bookings SET status = 'cancelled_by_diver',
         refund_php = CASE WHEN ?1 THEN paid_php ELSE max(0, paid_php - (amount_php + 1) / 2) END,
-        commission_php = CASE WHEN ?1 THEN 0 ELSE commission_php END, cancelled_at = ?2
+        commission_php = CASE WHEN ?1 THEN 0 ELSE commission_php END,
+        commission_paid_php = CASE WHEN ?1 THEN 0 ELSE commission_paid_php END, cancelled_at = ?2
       WHERE id = ?3 AND status = ?4`, full ? 1 : 0, nowIso(), b.id, b.status)
     if (!changes(r)) fail('BAD_STATE', 'la reserva ha cambiado, vuelve a intentarlo')
     // La plaza liberada pasa al primero de la lista de espera
@@ -343,6 +348,8 @@ export const RPC = {
     const b = await booking(ctx.db, p_booking)
     if (!b || !isStaff(ctx, await tripCenter(ctx.db, b.trip_id))) fail('FORBIDDEN', null, 403)
     if (!['pending_payment', 'confirmed'].includes(b.status)) fail('BAD_STATE', 'la reserva no está activa')
+    // Una reserva hecha por la app se confirma pagando la señal en la app (de ahí sale la comisión); en efectivo solo el resto
+    if (b.source === 'app' && b.status !== 'confirmed') fail('DEPOSIT_ONLINE', 'la señal de una reserva por la app se paga en la app; en efectivo solo se cobra el resto')
     const due = b.amount_php - b.paid_php
     const amt = p_amount === null || p_amount === undefined ? due : +p_amount
     if (!Number.isInteger(amt) || amt <= 0 || amt > due) fail('BAD_AMOUNT', 'importe no válido')

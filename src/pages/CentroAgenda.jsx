@@ -280,7 +280,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
                   disabled={busy === 'ci' + b.id} onClick={() => checkin(b)}>
                   {b.checked_in_at ? '✓ ' + t('A bordo') : t('Check-in')}
                 </button>
-                {b.paid_php < b.amount_php && (
+                {b.paid_php < b.amount_php && !(b.source === 'app' && b.status !== 'confirmed') && (
                   <button type="button" className="btn small ghost grow" disabled={busy === 'ca' + b.id} onClick={() => {
                     if (window.confirm(t('¿Registrar cobro en efectivo de {amount}?', { amount: php(b.amount_php - b.paid_php) })))
                       run(supabase.rpc('record_cash_payment', { p_booking: b.id }), t('Cobro en efectivo registrado'), 'ca' + b.id)

@@ -189,6 +189,7 @@ ok(BA?.amount_php === 7000 && BA.deposit_php === 3500 && BA.commission_php === 3
 ok(errCode(await A.rpc('book_trip', { p_trip: T1, p_seats: 1, p_with_gear: false, p_medical_signed: true })) === 'DUPLICATE', 'no duplica reserva')
 r = await A.rpc('confirm_payment_demo', { p_booking: BA.id, p_kind: 'deposit' })
 ok(r.data?.status === 'confirmed' && r.data.paid_php === 3500, 'A paga la señal demo y queda confirmada', r)
+ok(r.data?.commission_paid_php === 315, 'la comisión (315) se retiene entera del pago de la señal', r)
 
 r = await B.rpc('book_trip', { p_trip: T1, p_seats: 4, p_with_gear: false, p_medical_signed: true })
 const BB = r.data
@@ -204,12 +205,16 @@ ok(errCode(await B.rpc('confirm_payment_demo', { p_booking: BB.id, p_kind: 'depo
 section('centro: reserva por WhatsApp, check-in, efectivo')
 r = await centro.rpc('add_manual_booking', { p_trip: T1, p_guest: 'Juan WhatsApp', p_seats: 1, p_with_gear: false, p_source: 'whatsapp' })
 ok(r.data?.status === 'confirmed' && r.data.commission_php === 0 && r.data.amount_php === 3000, 'reserva manual sin comisión', r)
+{ const P = (await B.rpc('book_trip', { p_trip: T1, p_seats: 1, p_with_gear: false, p_medical_signed: true })).data
+  ok(errCode(await centro.rpc('record_cash_payment', { p_booking: P?.id })) === 'DEPOSIT_ONLINE', 'la señal de una reserva por la app no se cobra en efectivo')
+  await db.prepare('DELETE FROM bookings WHERE id = ?').bind(P?.id).run() }
 ok(errCode(await centro.rpc('add_manual_booking', { p_trip: T1, p_guest: 'X', p_seats: 9, p_with_gear: false, p_source: 'walk_in' })) === 'NO_SEATS', 'reserva manual respeta el barco')
 ok(errCode(await A.rpc('add_manual_booking', { p_trip: T1, p_guest: 'X', p_seats: 1, p_with_gear: false, p_source: 'walk_in' })) === 'FORBIDDEN', 'un buceador no añade reservas manuales')
 r = await centro.rpc('set_checkin', { p_booking: BA.id, p_in: true })
 ok(!!r.data?.checked_in_at, 'check-in de A', r)
 r = await centro.rpc('record_cash_payment', { p_booking: BA.id })
 ok(r.data?.paid_php === 7000 && !!r.data.balance_paid_at, 'cobra el resto en efectivo', r)
+ok(r.data?.commission_paid_php === 315, 'el efectivo no cambia la comisión retenida', r)
 ok(errCode(await centro.rpc('record_cash_payment', { p_booking: BA.id })) === 'BAD_AMOUNT', 'no cobra dos veces')
 
 // el centro ve a sus clientes y sus certificaciones, con la relación incrustada
@@ -222,7 +227,7 @@ section('cancelaciones')
 // A cancela a menos de 24 h: se queda el 50 %
 await db.prepare('UPDATE trips SET departs_at = ? WHERE id = ?').bind(dep(10), T1).run()
 r = await A.rpc('cancel_my_booking', { p_booking: BA.id })
-ok(r.data?.status === 'cancelled_by_diver' && r.data.refund_php === 3500 && r.data.commission_php === 315, 'A cancela a <24 h: devuelve 7000 − 3500, mantiene comisión', r)
+ok(r.data?.status === 'cancelled_by_diver' && r.data.refund_php === 3500 && r.data.commission_php === 315 && r.data.commission_paid_php === 315, 'A cancela a <24 h: devuelve 7000 − 3500, mantiene comisión', r)
 // otra salida cancelada por meteo: devuelve el 100 %
 r = await centro.rest({ table: 'trips', op: 'insert', values: { center_id: CID, boat_id: BOAT, departs_at: dep(72), price_php: 2500, divers_per_guide: 4, status: 'published' }, returning: true, select: 'id' })
 const T2 = r.data[0].id
@@ -230,8 +235,8 @@ const bB2 = (await B.rpc('book_trip', { p_trip: T2, p_seats: 1, p_with_gear: fal
 await B.rpc('confirm_payment_demo', { p_booking: bB2.id, p_kind: 'full' })
 r = await centro.rpc('cancel_trip_weather', { p_trip: T2 })
 ok(r.data === 1, 'cancelación por meteo', r)
-r = await B.rest({ table: 'bookings', select: 'status, refund_php, commission_php, refund_choice', filters: [['id', 'eq', bB2.id]], single: 'single' })
-ok(r.data?.status === 'cancelled_by_center' && r.data.refund_php === 0 && r.data.refund_choice === 'pending' && r.data.commission_php === 0, 'meteo: sin comisión y el buceador elige otro día o el reembolso', r)
+r = await B.rest({ table: 'bookings', select: 'status, refund_php, commission_php, commission_paid_php, refund_choice', filters: [['id', 'eq', bB2.id]], single: 'single' })
+ok(r.data?.status === 'cancelled_by_center' && r.data.refund_php === 0 && r.data.refund_choice === 'pending' && r.data.commission_php === 0 && r.data.commission_paid_php === 0, 'meteo: sin comisión y el buceador elige otro día o el reembolso', r)
 r = await B.rpc('choose_refund', { p_booking: bB2.id })
 ok(r.data?.refund_php === 2500 && r.data.refund_choice === 'refund', 'meteo: elige el reembolso del 100 %', r)
 

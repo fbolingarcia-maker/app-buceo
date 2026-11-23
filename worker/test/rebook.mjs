@@ -91,6 +91,7 @@ ok(code(await A.rpc('rebook_booking', { p_booking: bA.id, p_trip: 'tx' })) === '
 ok((await row(bA.id)).refund_choice === 'pending', 'el intento fallido no gasta la elección')
 r = await A.rpc('rebook_booking', { p_booking: bA.id, p_trip: 't2' })
 ok(r.data?.moved_php === 3000 && r.data.refund_php === 0 && r.data.due_php === 1000 && r.data.booking.status === 'confirmed' && r.data.booking.paid_php === 3000, 'pasa 3000 y quedan 1000 por pagar', r)
+ok(r.data?.booking.commission_paid_php === r.data?.booking.commission_php && r.data.booking.commission_php > 0, 'la nueva reserva ya lleva la comisión retenida del dinero que pasa', r.data?.booking)
 a = await row(bA.id)
 ok(a.refund_choice === 'rebooked' && a.rebooked_to === r.data.booking.id && a.moved_php === 3000 && a.refund_php === 0, 'la vieja apunta a la nueva', a)
 ok((await row(r.data.booking.id)).rebooked_from === bA.id, 'la nueva apunta a la vieja')
