@@ -2,6 +2,7 @@
 // (select con tablas incrustadas, filtros, orden, límite, count, single; insert, update, upsert y delete),
 // siempre pasando por las políticas de policies.js. Recibe JSON de src/lib/cf-client.js.
 import { TABLES, VIEWS, TYPES, FKS, pkOf } from './schema.js'
+import { centreCancelStatements } from './rebook.js'
 import { POLICIES, HIDDEN, PROTECTED, and, or, P, YES, NO } from './policies.js'
 import { ApiError, fail, outRow, inVal, all, first, uuid, nowIso } from './lib/util.js'
 
@@ -214,7 +215,8 @@ async function beforeWrite(ctx, t, op, row, old) {
 function afterWrite(ctx, t, op, row, old) {
   const stmts = []
   if (t === 'trips' && op === 'update' && row.status === 'cancelled_weather' && old.status !== 'cancelled_weather') {
-    stmts.push(ctx.db.prepare("UPDATE bookings SET status = 'cancelled_by_center', refund_php = paid_php, commission_php = 0, cancelled_at = ? WHERE trip_id = ? AND status IN ('pending_payment', 'confirmed')").bind(nowIso(), row.id))
+    // Igual que cancel_trip_weather: quien pagó por la app elige otra salida o el reembolso (rebook.js)
+    stmts.push(...centreCancelStatements(ctx.db, row.id, nowIso()))
   }
   return stmts
 }

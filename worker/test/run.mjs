@@ -230,8 +230,10 @@ const bB2 = (await B.rpc('book_trip', { p_trip: T2, p_seats: 1, p_with_gear: fal
 await B.rpc('confirm_payment_demo', { p_booking: bB2.id, p_kind: 'full' })
 r = await centro.rpc('cancel_trip_weather', { p_trip: T2 })
 ok(r.data === 1, 'cancelación por meteo', r)
-r = await B.rest({ table: 'bookings', select: 'status, refund_php, commission_php', filters: [['id', 'eq', bB2.id]], single: 'single' })
-ok(r.data?.status === 'cancelled_by_center' && r.data.refund_php === 2500 && r.data.commission_php === 0, 'meteo: 100 % y sin comisión', r)
+r = await B.rest({ table: 'bookings', select: 'status, refund_php, commission_php, refund_choice', filters: [['id', 'eq', bB2.id]], single: 'single' })
+ok(r.data?.status === 'cancelled_by_center' && r.data.refund_php === 0 && r.data.refund_choice === 'pending' && r.data.commission_php === 0, 'meteo: sin comisión y el buceador elige otro día o el reembolso', r)
+r = await B.rpc('choose_refund', { p_booking: bB2.id })
+ok(r.data?.refund_php === 2500 && r.data.refund_choice === 'refund', 'meteo: elige el reembolso del 100 %', r)
 
 section('informes del centro (cifras)')
 r = await centro.rest({ table: 'payments', select: 'amount_php, method, kind, paid_at', filters: [['status', 'eq', 'paid']] })

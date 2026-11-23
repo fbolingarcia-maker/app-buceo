@@ -11,6 +11,7 @@ import { COMUNIDAD, needsCert, needsMedical } from './comunidad.js'
 import { BACKUP_RPC } from './backup.js'
 import { CHAT, deleteDiverChats } from './chat.js'
 import { GUIDES, deleteDiverGuideRatings, ensureGuideRatings } from './guides.js'
+import { REBOOK, CANCEL_REASONS, centreCancelStatements, notifyCancelled } from './rebook.js'
 
 export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
@@ -35,7 +36,7 @@ function paymentAmount(b, kind) {
 // Sentencias que aplican un pago (port de settle_payment). Van en el mismo batch que el alta del pago si la hay.
 // Solo actúan si el pago aún no estaba pagado: idempotente aunque llegue dos veces (webhook + vuelta a la app).
 export function settleStatements(db, paymentId, bookingId, amount, now = nowIso()) {
-  const live = "status NOT IN ('cancelled_by_diver', 'cancelled_by_center')"
+  const live = "status NOT IN ('cancelled_by_diver', 'cancelled_by_center')" // un pago que llega tarde a una reserva cancelada se suma al reembolso
   return [
     db.prepare(`UPDATE bookings SET
         paid_php = paid_php + ?1,
@@ -360,21 +361,22 @@ export const RPC = {
     return booking(ctx.db, b.id)
   },
 
-  async cancel_trip_weather(ctx, { p_trip }) {
+  // Cancelar una salida (mar u otro imprevisto). Quien pagó por la app elige otra salida del centro o el reembolso (rebook.js)
+  async cancel_trip_weather(ctx, { p_trip, p_reason = 'weather', p_note = null }) {
     mfa(ctx)
     const t = await first(ctx.db, 'SELECT * FROM trips WHERE id = ?', p_trip)
     if (!t) fail('NOT_FOUND')
     if (!isStaff(ctx, t.center_id)) fail('FORBIDDEN', null, 403)
     if (t.status !== 'published') fail('BAD_STATE')
+    if (!CANCEL_REASONS.includes(p_reason)) fail('BAD_REASON', 'motivo no válido')
+    const note = String(p_note || '').trim().slice(0, 200) || null
     const now = nowIso()
     const [upd] = await ctx.db.batch([
-      ctx.db.prepare("UPDATE trips SET status = 'cancelled_weather' WHERE id = ? AND status = 'published'").bind(t.id),
-      ctx.db.prepare(`UPDATE bookings SET status = 'cancelled_by_center', refund_php = paid_php, commission_php = 0, cancelled_at = ?
-        WHERE trip_id = ? AND status IN ('pending_payment', 'confirmed') AND EXISTS (SELECT 1 FROM trips WHERE id = ? AND status = 'cancelled_weather')`).bind(now, t.id, t.id),
+      ctx.db.prepare("UPDATE trips SET status = 'cancelled_weather', cancel_reason = ?, cancel_note = ? WHERE id = ? AND status = 'published'").bind(p_reason, note, t.id),
+      ...centreCancelStatements(ctx.db, t.id, now),
     ])
     if (!changes(upd)) fail('BAD_STATE')
-    const hit = await all(ctx.db, "SELECT DISTINCT diver_id FROM bookings WHERE trip_id = ? AND status = 'cancelled_by_center' AND diver_id IS NOT NULL", t.id)
-    const q = Promise.all(hit.map((x) => notifyDiver(ctx.env, x.diver_id, { title: 'Salida cancelada · Trip cancelled', body: 'El centro ha cancelado la salida por el estado del mar. Se devuelve todo lo pagado. · Cancelled due to sea conditions: full refund.', url: '/reservas', urgent: true }))).catch(() => {})
+    const q = notifyCancelled(ctx.env, t.id, ctx.env.APP_ORIGIN || 'https://divingslot.com').catch((e) => console.error('aviso cancelación', e.message))
     if (ctx.waitUntil) ctx.waitUntil(q)
     return (await first(ctx.db, "SELECT count(*) AS n FROM bookings WHERE trip_id = ? AND status = 'cancelled_by_center'", t.id)).n
   },
@@ -668,7 +670,7 @@ const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
 
 // Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
-Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES)
+Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES, REBOOK)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

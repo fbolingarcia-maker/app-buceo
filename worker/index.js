@@ -26,6 +26,7 @@ import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits, notifyA
 import { handleWidget } from './comunidad.js'
 import { backupD1, BACKUP_CRON } from './backup.js'
 import { purgeChats } from './chat.js'
+import { expireRebookChoices } from './rebook.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
@@ -123,5 +124,6 @@ export default {
     ectx.waitUntil(balanceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('recordatorios de pago')))
     ectx.waitUntil(insuranceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('avisos de seguro')))
     ectx.waitUntil(expireUnpaidWithMoney(env).catch(onFail('reservas caducadas con pagos')))
+    ectx.waitUntil(expireRebookChoices(env).catch(onFail('plazo para elegir otro día')))
   },
 }

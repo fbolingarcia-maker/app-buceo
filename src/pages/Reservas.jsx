@@ -14,6 +14,7 @@ import { NoFlyBanner, ReviewForm, TripChat, InstallButton } from '../lib/plus'
 import { useChatUnread } from '../lib/chatUnread'
 import { PayBox, fnError, holdEnd } from '../lib/pay'
 import { CheckinPass } from '../lib/comunidad'
+import { RebookChoice, RebookResult } from '../lib/rebook'
 
 function addToCalendar(b) {
   const a = document.createElement('a')
@@ -112,12 +113,14 @@ export default function Reservas() {
   const [waits, setWaits] = useState([])
   const [reviews, setReviews] = useState({})
   const [chatFor, setChatFor] = useState(null)
+  // Enlace del email de cancelación: #/reservas?elegir=<reserva> abre directamente la lista de otros días
+  const [elegir] = useState(() => new URLSearchParams(window.location.hash.split('?')[1] || '').get('elegir'))
   const unread = useChatUnread()
 
   const load = useCallback(async () => {
     if (!diver) return
     const { data, error } = await supabase.from('bookings')
-      .select('*, trips(departs_at, num_dives, status, centers(name, phone, destination, locality, lat, lng), boats(name, show_to_divers)), booking_extras(name, qty, price_php)')
+      .select('*, trips(departs_at, num_dives, status, cancel_reason, cancel_note, centers(name, phone, destination, locality, lat, lng), boats(name, show_to_divers)), booking_extras(name, qty, price_php)')
       .eq('diver_id', diver.id).order('created_at', { ascending: false })
     if (error) setError(errMsg(error))
     setList(data || [])
@@ -180,8 +183,11 @@ export default function Reservas() {
 
   const now = Date.now()
   const paid = justPaid && list.find((b) => b.id === justPaid)
-  const upcoming = list.filter((b) => new Date(b.trips?.departs_at) > now)
-  const past = list.filter((b) => new Date(b.trips?.departs_at) <= now)
+  // Salidas que el centro canceló y en las que el buceador aún tiene que elegir: arriba, antes que el resto
+  const choosing = (b) => b.status === 'cancelled_by_center' && b.refund_choice === 'pending' && new Date(b.choice_until) > now
+  const toChoose = list.filter(choosing)
+  const upcoming = list.filter((b) => !choosing(b) && new Date(b.trips?.departs_at) > now)
+  const past = list.filter((b) => !choosing(b) && new Date(b.trips?.departs_at) <= now)
   const next = upcoming.filter((b) => b.status === 'confirmed').sort((a, b) => a.trips.departs_at.localeCompare(b.trips.departs_at))[0]
   // Fin aproximado de la última salida hecha: hora de salida + 1,5 h por inmersión (para el aviso de no volar)
   const done = past.filter((b) => b.status === 'confirmed').map((b) => new Date(b.trips.departs_at).getTime() + (b.trips.num_dives || 2) * 1.5 * 36e5).filter((x) => x <= now)
@@ -217,12 +223,14 @@ export default function Reservas() {
             {t('Pagado {amount}', { amount: php(b.paid_php) })}{balance > 0 && active ? <> · <b>{t('pendiente {amount}', { amount: php(balance) })}</b></> : ' · ' + t('todo pagado')}
           </div>
         )}
-        {b.trips?.status === 'cancelled_weather' ? (
-          <div className="msg warn" role="status">
-            {t('El centro ha cancelado la salida por el estado del mar.')}
-            {b.refund_php > 0 && <><br />{t('Se te devuelve todo lo pagado: {amount}.', { amount: php(b.refund_php) })}</>}
-            <div style={{ marginTop: 6 }}><Link to="/">{t('Buscar otra salida')}</Link></div>
-          </div>
+        {b.rebooked_from && <div className="small muted" style={{ marginTop: 4 }}>{t('Cambiada desde una salida que el centro canceló')}</div>}
+        {choosing(b) ? (
+          <RebookChoice b={b} startOpen={elegir === b.id} onDone={(m) => { setInfo(m); load() }} />
+        ) : b.trips?.status === 'cancelled_weather' ? (
+          <>
+            <RebookResult b={b} all={list} />
+            {b.refund_choice !== 'rebooked' && <div className="small" style={{ marginTop: 6 }}><Link to="/">{t('Buscar otra salida')}</Link></div>}
+          </>
         ) : b.refund_php > 0 && <div className="msg ok" role="status">{t('Reembolso: {amount}', { amount: php(b.refund_php) })}</div>}
         {/* Mensajes privados con el centro (solo el buceador y el centro), hasta 30 días después de la salida */}
         {(unread.bookings[b.id] > 0 || new Date(b.trips?.departs_at) > now - 30 * 864e5) && (
@@ -272,6 +280,7 @@ export default function Reservas() {
       {error && <div className="msg err" role="alert">{error}</div>}
       {info && <div className="msg ok" role="status">{info}</div>}
       {paid && <Confirmada b={paid} diver={diver} onClose={() => setJustPaid(null)} />}
+      {toChoose.length > 0 && <><h2>{toChoose.length === 1 ? t('Una salida cancelada: elige qué hacer') : t('{n} salidas canceladas: elige qué hacer', { n: toChoose.length })}</h2>{toChoose.map(card)}</>}
       <PendingGuideRatings />
       <PendingBuddyRatings />
       <NoFlyBanner lastDiveEnd={lastEnd} />

@@ -578,3 +578,9 @@ details.fold:not([open]) > summary::after { content: '▸'; }
 .warn-text { color: var(--warn); display: inline-flex; align-items: center; gap: 4px; }
 .btn.icon-only { position: relative; }
 .btn.icon-only .badge { position: absolute; top: -6px; right: -6px; margin: 0; }
+
+/* Salida cancelada por el centro: elegir otro día (src/lib/rebook.jsx) */
+.rebook-list { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow: auto; }
+.rebook-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); cursor: pointer; min-height: 44px; }
+.rebook-opt.on { border-color: var(--oceano); box-shadow: 0 0 0 1px var(--oceano) inset; }
+.rebook-opt .grow { flex: 1; min-width: 0; }

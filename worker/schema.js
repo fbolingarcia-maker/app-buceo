@@ -167,6 +167,9 @@ export const TABLES = {
     ['course_prereq', 'text', { check: ENUM('course_prereq', CERT_LEVELS) }],
     // Actividad (11 nov): buceo, esnórquel, apnea o bautismo. Las tres últimas no piden certificación; el esnórquel tampoco el cuestionario médico
     ['activity', 'text', { nn: true, def: "'scuba'", check: ENUM('activity', ACTIVITIES) }],
+    // Cancelación por el centro (23 nov): motivo (mar u otro imprevisto) y nota opcional para los buceadores
+    ['cancel_reason', 'text', { check: ENUM('cancel_reason', ['weather', 'other']) }],
+    ['cancel_note', 'text', { check: 'length(cancel_note) <= 200' }],
   ] },
   trip_sites: { pk: ['trip_id', 'position'], cols: [
     ['trip_id', 'uuid', { nn: true, ref: 'trips(id)', onDelete: 'CASCADE' }],
@@ -250,6 +253,12 @@ export const TABLES = {
     ['discount_php', 'int', { nn: true, def: '0', check: 'discount_php >= 0' }],
     ['pay_on_site', 'bool', { nn: true, def: '0' }],
     ['balance_reminded_at', 'ts'], // recordatorio del día antes (hora, lugar, mar y el resto si queda algo)
+    // Salida cancelada por el centro (23 nov, worker/rebook.js): el buceador elige otra salida del centro o el reembolso
+    ['refund_choice', 'text', { check: ENUM('refund_choice', ['pending', 'rebooking', 'rebooked', 'refund']) }],
+    ['choice_until', 'ts'],
+    ['rebooked_to', 'uuid'],
+    ['rebooked_from', 'uuid'],
+    ['moved_php', 'int', { nn: true, def: '0', check: 'moved_php >= 0' }],
   ] },
   payments: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],

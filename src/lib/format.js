@@ -32,7 +32,7 @@ export const BOOKING_STATUS = translated({
 export const TRIP_STATUS = translated({
   draft: 'Borrador',
   published: 'Publicada',
-  cancelled_weather: 'Cancelada por meteo',
+  cancelled_weather: 'Cancelada por el centro', // por el mar u otro imprevisto (trips.cancel_reason)
   completed: 'Completada',
 })
 

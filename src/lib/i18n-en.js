@@ -17,5 +17,6 @@ import reserva10 from './en/reserva10'
 import comunidad from './en/comunidad'
 import chat from './en/chat'
 import guides from './en/guides'
+import rebook from './en/rebook'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad, ...chat, ...guides }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad, ...chat, ...guides, ...rebook }

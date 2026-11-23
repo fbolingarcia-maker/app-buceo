@@ -9,6 +9,7 @@ import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
 import { ManifestSheet, manifestCsv } from '../lib/manifest'
 import { SeaChip, extraName } from '../lib/extras'
 import { TripChat } from '../lib/plus'
+import { CancelTrip } from '../lib/rebook'
 
 // Sin cobertura en el barco: la agenda de cada día se guarda en el móvil y los check-in se encolan hasta que vuelva la red
 const cacheKey = (center, day) => 'ds_agenda:' + center + ':' + day
@@ -328,12 +329,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
                   <input type="number" inputMode="numeric" min="0" style={{ width: 70 }} defaultValue={trip.blocked_seats}
                     onBlur={saveBlocked} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }} />
                 </label>
-                <button type="button" className="btn small danger" onClick={() => {
-                  const txt = active.length
-                    ? t('¿Cancelar la salida de las {time} por meteo? Se cancelan {n} reservas y se devuelven {amount}.', { time: time(trip.departs_at), n: active.length, amount: php(paidTotal) })
-                    : t('¿Cancelar la salida de las {time} por meteo?', { time: time(trip.departs_at) })
-                  if (window.confirm(txt)) run(supabase.rpc('cancel_trip_weather', { p_trip: trip.id }), t('Salida cancelada por meteo. Reembolsos generados.'))
-                }}>{t('Cancelar por meteo')}</button>
+                <CancelTrip trip={trip} activeCount={active.length} paidTotal={paidTotal} run={run} />
               </>
             )}
           </div>

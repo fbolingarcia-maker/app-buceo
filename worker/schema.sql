@@ -158,7 +158,9 @@ CREATE TABLE IF NOT EXISTS trips (
   course_name TEXT CHECK (length(course_name) <= 80),
   course_days INTEGER CHECK (course_days BETWEEN 1 AND 14),
   course_prereq TEXT CHECK (course_prereq IN ('open_water', 'advanced', 'rescue', 'divemaster', 'instructor')),
-  activity TEXT NOT NULL DEFAULT 'scuba' CHECK (activity IN ('scuba', 'snorkel', 'freedive', 'try_dive'))
+  activity TEXT NOT NULL DEFAULT 'scuba' CHECK (activity IN ('scuba', 'snorkel', 'freedive', 'try_dive')),
+  cancel_reason TEXT CHECK (cancel_reason IN ('weather', 'other')),
+  cancel_note TEXT CHECK (length(cancel_note) <= 200)
 );
 
 CREATE TABLE IF NOT EXISTS trip_sites (
@@ -238,6 +240,11 @@ CREATE TABLE IF NOT EXISTS bookings (
   discount_php INTEGER NOT NULL DEFAULT 0 CHECK (discount_php >= 0),
   pay_on_site INTEGER NOT NULL DEFAULT 0,
   balance_reminded_at TEXT,
+  refund_choice TEXT CHECK (refund_choice IN ('pending', 'rebooking', 'rebooked', 'refund')),
+  choice_until TEXT,
+  rebooked_to TEXT,
+  rebooked_from TEXT,
+  moved_php INTEGER NOT NULL DEFAULT 0 CHECK (moved_php >= 0),
   CHECK ((source = 'app' AND diver_id IS NOT NULL) OR (source <> 'app' AND guest_name IS NOT NULL)),
   CHECK (source = 'app' OR commission_php = 0)
 );
