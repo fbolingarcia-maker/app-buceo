@@ -45,7 +45,7 @@ const L = {
     indexH1: 'Dive destinations in the Philippines',
     indexLead: (d, s, c) => `${d} destinations, ${s} dive sites and ${c} dive centres. Pick a place to see its dive sites, the level each one needs and who runs trips there.`,
     indexDesc: (d, s) => `Guide to ${d} scuba diving destinations in the Philippines: ${s} dive sites with depth, recommended level and marine life, plus local dive centres.`,
-    title: (d) => `Scuba diving in ${d.name}, ${d.province} · Dive sites and centres · DivingSlot`,
+    title: (d) => `${d.name} diving: dive sites and dive centres (${d.province}) · DivingSlot`,
     desc: (d, s, c) => `Diving in ${d.name} (${d.province}, ${d.island_group}): ${s} dive sites with depth, level and what you will see${c ? `, and ${c} dive centres` : ''}. Book boat dive trips on DivingSlot.`,
     h1: (d) => `Scuba diving in ${d.name}`,
     lead: (d, s, c) => `${d.province} · ${d.island_group}. ${s ? `${s} dive site${s === 1 ? '' : 's'}` : 'Dive sites coming soon'}${c ? ` and ${c} dive centre${c === 1 ? '' : 's'}` : ''}.`,
@@ -63,6 +63,21 @@ const L = {
     km: (n) => `${n} km`,
     counts: (s, c) => `${s} site${s === 1 ? '' : 's'} · ${c} centre${c === 1 ? '' : 's'}`,
     note: 'Dive centre list from public sources and centres that joined DivingSlot. If something is out of date, write to divingslot@gmail.com.',
+    siteDir: 'site/', centreDir: 'centre/',
+    siteTitle: (s, a) => `${s.name.includes(a) ? s.name : s.name + ', ' + a}: dive site guide · DivingSlot`,
+    siteDesc: (s, a, d) => `${s.name} dive site in ${a}, ${d.province}, Philippines.${s.hl ? ' ' + s.hl + '.' : ''} Depth, recommended level and dive centres nearby.`,
+    siteH1: (s) => `${s.name} dive site`,
+    siteLead: (a, d) => `${a} · ${d.province} · ${d.island_group}, Philippines`,
+    depthL: 'Depth', levelL: 'Recommended level', feeL: 'Sanctuary or park fee', fromL: 'Dived from', marineL: 'What you will see',
+    otherSites: (a) => `More dive sites in ${a}`, centresNear: (d) => `Dive centres in ${d.name}`,
+    centreTitle: (c, d) => `${c.name}, ${d.name}: dive centre · DivingSlot`,
+    centreDesc: (c, d, n) => `${c.name} is a dive centre in ${c.locality && c.locality !== d.name ? c.locality + ', ' : ''}${d.name} (${d.province}, Philippines). Dive sites nearby${n ? ` (${n})` : ''}, agencies and how to book dive trips.`,
+    centreLead: (c, d) => `Dive centre in ${c.locality && c.locality !== d.name ? c.locality + ', ' : ''}${d.name} · ${d.province}, Philippines`,
+    agenciesL: 'Agencies', langsL: 'Languages', webL: 'Website', gfL: 'Green Fins', gfV: 'Eco practices checked by DivingSlot',
+    bookOnline: 'Book dive trips online with this centre on DivingSlot.',
+    listed: 'Listed from public sources: trips with this centre cannot be booked on DivingSlot yet.',
+    claim: 'Is this your dive centre? Claim the listing in the app to publish your trips.',
+    seeTrips: 'See trips and details', sitesNear: (d) => `Dive sites in ${d.name}`, otherCentres: (d) => `Other dive centres in ${d.name}`,
   },
   es: {
     lang: 'es', base: '/es/buceo/', other: 'en', appLang: 'es',
@@ -70,7 +85,7 @@ const L = {
     indexH1: 'Destinos de buceo en Filipinas',
     indexLead: (d, s, c) => `${d} destinos, ${s} puntos de buceo y ${c} centros. Elige un lugar para ver sus puntos de buceo, el nivel que pide cada uno y quién sale a bucear allí.`,
     indexDesc: (d, s) => `Guía de ${d} destinos de buceo en Filipinas: ${s} puntos de buceo con profundidad, nivel recomendado y fauna, y los centros de buceo de cada zona.`,
-    title: (d) => `Buceo en ${d.name}, ${d.province} · Puntos de buceo y centros · DivingSlot`,
+    title: (d) => `Buceo en ${d.name}: puntos de buceo y centros (${d.province}) · DivingSlot`,
     desc: (d, s, c) => `Bucear en ${d.name} (${d.province}, ${d.island_group}): ${s} puntos de buceo con profundidad, nivel y qué se ve${c ? `, y ${c} centros de buceo` : ''}. Reserva salidas en barco en DivingSlot.`,
     h1: (d) => `Buceo en ${d.name}`,
     lead: (d, s, c) => `${d.province} · ${d.island_group}. ${s ? `${s} punto${s === 1 ? '' : 's'} de buceo` : 'Pronto añadiremos puntos de buceo'}${c ? ` y ${c} centro${c === 1 ? '' : 's'} de buceo` : ''}.`,
@@ -88,6 +103,21 @@ const L = {
     km: (n) => `${n} km`,
     counts: (s, c) => `${s} punto${s === 1 ? '' : 's'} · ${c} centro${c === 1 ? '' : 's'}`,
     note: 'Lista de centros a partir de fuentes públicas y de los centros dados de alta en DivingSlot. Si algo no está al día, escribe a divingslot@gmail.com.',
+    siteDir: 'punto/', centreDir: 'centro/',
+    siteTitle: (s, a) => `${s.name.includes(a) ? s.name : s.name + ' (' + a + ')'}: punto de buceo · DivingSlot`,
+    siteDesc: (s, a, d) => `Punto de buceo ${s.name} en ${a}, ${d.province}, Filipinas.${(s.hl_es || s.hl) ? ' ' + (s.hl_es || s.hl) + '.' : ''} Profundidad, nivel recomendado y centros de buceo cercanos.`,
+    siteH1: (s) => `Punto de buceo ${s.name}`,
+    siteLead: (a, d) => `${a} · ${d.province} · ${d.island_group}, Filipinas`,
+    depthL: 'Profundidad', levelL: 'Nivel recomendado', feeL: 'Tasa del santuario o parque', fromL: 'Se bucea desde', marineL: 'Qué se ve',
+    otherSites: (a) => `Más puntos de buceo en ${a}`, centresNear: (d) => `Centros de buceo en ${d.name}`,
+    centreTitle: (c, d) => `${c.name} (${d.name}): centro de buceo · DivingSlot`,
+    centreDesc: (c, d, n) => `${c.name} es un centro de buceo en ${c.locality && c.locality !== d.name ? c.locality + ', ' : ''}${d.name} (${d.province}, Filipinas). Puntos de buceo cercanos${n ? ` (${n})` : ''}, agencias y cómo reservar salidas.`,
+    centreLead: (c, d) => `Centro de buceo en ${c.locality && c.locality !== d.name ? c.locality + ', ' : ''}${d.name} · ${d.province}, Filipinas`,
+    agenciesL: 'Agencias', langsL: 'Idiomas', webL: 'Web', gfL: 'Green Fins', gfV: 'Prácticas ecológicas comprobadas por DivingSlot',
+    bookOnline: 'Reserva salidas de buceo con este centro en DivingSlot.',
+    listed: 'Ficha a partir de fuentes públicas: aún no se pueden reservar salidas con este centro en DivingSlot.',
+    claim: '¿Es tu centro de buceo? Reclama la ficha en la app para publicar tus salidas.',
+    seeTrips: 'Ver salidas y detalles', sitesNear: (d) => `Puntos de buceo en ${d.name}`, otherCentres: (d) => `Otros centros de buceo en ${d.name}`,
   },
 }
 
@@ -105,6 +135,8 @@ const FLAG = '<svg class="flag" viewBox="0 0 30 20" aria-hidden="true"><rect wid
 
 function layout(l, { title, desc, url, alt, h1, body, jsonld }) {
   const T = L[l]
+  // Google corta los títulos de unos 60 caracteres: si no cabe, sin la marca al final
+  if (title.length > 62 && title.endsWith(' · DivingSlot')) title = title.slice(0, -' · DivingSlot'.length)
   return `<!doctype html>
 <html lang="${T.lang}">
 <head>
@@ -161,9 +193,9 @@ function destPage(l, d) {
   const hl = (s) => (l === 'es' ? s.hl_es || s.hl : s.hl)
   const siteHtml = sites.length ? `<ul class="list">${sites.map((s) => {
     const meta = [s.area !== d.name ? esc(s.area) : '', T.depth(s.min, s.max), s.fee ? T.fee(s.fee) : ''].filter(Boolean).join(' · ')
-    return `<li class="card"><div class="row"><h3>${esc(s.name)}</h3><span class="pill${s.level === 'advanced' ? ' warn' : ''}" title="${T.levelFor}">${T.levels[s.level] || esc(s.level)}</span></div>${meta ? `<p class="meta">${meta}</p>` : ''}${hl(s) ? `<p>${esc(hl(s))}</p>` : ''}</li>`
+    return `<li class="card"><div class="row"><h3><a href="${T.base}${T.siteDir}${siteSlug.get(s)}">${esc(s.name)}</a></h3><span class="pill${s.level === 'advanced' ? ' warn' : ''}" title="${T.levelFor}">${T.levels[s.level] || esc(s.level)}</span></div>${meta ? `<p class="meta">${meta}</p>` : ''}${hl(s) ? `<p>${esc(hl(s))}</p>` : ''}</li>`
   }).join('')}</ul>` : `<p class="card muted">${T.noSites}</p>`
-  const centreHtml = centres.length ? `<ul class="list cols">${centres.map((c) => `<li><a class="card row" href="${appUrl('/c/' + c.id)}"><span><b>${esc(c.name)}</b>${c.locality && c.locality !== d.name ? `<span class="meta"> · ${esc(c.locality)}</span>` : ''}</span>${c.socio ? `<span class="pill ok">${T.bookable}</span>` : ''}</a></li>`).join('')}</ul><p class="meta">${T.note}</p>` : ''
+  const centreHtml = centres.length ? `<ul class="list cols">${centres.map((c) => `<li><a class="card row" href="${T.base}${T.centreDir}${centreSlug.get(c)}"><span><b>${esc(c.name)}</b>${c.locality && c.locality !== d.name ? `<span class="meta"> · ${esc(c.locality)}</span>` : ''}</span>${c.socio ? `<span class="pill ok">${T.bookable}</span>` : ''}</a></li>`).join('')}</ul><p class="meta">${T.note}</p>` : ''
   const body = `${crumbs(l, d)}
 <section class="hero"><h1>${esc(T.h1(d))}</h1><p class="lead">${esc(T.lead(d, sites.length, centres.length))}</p>
 <p class="ctas"><a class="btn" href="${appUrl('/d/' + encodeURIComponent(d.name))}">${esc(T.cta(d))}</a></p></section>
@@ -207,6 +239,89 @@ ${order.map((g) => `<h2>${esc(T.groups[g] || g)}</h2>
   return layout(l, { title: T.indexTitle, desc: T.indexDesc(dests.length, data.sites.length), url, alt: pageUrl(T.other), body, jsonld })
 }
 
+
+// Slugs únicos para puntos y centros (si dos se llaman igual, se añade la zona o el destino)
+const uniq = (items, base, extra) => {
+  const seen = new Map(), out = new Map()
+  for (const it of items) { const k = slug(base(it)); seen.set(k, (seen.get(k) || 0) + 1) }
+  for (const it of items) {
+    let k = slug(base(it))
+    if (seen.get(k) > 1) k = slug(base(it) + '-' + extra(it))
+    let n = 2, kk = k
+    while ([...out.values()].includes(kk)) kk = k + '-' + n++
+    out.set(it, kk)
+  }
+  return out
+}
+const siteSlug = uniq(data.sites, (s) => s.name, (s) => s.area)
+const centreSlug = uniq(data.centers, (c) => c.name, (c) => c.dest)
+// Destino desde el que se bucea una zona (la propia zona o la que la tiene en EXTRA_AREAS)
+const destOfArea = (area) => dests.find((d) => d.name === area) || dests.find((d) => (EXTRA_AREAS[d.name] || []).includes(area))
+const AGENCY = (a) => String(a).toUpperCase() === a ? a : a.charAt(0).toUpperCase() + a.slice(1)
+const LANGN = { en: 'English', es: 'Español', de: 'Deutsch', fr: 'Français', it: 'Italiano', ja: '日本語', ko: '한국어', zh: '中文', tl: 'Tagalog', ru: 'Русский', nl: 'Nederlands' }
+const facts = (rows) => `<dl class="facts">${rows.filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`
+const subUrl = (l, dir, k) => SITE + L[l].base + L[l][dir] + k
+
+function crumbs2(l, d, last) {
+  const T = L[l]
+  return `<nav class="crumbs" aria-label="Breadcrumb"><a href="/">${T.home}</a> <span aria-hidden="true">/</span> <a href="${T.base}">${T.destinations}</a> <span aria-hidden="true">/</span> <a href="${T.base}${slug(d.name)}">${esc(d.name)}</a> <span aria-hidden="true">/</span> <span aria-current="page">${esc(last)}</span></nav>`
+}
+const crumbLd = (l, d, name, url) => ({ '@type': 'BreadcrumbList', itemListElement: [
+  { '@type': 'ListItem', position: 1, name: L[l].home, item: SITE + '/' },
+  { '@type': 'ListItem', position: 2, name: L[l].destinations, item: pageUrl(l) },
+  { '@type': 'ListItem', position: 3, name: d.name, item: pageUrl(l, d) },
+  { '@type': 'ListItem', position: 4, name, item: url },
+] })
+
+function sitePage(l, s) {
+  const T = L[l]
+  const d = destOfArea(s.area)
+  const hl = l === 'es' ? s.hl_es || s.hl : s.hl
+  const others = data.sites.filter((x) => x.area === s.area && x !== s).sort((a, b) => a.name.localeCompare(b.name))
+  const centres = centresOf(d).slice(0, 12)
+  const url = subUrl(l, 'siteDir', siteSlug.get(s))
+  const body = `${crumbs2(l, d, s.name)}
+<section class="hero"><h1>${esc(T.siteH1(s))}</h1><p class="lead">${esc(T.siteLead(s.area, d))}</p>
+<p class="ctas"><a class="btn" href="${appUrl('/d/' + encodeURIComponent(d.name))}">${esc(T.cta(d))}</a></p></section>
+${facts([[T.marineL, hl ? esc(hl) : ''], [T.depthL, T.depth(s.min, s.max)], [T.levelL, T.levels[s.level] || esc(s.level || '')], [T.feeL, s.fee ? '₱' + s.fee.toLocaleString('en-US') : ''], [T.fromL, `<a href="${T.base}${slug(d.name)}">${esc(d.name)}</a>`]])}
+${others.length ? `<h2>${esc(T.otherSites(s.area))} <span class="count">${others.length}</span></h2>
+<ul class="list cols">${others.map((x) => `<li><a class="card row" href="${T.base}${T.siteDir}${siteSlug.get(x)}"><b>${esc(x.name)}</b><span class="meta">${[T.depth(x.min, x.max), T.levels[x.level] || ''].filter(Boolean).join(' · ')}</span></a></li>`).join('')}</ul>` : ''}
+${centres.length ? `<h2>${esc(T.centresNear(d))}</h2>
+<ul class="list cols">${centres.map((c) => `<li><a class="card row" href="${T.base}${T.centreDir}${centreSlug.get(c)}"><b>${esc(c.name)}</b>${c.socio ? `<span class="pill ok">${T.bookable}</span>` : ''}</a></li>`).join('')}</ul>` : ''}`
+  const jsonld = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'TouristAttraction', name: s.name, url, description: hl || undefined, inLanguage: T.lang, touristType: 'Scuba divers',
+      containedInPlace: { '@type': 'TouristDestination', name: d.name, url: pageUrl(l, d), geo: { '@type': 'GeoCoordinates', latitude: d.lat, longitude: d.lng } } },
+    crumbLd(l, d, s.name, url),
+  ] }
+  return layout(l, { title: T.siteTitle(s, s.area), desc: T.siteDesc(s, s.area, d), url, alt: subUrl(T.other, 'siteDir', siteSlug.get(s)), body, jsonld })
+}
+
+function centrePage(l, c) {
+  const T = L[l]
+  const d = dests.find((x) => x.name === c.dest)
+  const sites = sitesOf(d)
+  const others = centresOf(d).filter((x) => x !== c).slice(0, 12)
+  const url = subUrl(l, 'centreDir', centreSlug.get(c))
+  let web = ''
+  try { if (c.web) { const u = new URL(/^https?:/i.test(c.web) ? c.web : 'https://' + c.web); web = `<a href="${esc(u.href)}" rel="nofollow noopener" target="_blank">${esc(u.hostname.replace(/^www\./, ''))}</a>` } } catch (e) { /* web no válida */ }
+  const body = `${crumbs2(l, d, c.name)}
+<section class="hero"><h1>${esc(c.name)}</h1><p class="lead">${esc(T.centreLead(c, d))}</p>
+<p class="ctas"><a class="btn" href="${appUrl('/c/' + c.id)}">${T.seeTrips}</a></p>
+<p class="meta">${c.socio ? T.bookOnline : `${T.listed} ${T.claim}`}</p></section>
+${facts([[T.agenciesL, (c.agencies || []).map((a) => esc(AGENCY(a))).join(', ')], [T.langsL, (c.languages || []).map((x) => esc(LANGN[x] || x)).join(', ')], [T.webL, web], [T.gfL, c.gf ? T.gfV : '']])}
+${sites.length ? `<h2>${esc(T.sitesNear(d))} <span class="count">${sites.length}</span></h2>
+<ul class="list cols">${sites.map((x) => `<li><a class="card row" href="${T.base}${T.siteDir}${siteSlug.get(x)}"><b>${esc(x.name)}</b><span class="meta">${[x.area !== d.name ? esc(x.area) : '', T.depth(x.min, x.max)].filter(Boolean).join(' · ')}</span></a></li>`).join('')}</ul>` : ''}
+${others.length ? `<h2>${esc(T.otherCentres(d))}</h2>
+<ul class="list cols">${others.map((x) => `<li><a class="card row" href="${T.base}${T.centreDir}${centreSlug.get(x)}"><b>${esc(x.name)}</b>${x.socio ? `<span class="pill ok">${T.bookable}</span>` : ''}</a></li>`).join('')}</ul>` : ''}
+<p class="meta">${T.note}</p>`
+  const biz = { '@type': 'SportsActivityLocation', name: c.name, url, description: T.centreDesc(c, d, sites.length),
+    address: { '@type': 'PostalAddress', addressLocality: c.locality || d.name, addressRegion: d.province, addressCountry: 'PH' } }
+  if (web) biz.sameAs = [new URL(/^https?:/i.test(c.web) ? c.web : 'https://' + c.web).href]
+  if ((c.languages || []).length) biz.knowsLanguage = c.languages
+  const jsonld = { '@context': 'https://schema.org', '@graph': [biz, crumbLd(l, d, c.name, url)] }
+  return layout(l, { title: T.centreTitle(c, d), desc: T.centreDesc(c, d, sites.length), url, alt: subUrl(T.other, 'centreDir', centreSlug.get(c)), body, jsonld })
+}
+
 // Escribir las páginas (borra antes las generadas, por si un destino cambia de nombre)
 const outs = { en: path.join(ROOT, 'public/dive'), es: path.join(ROOT, 'public/es/buceo') }
 let n = 0
@@ -217,9 +332,17 @@ for (const [l, dir] of Object.entries(outs)) {
   for (const d of dests) {
     fs.writeFileSync(path.join(dir, slug(d.name) + '.html'), destPage(l, d)); n++
   }
+  // Una página por punto de buceo y por centro (subcarpetas site/ y centre/, o punto/ y centro/)
+  for (const [sub, items, slugs, fn] of [[L[l].siteDir, data.sites.filter((s) => destOfArea(s.area)), siteSlug, sitePage], [L[l].centreDir, data.centers.filter((c) => dests.some((d) => d.name === c.dest)), centreSlug, centrePage]]) {
+    const sd = path.join(dir, sub)
+    fs.rmSync(sd, { recursive: true, force: true })
+    fs.mkdirSync(sd, { recursive: true })
+    for (const it of items) { fs.writeFileSync(path.join(sd, slugs.get(it) + '.html'), fn(l, it)); n++ }
+  }
 }
 
 // sitemap.xml con las versiones en los dos idiomas
+const TODAY = new Date().toISOString().slice(0, 10)
 const fixed = [
   ['/', 'weekly', '1.0'], ['/app/', 'daily', '0.8'],
   ['/legal/privacy', 'yearly', '0.2'], ['/legal/terms', 'yearly', '0.2'], ['/legal/cancellation', 'yearly', '0.2'],
@@ -228,7 +351,9 @@ const pair = (d) => [pageUrl('en', d), pageUrl('es', d)]
 const alts = (en, es) => `<xhtml:link rel="alternate" hreflang="en" href="${en}"/><xhtml:link rel="alternate" hreflang="es" href="${es}"/>`
 const urls = [
   ...fixed.map(([p, f, pr]) => `  <url><loc>${SITE}${p}</loc><changefreq>${f}</changefreq><priority>${pr}</priority></url>`),
-  ...[null, ...dests].flatMap((d) => { const [en, es] = pair(d); return [en, es].map((u) => `  <url><loc>${u}</loc>${alts(en, es)}<changefreq>weekly</changefreq><priority>${d ? '0.7' : '0.8'}</priority></url>`) }),
+  ...[null, ...dests].flatMap((d) => { const [en, es] = pair(d); return [en, es].map((u) => `  <url><loc>${u}</loc>${alts(en, es)}<lastmod>${TODAY}</lastmod></url>`) }),
+  ...[['siteDir', data.sites.filter((s) => destOfArea(s.area)), siteSlug], ['centreDir', data.centers.filter((c) => dests.some((d) => d.name === c.dest)), centreSlug]]
+    .flatMap(([dir, items, slugs]) => items.flatMap((it) => { const en = subUrl('en', dir, slugs.get(it)), es = subUrl('es', dir, slugs.get(it)); return [en, es].map((u) => `  <url><loc>${u}</loc>${alts(en, es)}<lastmod>${TODAY}</lastmod></url>`) })),
 ]
 fs.writeFileSync(path.join(ROOT, 'public/sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">

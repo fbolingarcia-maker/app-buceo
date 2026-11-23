@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+# Redirecciones al canal propio del centro y widget insertable: no son páginas para buscar
+Disallow: /r/
+Disallow: /w/
 
 Sitemap: https://divingslot.com/sitemap.xml

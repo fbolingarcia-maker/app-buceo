@@ -5,7 +5,9 @@ La app usa rutas con `#`, que Google no indexa bien. Por eso cada destino tiene 
 - Inglés: `/dive/` y `/dive/<destino>` (fichero `public/dive/<destino>.html`).
 - Español: `/es/buceo/` y `/es/buceo/<destino>` (fichero `public/es/buceo/<destino>.html`).
 
-Cada página incluye los puntos de buceo, los centros del directorio, los destinos cercanos y el botón a las salidas de la app (`/app/#/d/<destino>`). Las páginas están en `public/` y se publican tal cual, sin JavaScript. Llevan CSP propia, `canonical`, `hreflang` y JSON-LD (`TouristDestination` y `BreadcrumbList`). Están enlazadas desde el pie de la landing y desde `public/sitemap.xml`.
+Cada página incluye los puntos de buceo, los centros del directorio, los destinos cercanos y el botón a las salidas de la app (`/app/#/d/<destino>`).
+
+Desde el 23 nov 2026 también hay una página por **punto de buceo** (`/dive/site/<punto>`, `/es/buceo/punto/<punto>`: qué se ve, profundidad, nivel, tasa, otros puntos de la zona y centros) y por **centro** (`/dive/centre/<centro>`, `/es/buceo/centro/<centro>`: localidad, agencias, idiomas, web, Green Fins comprobado, puntos y otros centros del destino, «Ver salidas» y «Reclamar la ficha»). JSON-LD `TouristAttraction` y `SportsActivityLocation` con `BreadcrumbList`. El sitemap lleva `lastmod` (fecha de generación). Los títulos de más de 62 caracteres van sin « · DivingSlot». Las páginas están en `public/` y se publican tal cual, sin JavaScript. Llevan CSP propia, `canonical`, `hreflang` y JSON-LD (`TouristDestination` y `BreadcrumbList`). Están enlazadas desde el pie de la landing y desde `public/sitemap.xml`.
 
 ## Actualizar
 
