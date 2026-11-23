@@ -8,15 +8,18 @@ import DestinoSelect from '../lib/DestinoSelect'
 import { CENTER_LANGS, FlagImg, langName } from '../lib/langs'
 import Icon from '../lib/Icon'
 import { LocateFixed } from 'lucide-react'
+import { CenterPhoto } from '../lib/photos'
 import { CanalPropio, Extras, GreenFins, Packs } from '../lib/centroExtras'
 import { TeamSection, WidgetSection } from '../lib/comunidad'
 import { CenterGuideRatings } from '../lib/guides'
 
 export default function CentroAjustes() {
-  const { center, refresh, readOnly } = useAuth()
+  const { center, refresh, readOnly, user } = useAuth()
   return (
     <>
       <h1>{t('Mi centro')}</h1>
+      <h2>{t('Foto del centro')}</h2>
+      <CenterPhoto center={center} uid={user?.id} refresh={refresh} readOnly={readOnly} />
       <h2 id="equipo">{t('Equipo')}</h2>
       <TeamSection center={center} readOnly={readOnly} />
       {!readOnly && <CenterGuideRatings centerId={center.id} staff />}

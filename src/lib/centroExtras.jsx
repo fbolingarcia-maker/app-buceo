@@ -22,7 +22,7 @@ export function CanalPropio({ center }) {
   const html = `<a href="${link}" target="_blank" rel="noopener" style="display:inline-block;background:#0b5e8a;color:#fff;padding:12px 20px;border-radius:10px;font:600 16px sans-serif;text-decoration:none">${t('Reserva tu inmersión')}</a>`
   return (
     <div className="card stack">
-      <p style={{ margin: 0 }}>{t('Comparte tu enlace para que tus clientes vean tus salidas y reserven en la app. Las reservas por la app tienen una comisión de ₱250 por buceador; las reservas que apuntas tú (WhatsApp, en el centro) no.')}</p>
+      <p style={{ margin: 0 }}>{t('Comparte tu enlace para que tus clientes vean tus salidas y reserven en la app. Las reservas por la app pagan la comisión de DivingSlot acordada contigo; las reservas que apuntas tú (WhatsApp, en el centro) no.')}</p>
       <div className="code-box" aria-label={t('Tu enlace de reservas')}>{link}</div>
       <div className="row wrap" style={{ gap: 6 }}>
         <CopyBtn text={link} label={t('Copiar enlace')} />

@@ -27,6 +27,7 @@ import { handleWidget } from './comunidad.js'
 import { backupD1, BACKUP_CRON } from './backup.js'
 import { purgeChats } from './chat.js'
 import { expireRebookChoices } from './rebook.js'
+import { handleCenterPhoto } from './photos.js'
 
 // Protección CSRF: toda petición que cambia datos lleva la cabecera X-DivingSlot (un formulario de otra web no puede
 // ponerla sin un preflight CORS que no permitimos) y, si el navegador manda Origin, tiene que ser el nuestro.
@@ -50,6 +51,7 @@ export async function handleApi(req, env, ectx) {
     if (path === 'hit' && req.method === 'POST') return await handleHit(req, env, url)
     if (path === 'notify' && req.method === 'POST') return await handleNotify(req, env)
     if (path === 'sea' && req.method === 'GET') return await handleSea(req, env, url, ectx)
+    if (path.startsWith('center-photo/') && req.method === 'GET') return await handleCenterPhoto(env, path.slice(13))
     if (!csrfOk(req, url)) return json({ error: { message: 'FORBIDDEN: origen no permitido', code: 'CSRF' } }, 403)
     if (!env.DB) fail('NOT_CONFIGURED', 'falta la base de datos D1', 503)
     const ctx = await loadCtx(req, env)

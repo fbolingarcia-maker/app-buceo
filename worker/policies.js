@@ -37,7 +37,8 @@ const hasBookingOn = (ctx, col) => (ctx.diverId ? P(`${col} IN (SELECT trip_id F
 export const POLICIES = {
   destinations: { select: () => YES },
   dive_sites: { select: () => YES },
-  app_config: { select: (c, a) => or(P(`${a}.key <> 'last_backup'`), admin(c)) }, // la última copia de seguridad solo la ve el administrador
+  // La última copia de seguridad y la comisión de DivingSlot (dato interno, 23 nov 2026) solo las ve el administrador
+  app_config: { select: (c, a) => or(P(`${a}.key NOT IN ('last_backup', 'marketplace_fee_pct', 'marketplace_fee_php')`), admin(c)) },
   published_trips: { select: () => YES },
   boats: { select: () => YES, ops: ['insert', 'update', 'delete'],
     write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },
@@ -99,8 +100,8 @@ export const POLICIES = {
 }
 
 // Columnas que no se leen nunca por REST (solo con RPC): datos privados del centro
-export const HIDDEN = { centers: ['gcash_number', 'notes', 'review_note'] }
+export const HIDDEN = { centers: ['gcash_number', 'notes', 'review_note', 'photo_path'] }
 // Columnas que solo cambian las RPC de la plataforma (port de protect_center_columns)
-export const PROTECTED = { centers: ['verification_status', 'verified_at', 'claims_center_id', 'listing_status', 'review_note', 'green_fins_verified'] }
+export const PROTECTED = { centers: ['verification_status', 'verified_at', 'claims_center_id', 'listing_status', 'review_note', 'green_fins_verified', 'photo_path', 'photo_v'] }
 
 export { NO, YES, or, and, P }

@@ -6,7 +6,7 @@ SELECT json_object(
                    'fee', sanctuary_fee_php, 'hl', highlight, 'hl_es', highlight_es))
             FROM (SELECT * FROM dive_sites ORDER BY area, name)),
   'centers', (SELECT json_group_array(json_object('id', id, 'name', name, 'dest', destination, 'locality', locality, 'socio', json(CASE WHEN listing_status = 'socio' THEN 'true' ELSE 'false' END),
-                   'agencies', json(coalesce(agencies, '[]')), 'languages', json(coalesce(languages, '[]')), 'web', website, 'gf', json(CASE WHEN green_fins_verified = 1 THEN 'true' ELSE 'false' END)))
+                   'agencies', json(coalesce(agencies, '[]')), 'languages', json(coalesce(languages, '[]')), 'web', website, 'gf', json(CASE WHEN green_fins_verified = 1 THEN 'true' ELSE 'false' END), 'photo', photo_v))
               FROM (SELECT * FROM centers WHERE listing_status <> 'cerrado' AND name NOT LIKE 'Demo%'
                     AND (listing_status <> 'socio' OR verification_status = 'verified') ORDER BY destination, name))
 ) AS data;

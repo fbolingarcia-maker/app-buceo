@@ -12,8 +12,10 @@ import { BACKUP_RPC } from './backup.js'
 import { CHAT, deleteDiverChats } from './chat.js'
 import { GUIDES, deleteDiverGuideRatings, ensureGuideRatings } from './guides.js'
 import { REBOOK, CANCEL_REASONS, centreCancelStatements, notifyCancelled } from './rebook.js'
+import { PHOTOS } from './photos.js'
 
-export const RULES = { commission_per_diver_php: 250, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
+// commission_pct: % de DivingSlot sobre el total de la reserva (con tasas). Dato interno: no se muestra en la web pública (decisión de Fernando, 23 nov 2026)
+export const RULES = { commission_pct: 4.5, hold_minutes: 15, min_lead_minutes: 60, full_refund_hours: 24 }
 
 const config = async (db, key) => (await first(db, 'SELECT value FROM app_config WHERE key = ?', key))?.value ?? null
 const booking = async (db, id) => outRow('bookings', await first(db, 'SELECT * FROM bookings WHERE id = ?', id))
@@ -193,7 +195,8 @@ export const RPC = {
     const amount = seats * unit + gear * seats * t.gear_rental_php + fees + extrasAmt
     const pct = +((await config(ctx.db, 'deposit_pct')) || 50)
     const direct = !!p_ref && p_ref === t.center_id
-    const fee = +((await config(ctx.db, 'marketplace_fee_php')) ?? RULES.commission_per_diver_php)
+    const feePct = +((await config(ctx.db, 'marketplace_fee_pct')) ?? RULES.commission_pct)
+    const commission = Math.round((amount * feePct) / 100)
     const id = uuid(), now = nowIso()
     // Alta atómica: solo entra si la salida sigue publicada, el centro verificado, quedan plazas y no hay reserva duplicada
     const r = await run(ctx.db, `INSERT INTO bookings (id, trip_id, diver_id, seats, with_gear, source, status, amount_php, commission_php, medical_signed, deposit_php, created_at,
@@ -204,7 +207,7 @@ export const RPC = {
         AND t.departs_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+${RULES.min_lead_minutes} minutes')
         AND ${APP_AVAILABLE('t')} >= ?3
         AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.trip_id = t.id AND b.diver_id = ?2 AND ${HOLDS('b')})`,
-    id, ctx.diverId, seats, gear, amount, seats * fee, pct, now, t.id, direct ? 'direct' : 'marketplace', fees, extrasAmt, discount)
+    id, ctx.diverId, seats, gear, amount, commission, pct, now, t.id, direct ? 'direct' : 'marketplace', fees, extrasAmt, discount)
     if (!changes(r)) {
       const dup = await first(ctx.db, `SELECT 1 AS x FROM bookings b WHERE b.trip_id = ? AND b.diver_id = ? AND ${HOLDS('b')}`, t.id, ctx.diverId)
       if (dup) fail('DUPLICATE', 'ya tienes una reserva en esta salida')
@@ -670,7 +673,7 @@ const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
 
 // Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
-Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES, REBOOK)
+Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES, REBOOK, PHOTOS)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

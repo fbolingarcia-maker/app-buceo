@@ -457,7 +457,8 @@ a.card.trip.full { opacity: .6; }
 }
 
 /* ── Mejoras de usabilidad (9 nov 2026) ── */
-.quick-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 10px; }
+.quick-filters { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 10px; scrollbar-width: none; }
+.quick-filters .filter-btn.dest { box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
 .quick-filters::-webkit-scrollbar { display: none; }
 .quick-filters .filter-btn { flex: 0 0 auto; position: relative; }
 .quick-filters .badge { position: static; margin-left: 2px; }
@@ -584,3 +585,26 @@ details.fold:not([open]) > summary::after { content: '▸'; }
 .rebook-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); cursor: pointer; min-height: 44px; }
 .rebook-opt.on { border-color: var(--oceano); box-shadow: 0 0 0 1px var(--oceano) inset; }
 .rebook-opt .grow { flex: 1; min-width: 0; }
+
+/* Salidas en el móvil: título oculto a la vista para que los resultados suban (23 nov 2026) */
+@media (max-width: 640px) {
+  .explore-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .search-box { margin-top: 6px; }
+}
+
+/* Ficha de la salida: con la barra de reserva a la vista no se muestra la de pestañas (una sola barra fija) */
+body.cta-open .tabs { display: none; }
+body.cta-open .sticky-cta { bottom: calc(12px + env(safe-area-inset-bottom)); }
+/* Selector de plazas − n + */
+.field .label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.stepper { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--field); background: var(--surface); padding: 3px; }
+.stepper button { width: 44px; height: 44px; border: 0; border-radius: 11px; background: transparent; color: var(--ink); font: 600 22px/1 var(--font-ui); cursor: pointer; }
+.stepper button:disabled { color: var(--ink-3); cursor: default; }
+.stepper button:not(:disabled):hover { background: color-mix(in srgb, var(--oceano) 10%, transparent); }
+.stepper output { min-width: 36px; text-align: center; font: 600 20px var(--font-data); }
+
+/* Foto propia del centro (src/lib/photos.jsx) */
+.hero-photo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--r-card); background: var(--line); }
+.hero-photo.empty { display: grid; place-items: center; color: var(--ink-3); aspect-ratio: 16 / 6; }
+.centre-avatar { overflow: hidden; }
+.centre-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }

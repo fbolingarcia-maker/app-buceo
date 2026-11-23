@@ -81,7 +81,7 @@ export default {
  "¿Quién va?": "누가 가나요?",
  "1 plaza reservada": "1자리 예약됨",
  "{n} plazas reservadas": "{n}자리 예약됨",
- "Aún no ha reservado nadie. ¡Sé el primero!": "아직 예약한 사람이 없습니다. 첫 번째가 되어 보세요.",
+ "Aún no ha reservado nadie. Puedes ser el primero.": "아직 예약한 사람이 없습니다. 첫 번째가 되어 보세요.",
  "Tú": "나",
  "+1 acompañante": "+동반 1명",
  "+{n} acompañantes": "+동반 {n}명",

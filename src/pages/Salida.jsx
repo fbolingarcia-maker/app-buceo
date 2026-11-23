@@ -14,6 +14,7 @@ import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, ext
 import { PayBox, holdEnd } from '../lib/pay'
 import { TripChat, CenterReviews, expName, Approx } from '../lib/plus'
 import { noCert, noMedical, activityName, Sightings, FollowButton } from '../lib/comunidad'
+import { centerPhotoUrl } from '../lib/photos'
 import { time, dayLabel, manilaDate } from '../lib/format'
 
 const DRAFT = 'ds_book_draft'
@@ -31,7 +32,7 @@ function QuienVa({ tripId, loggedIn }) {
   return (
     <details className="fold" open={total < 5}>
       <summary><h2 style={{ display: 'inline' }}>{t('¿Quién va?')} {total > 0 && <span className="muted small" style={{ fontWeight: 400 }}>· {total === 1 ? t('1 plaza reservada') : t('{n} plazas reservadas', { n: total })}</span>}</h2></summary>
-      {total === 0 && <div className="card muted">{t('Aún no ha reservado nadie. ¡Sé el primero!')}</div>}
+      {total === 0 && <div className="card muted">{t('Aún no ha reservado nadie. Puedes ser el primero.')}</div>}
       {data.divers.map((d, i) => (
         <div key={i} className="card diver">
           <div className="avatar" aria-hidden>{(d.name || '?').charAt(0).toUpperCase()}</div>
@@ -118,7 +119,7 @@ export default function Salida({ id }) {
       if (error) setError(errMsg(error))
       setTrip(data || false)
       if (data) {
-        supabase.from('centers').select('name, phone, locality, website, destination, province, languages, course_languages, green_fins, green_fins_verified').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
+        supabase.from('centers').select('name, phone, locality, website, destination, province, languages, course_languages, green_fins, green_fins_verified, photo_v').eq('id', data.center_id).maybeSingle().then(({ data }) => setCenter(data))
         supabase.from('center_extras').select('id, kind, name, description, price_php, per_seat').eq('center_id', data.center_id).eq('active', true).order('price_php').then(({ data }) => setExtras(data || []))
         if (data.sites?.length) supabase.from('dive_sites').select('name, min_depth_m, max_depth_m, highlight, highlight_es, recommended_min').in('name', data.sites).then(({ data }) => setSiteInfo(data || []))
       }
@@ -144,6 +145,11 @@ export default function Salida({ id }) {
     io.observe(el)
     return () => io.disconnect()
   }, [trip])
+  const showCta = !!(ctaVisible && trip && trip.available_seats > 0 && !isCenter && !booked)
+  useEffect(() => {
+    document.body.classList.toggle('cta-open', showCta)
+    return () => document.body.classList.remove('cta-open')
+  }, [showCta])
 
   if (trip === null) return <p className="muted">{t('Cargando…')}</p>
   if (trip === false) return <div className="card">{t('Esta salida ya no está disponible.')} <Link to="/">{t('Ver salidas')}</Link></div>
@@ -195,12 +201,10 @@ export default function Salida({ id }) {
   return (
     <>
       <Link to="/" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Salidas')}</Link>
+      {center?.photo_v > 0 && <img className="hero-photo" src={centerPhotoUrl(trip.center_id, center.photo_v)} alt={t('Foto de {name}', { name: trip.center_name })} style={{ marginTop: 10 }} />}
       <h1 style={{ marginTop: 8 }}>{trip.center_name}</h1>
       {trip.available_seats > 0 && !isCenter && (
-        <div className="row between" style={{ gap: 8, marginBottom: 12 }}>
-          <span className="muted small">{t('{n} plazas', { n: trip.available_seats })} · <PriceTag trip={trip} />{fees > 0 && <> + {php(fees)} {t('de tasas')}</>} <LastMinuteTag trip={trip} /></span>
-          <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
-        </div>
+        <p className="muted small" style={{ margin: '0 0 12px' }}>{t('{n} plazas', { n: trip.available_seats })} · <PriceTag trip={trip} />{fees > 0 && <> + {php(fees)} {t('de tasas')}</>} <LastMinuteTag trip={trip} /></p>
       )}
       {/* Lo que impide reservar se dice arriba, no solo junto al botón de pago del final */}
       {session && diver && !isCenter && !booked && trip.available_seats > 0 && (!levelOk || !medical) && (
@@ -223,8 +227,6 @@ export default function Salida({ id }) {
         <div className="row between"><span className="muted">{t('Plazas libres')}</span><b>{trip.available_seats}</b></div>
       </div>
 
-      <SeaCard tripId={trip.id} />
-      {trip.center_destination && <details className="fold"><summary><h2 style={{ display: 'inline' }}>{t('Avistamientos en {destino}', { destino: trip.center_destination })}</h2></summary><Sightings area={trip.center_destination} title={false} allowAdd={false} /></details>}
 
       {trip.sites?.length > 0 && (() => {
         // Regla de 0 a 40 m, o hasta el máximo de la salida redondeado a 10 si algún punto pasa de 40 m
@@ -250,6 +252,11 @@ export default function Salida({ id }) {
         )
       })()}
 
+      <QuienVa tripId={trip.id} loggedIn={!!session} />
+
+      <SeaCard tripId={trip.id} />
+      {trip.center_destination && <details className="fold"><summary><h2 style={{ display: 'inline' }}>{t('Avistamientos en {destino}', { destino: trip.center_destination })}</h2></summary><Sightings area={trip.center_destination} title={false} allowAdd={false} /></details>}
+
       <div className="card">
         <div className="row between wrap" style={{ gap: 8 }}>
           <div>
@@ -271,9 +278,8 @@ export default function Salida({ id }) {
 
       {(mine || isCenter) && session && <TripChat tripId={trip.id} open={openChat} />}
 
-      <QuienVa tripId={trip.id} loggedIn={!!session} />
 
-      {ctaVisible && trip.available_seats > 0 && !isCenter && !booked && (
+      {showCta && (
         <div className="sticky-cta">
           <span><span className="small muted">{t('Total')}</span> <b>{php(total)}</b> <span className="small muted">· {seats > 1 ? t('{n} plazas', { n: seats }) : t('{n} plaza', { n: 1 })}{fees > 0 && <> · {t('tasas incluidas')}</>}</span></span>
           <button type="button" className="btn small" onClick={() => document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t('Reservar')}</button>
@@ -295,10 +301,12 @@ export default function Salida({ id }) {
               </div>
             )}
             <div className="field">
-              <label htmlFor="seats">{t('Plazas')}</label>
-              <select id="seats" value={seats} onChange={(e) => setSeats(+e.target.value)}>
-                {Array.from({ length: Math.min(trip.available_seats, 6) }, (_, i) => i + 1).map((n) => <option key={n}>{n}</option>)}
-              </select>
+              <span className="label" id="seats-l">{t('Plazas')}</span>
+              <div className="stepper" role="group" aria-labelledby="seats-l">
+                <button type="button" aria-label={t('Una plaza menos')} disabled={seats <= 1} onClick={() => setSeats(seats - 1)}>−</button>
+                <output aria-live="polite" id="seats">{seats}</output>
+                <button type="button" aria-label={t('Una plaza más')} disabled={seats >= Math.min(trip.available_seats, 6)} onClick={() => setSeats(seats + 1)}>+</button>
+              </div>
             </div>
             {trip.gear_rental_php > 0 && (
               <label className="check field"><input type="checkbox" checked={gear} onChange={(e) => setGear(e.target.checked)} /> {t('Alquilar equipo completo (+{precio} por persona)', { precio: php(trip.gear_rental_php) })}</label>

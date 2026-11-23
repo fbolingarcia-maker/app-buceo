@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, errMsg } from '../lib/supabase'
 import { Link } from '../lib/router'
+import { centerPhotoUrl } from '../lib/photos'
 import { LEVELS, levelName, levelRank, levelColor, initials, manilaDate, addDays, dayLabel, time, php } from '../lib/format'
 import { t } from '../lib/i18n'
 import { norm, distKm, kmLabel, currentPosition, ss, ssSet } from '../lib/geo'
@@ -109,7 +110,7 @@ export default function Explorar() {
   else if (sort === 'near' && here) shown = [...shown].sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || a.departs_at.localeCompare(b.departs_at))
   // Salidas del día agrupadas por centro (como los clubs de Playtomic: primero el centro, luego su disponibilidad)
   const groups = Object.values(shown.reduce((m, tr) => {
-    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, lat: tr.center_lat, lng: tr.center_lng, rating: tr.center_rating, reviews: tr.center_reviews, langs: tr.center_languages || [], agencies: tr.center_agencies || [], gf: tr.center_green_fins, gfv: tr.center_green_fins_verified, trips: [] })
+    const g = m[tr.center_id] || (m[tr.center_id] = { id: tr.center_id, name: tr.center_name, dest: destOf(tr), prov: tr.center_province, km: tr.km, lat: tr.center_lat, lng: tr.center_lng, rating: tr.center_rating, reviews: tr.center_reviews, langs: tr.center_languages || [], agencies: tr.center_agencies || [], gf: tr.center_green_fins, gfv: tr.center_green_fins_verified, photo: tr.center_photo_v || 0, trips: [] })
     g.trips.push(tr)
     return m
   }, {})).map((g) => {
@@ -148,12 +149,13 @@ export default function Explorar() {
   const agencyOpts = [...new Set((trips || []).flatMap((tr) => (tr.center_agencies || []).map((a) => a.toUpperCase())))].sort()
   const langOpts = [...new Set((trips || []).flatMap((tr) => [...(tr.center_languages || []), ...(tr.center_course_languages || [])]))]
 
-  const nFilters = [level !== 'all', agency, lang, sort !== 'time'].filter(Boolean).length
+  const nFilters = [level !== 'all', agency, lang, sort !== 'time', buddy, kind].filter(Boolean).length
   const pickPlace = (p) => { setPlace(p); setQ(''); setFocus(false); if (sort === 'near') setSort('time') }
 
   return (
     <>
-      <h1>{t('Salidas de buceo en Filipinas')}</h1>
+      {/* En el móvil el título se oculta a la vista (sigue para lectores de pantalla y buscadores): los resultados suben */}
+      <h1 className="explore-title">{t('Salidas de buceo en Filipinas')}</h1>
 
       <div className="search-box">
         <div className="row" style={{ gap: 8 }}>
@@ -184,11 +186,6 @@ export default function Explorar() {
           {place.kind === 'dest' && <Link to={'/d/' + encodeURIComponent(place.name)} className="small">{t('Guía del destino')}</Link>}
         </div>
       )}
-      {!place && !here && !q && popular.length > 1 && (
-        <div className="chips">
-          {popular.map((d) => <button key={d} onClick={() => pickPlace({ kind: 'dest', name: d })}>{d}</button>)}
-        </div>
-      )}
       {geoErr && <div className="msg err" role="alert">{geoErr}</div>}
       {here && nearest > 50 && nearest < 1e9 && <div className="msg ok" role="status">{t('No hay salidas cerca de ti. Te mostramos primero las más próximas.')}</div>}
 
@@ -203,20 +200,20 @@ export default function Explorar() {
         ))}
       </div>
 
-      {/* Atajos visibles y el resto de filtros en un panel (botón «Filtros»): se ve claro qué hay y qué está activo */}
+      {/* Una sola fila deslizable: Filtros, Mapa, Mis centros y los destinos con salidas. El resto de filtros, en el panel */}
       <div className="quick-filters">
         <button type="button" className={'filter-btn' + (panel || nFilters ? ' on' : '')} aria-expanded={panel} onClick={() => setPanel(!panel)}>
           <Icon icon={SlidersHorizontal} size={16} />{t('Filtros')}{nFilters > 0 && <span className="badge">{nFilters}</span>}
         </button>
+        <button type="button" className="filter-btn" onClick={() => { setView(view === 'map' ? 'list' : 'map'); setPin(null) }} aria-pressed={view === 'map'}><Icon icon={view === 'map' ? List : MapIcon} size={16} />{view === 'map' ? t('Lista') : t('Mapa')}</button>
         {(favs.length > 0 || onlyFav) && (
           <button type="button" className={onlyFav ? 'filter-btn on' : 'filter-btn'} aria-pressed={onlyFav} onClick={() => setOnlyFav(!onlyFav)}>
             <Icon icon={Heart} size={16} fill={onlyFav ? 'currentColor' : 'none'} />{t('Mis centros')}
           </button>
         )}
-        <button type="button" className={buddy ? 'filter-btn on' : 'filter-btn'} aria-pressed={buddy} onClick={() => setBuddy(!buddy)}><Icon icon={Users} size={16} />{t('Buscan buddy')}</button>
-        <button type="button" className={kind === 'course' ? 'filter-btn on' : 'filter-btn'} aria-pressed={kind === 'course'} onClick={() => setKind(kind === 'course' ? '' : 'course')}><Icon icon={GraduationCap} size={16} />{t('Cursos')}</button>
-        <button type="button" className={kind === 'nocert' ? 'filter-btn on' : 'filter-btn'} aria-pressed={kind === 'nocert'} onClick={() => setKind(kind === 'nocert' ? '' : 'nocert')}><Icon icon={Waves} size={16} />{t('Sin certificación')}</button>
-        <button type="button" className="filter-btn" onClick={() => { setView(view === 'map' ? 'list' : 'map'); setPin(null) }} aria-pressed={view === 'map'}><Icon icon={view === 'map' ? List : MapIcon} size={16} />{view === 'map' ? t('Lista') : t('Mapa')}</button>
+        {!place && !here && !q && popular.length > 1 && popular.map((d) => (
+          <button key={d} type="button" className="filter-btn dest" onClick={() => pickPlace({ kind: 'dest', name: d })}><Icon icon={MapPin} size={16} />{d}</button>
+        ))}
       </div>
       {/* El nivel se pone solo con la certificación del buceador: se dice cuál es y cómo quitarlo */}
       {level !== 'all' && !panel && (
@@ -247,8 +244,13 @@ export default function Explorar() {
               <option value="price">{t('Ordenar: precio')}</option>
               {here && <option value="near">{t('Ordenar: distancia')}</option>}
             </select></div>
+          <div className="chips wrapc" role="group" aria-label={t('Tipo de salida')} style={{ marginBottom: 12 }}>
+            <button type="button" className={buddy ? 'on' : ''} aria-pressed={buddy} onClick={() => setBuddy(!buddy)}><Icon icon={Users} size={16} /> {t('Buscan buddy')}</button>
+            <button type="button" className={kind === 'course' ? 'on' : ''} aria-pressed={kind === 'course'} onClick={() => setKind(kind === 'course' ? '' : 'course')}><Icon icon={GraduationCap} size={16} /> {t('Cursos')}</button>
+            <button type="button" className={kind === 'nocert' ? 'on' : ''} aria-pressed={kind === 'nocert'} onClick={() => setKind(kind === 'nocert' ? '' : 'nocert')}><Icon icon={Waves} size={16} /> {t('Sin certificación')}</button>
+          </div>
           <div className="row between" style={{ gap: 8 }}>
-            <button type="button" className="btn small ghost" onClick={() => { setLevel('all'); setAgency(''); setLang(''); setSort('time') }}>{t('Quitar filtros')}</button>
+            <button type="button" className="btn small ghost" onClick={() => { setLevel('all'); setAgency(''); setLang(''); setSort('time'); setBuddy(false); setKind('') }}>{t('Quitar filtros')}</button>
             <button type="button" className="btn small" onClick={() => setPanel(false)}>{t('Ver {n} salidas', { n: shown.length })}</button>
           </div>
         </div>
@@ -293,7 +295,7 @@ export default function Explorar() {
         <section key={g.id} id={'c-' + g.id} className="card centre-card" aria-label={g.name}>
           <div className="centre-top">
           <Link to={'/c/' + g.id} className="centre-head">
-            <span className="centre-avatar" aria-hidden="true">{initials(g.name)}</span>
+            <span className="centre-avatar" aria-hidden="true">{g.photo ? <img src={centerPhotoUrl(g.id, g.photo)} alt="" loading="lazy" /> : initials(g.name)}</span>
             <span className="grow" style={{ minWidth: 0 }}>
               <b className="centre-name">{g.name}</b>
               <span className="small muted centre-meta">

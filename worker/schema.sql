@@ -97,7 +97,9 @@ CREATE TABLE IF NOT EXISTS centers (
   checked_at TEXT,
   green_fins TEXT CHECK (green_fins IN ('member', 'certified', 'digital')),
   green_fins_verified INTEGER NOT NULL DEFAULT 0,
-  eco TEXT NOT NULL DEFAULT '{}'
+  eco TEXT NOT NULL DEFAULT '{}',
+  photo_path TEXT,
+  photo_v INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS center_staff (
@@ -523,7 +525,7 @@ SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t
   (SELECT count(*) FROM trip_waitlist w WHERE w.trip_id = t.id AND w.status = 'waiting') AS waitlist,
   (SELECT round(avg(r.rating), 1) FROM center_reviews r WHERE r.center_id = c.id) AS center_rating,
   (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews,
-  t.activity
+  t.activity, c.photo_v AS center_photo_v
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified';
 
@@ -597,4 +599,4 @@ CREATE INDEX IF NOT EXISTS sightings_seen ON sightings(seen_on);
 
 CREATE INDEX IF NOT EXISTS logs_public ON dive_logs(share_public, created_at);
 
-INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');
+INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_pct', '4.5'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');

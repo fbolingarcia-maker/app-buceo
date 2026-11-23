@@ -81,7 +81,7 @@ export default {
  "¿Quién va?": "Wer fährt mit?",
  "1 plaza reservada": "1 Platz gebucht",
  "{n} plazas reservadas": "{n} Plätze gebucht",
- "Aún no ha reservado nadie. ¡Sé el primero!": "Noch hat niemand gebucht. Sei der Erste.",
+ "Aún no ha reservado nadie. Puedes ser el primero.": "Noch hat niemand gebucht. Sei der Erste.",
  "Tú": "Du",
  "+1 acompañante": "+1 Begleitung",
  "+{n} acompañantes": "+{n} Begleitungen",

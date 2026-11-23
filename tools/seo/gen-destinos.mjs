@@ -15,6 +15,10 @@ import path from 'node:path'
 const ROOT = new URL('../../', import.meta.url).pathname
 const SITE = 'https://divingslot.com'
 const data = JSON.parse(fs.readFileSync(new URL('./datos.json', import.meta.url), 'utf8'))
+// Fotos de cabecera por destino con licencia libre: { "Panglao": { "src": url, "author": …, "license": …, "link": página del fichero } }
+const fotosFile = new URL('./fotos.json', import.meta.url)
+const FOTOS = fs.existsSync(fotosFile) ? JSON.parse(fs.readFileSync(fotosFile, 'utf8')) : {}
+const destPhoto = (d, l) => { const f = FOTOS[d.name]; return f ? `<figure class="hero-img"><img src="${esc(f.src)}" alt="${esc((l === 'es' ? 'Buceo en ' : 'Diving in ') + d.name)}" width="1280" height="720" loading="eager"><figcaption>${l === 'es' ? 'Foto' : 'Photo'}: ${esc(f.author)} · <a href="${esc(f.link)}" rel="nofollow noopener" target="_blank">${esc(f.license)}</a></figcaption></figure>` : '' }
 
 // Igual que EXTRA_AREAS de src/lib/places.js: zonas que se bucean desde un destino
 const EXTRA_AREAS = {
@@ -142,7 +146,7 @@ function layout(l, { title, desc, url, alt, h1, body, jsonld }) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: https://upload.wikimedia.org; connect-src 'self' https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; object-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#0a5a85">
 <title>${esc(title)}</title>
@@ -197,7 +201,7 @@ function destPage(l, d) {
   }).join('')}</ul>` : `<p class="card muted">${T.noSites}</p>`
   const centreHtml = centres.length ? `<ul class="list cols">${centres.map((c) => `<li><a class="card row" href="${T.base}${T.centreDir}${centreSlug.get(c)}"><span><b>${esc(c.name)}</b>${c.locality && c.locality !== d.name ? `<span class="meta"> · ${esc(c.locality)}</span>` : ''}</span>${c.socio ? `<span class="pill ok">${T.bookable}</span>` : ''}</a></li>`).join('')}</ul><p class="meta">${T.note}</p>` : ''
   const body = `${crumbs(l, d)}
-<section class="hero"><h1>${esc(T.h1(d))}</h1><p class="lead">${esc(T.lead(d, sites.length, centres.length))}</p>
+${destPhoto(d, l)}<section class="hero"><h1>${esc(T.h1(d))}</h1><p class="lead">${esc(T.lead(d, sites.length, centres.length))}</p>
 <p class="ctas"><a class="btn" href="${appUrl('/d/' + encodeURIComponent(d.name))}">${esc(T.cta(d))}</a></p></section>
 <h2>${T.sites}${sites.length ? ` <span class="count">${sites.length}</span>` : ''}</h2>
 ${siteHtml}
@@ -281,7 +285,7 @@ function sitePage(l, s) {
   const centres = centresOf(d).slice(0, 12)
   const url = subUrl(l, 'siteDir', siteSlug.get(s))
   const body = `${crumbs2(l, d, s.name)}
-<section class="hero"><h1>${esc(T.siteH1(s))}</h1><p class="lead">${esc(T.siteLead(s.area, d))}</p>
+${destPhoto(d, l)}<section class="hero"><h1>${esc(T.siteH1(s))}</h1><p class="lead">${esc(T.siteLead(s.area, d))}</p>
 <p class="ctas"><a class="btn" href="${appUrl('/d/' + encodeURIComponent(d.name))}">${esc(T.cta(d))}</a></p></section>
 ${facts([[T.marineL, hl ? esc(hl) : ''], [T.depthL, T.depth(s.min, s.max)], [T.levelL, T.levels[s.level] || esc(s.level || '')], [T.feeL, s.fee ? '₱' + s.fee.toLocaleString('en-US') : ''], [T.fromL, `<a href="${T.base}${slug(d.name)}">${esc(d.name)}</a>`]])}
 ${others.length ? `<h2>${esc(T.otherSites(s.area))} <span class="count">${others.length}</span></h2>
@@ -305,7 +309,7 @@ function centrePage(l, c) {
   let web = ''
   try { if (c.web) { const u = new URL(/^https?:/i.test(c.web) ? c.web : 'https://' + c.web); web = `<a href="${esc(u.href)}" rel="nofollow noopener" target="_blank">${esc(u.hostname.replace(/^www\./, ''))}</a>` } } catch (e) { /* web no válida */ }
   const body = `${crumbs2(l, d, c.name)}
-<section class="hero"><h1>${esc(c.name)}</h1><p class="lead">${esc(T.centreLead(c, d))}</p>
+${c.photo ? `<figure class="hero-img"><img src="/api/center-photo/${c.id}?v=${c.photo}" alt="${esc(c.name)}" width="1280" height="720"></figure>` : destPhoto(d, l)}<section class="hero"><h1>${esc(c.name)}</h1><p class="lead">${esc(T.centreLead(c, d))}</p>
 <p class="ctas"><a class="btn" href="${appUrl('/c/' + c.id)}">${T.seeTrips}</a></p>
 <p class="meta">${c.socio ? T.bookOnline : `${T.listed} ${T.claim}`}</p></section>
 ${facts([[T.agenciesL, (c.agencies || []).map((a) => esc(AGENCY(a))).join(', ')], [T.langsL, (c.languages || []).map((x) => esc(LANGN[x] || x)).join(', ')], [T.webL, web], [T.gfL, c.gf ? T.gfV : '']])}

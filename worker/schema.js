@@ -77,7 +77,7 @@ export const TABLES = {
     ['lat', 'real', { nn: true }],
     ['lng', 'real', { nn: true }],
   ] },
-  centers: { private: ['gcash_number', 'notes', 'review_note'], cols: [
+  centers: { private: ['gcash_number', 'notes', 'review_note', 'photo_path'], cols: [
     ['id', 'uuid', { pk: true, def: UUID }],
     ['name', 'text', { nn: true }],
     ['area', 'text', { nn: true, def: "'Panglao'" }],
@@ -109,6 +109,9 @@ export const TABLES = {
     ['green_fins', 'text', { check: ENUM('green_fins', ['member', 'certified', 'digital']) }],
     ['green_fins_verified', 'bool', { nn: true, def: '0' }],
     ['eco', 'json', { nn: true, def: "'{}'" }],
+    // Foto propia del centro (worker/photos.js): ruta privada en dive-photos y versión pública para la caché (0 = sin foto)
+    ['photo_path', 'text'],
+    ['photo_v', 'int', { nn: true, def: '0' }],
   ] },
   center_staff: { pk: ['center_id', 'user_id'], cols: [
     ['center_id', 'uuid', { nn: true, ref: 'centers(id)', onDelete: 'CASCADE' }],
@@ -508,7 +511,7 @@ export const VIEWS = {
       ['center_area', 'text'], ['center_locality', 'text'], ['center_lat', 'real'], ['center_lng', 'real'], ['booked_seats', 'int'],
       ['center_destination', 'text'], ['center_province', 'text'], ['center_languages', 'json'], ['center_agencies', 'json'], ['center_course_languages', 'json'],
       ['include_fees', 'bool'], ['fees_php', 'int'], ['last_minute_pct', 'int'], ['center_green_fins', 'text'], ['center_green_fins_verified', 'bool'],
-      ['early_pct', 'int'], ['kind', 'text'], ['course_name', 'text'], ['course_days', 'int'], ['course_prereq', 'text'], ['buddy_seekers', 'json'], ['waitlist', 'int'], ['center_rating', 'real'], ['center_reviews', 'int'], ['activity', 'text']],
+      ['early_pct', 'int'], ['kind', 'text'], ['course_name', 'text'], ['course_days', 'int'], ['course_prereq', 'text'], ['buddy_seekers', 'json'], ['waitlist', 'int'], ['center_rating', 'real'], ['center_reviews', 'int'], ['activity', 'text'], ['center_photo_v', 'int']],
     sql: `SELECT t.id, t.center_id, t.departs_at, t.num_dives, t.min_level, t.price_php, t.gear_rental_php, c.name AS center_name,
   CASE WHEN bo.show_to_divers THEN bo.name END AS boat_name,
   (SELECT json_group_array(name) FROM (SELECT ds.name FROM trip_sites ts JOIN dive_sites ds ON ds.id = ts.site_id WHERE ts.trip_id = t.id ORDER BY ts.position)) AS sites,
@@ -525,7 +528,7 @@ export const VIEWS = {
   (SELECT count(*) FROM trip_waitlist w WHERE w.trip_id = t.id AND w.status = 'waiting') AS waitlist,
   (SELECT round(avg(r.rating), 1) FROM center_reviews r WHERE r.center_id = c.id) AS center_rating,
   (SELECT count(*) FROM center_reviews r WHERE r.center_id = c.id) AS center_reviews,
-  t.activity
+  t.activity, c.photo_v AS center_photo_v
 FROM trips t JOIN centers c ON c.id = t.center_id JOIN boats bo ON bo.id = t.boat_id
 WHERE t.status = 'published' AND c.verification_status = 'verified'`,
   },
@@ -602,6 +605,6 @@ export function schemaSql() {
   }
   for (const [v, def] of Object.entries(VIEWS)) out.push(`DROP VIEW IF EXISTS ${v};\nCREATE VIEW ${v} AS\n${def.sql};`)
   out.push(...INDEXES.map((i) => i + ';'))
-  out.push("INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_php', '250'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');")
+  out.push("INSERT OR IGNORE INTO app_config (key, value) VALUES ('payments_mode', 'demo'), ('deposit_pct', '50'), ('marketplace_fee_pct', '4.5'), ('dan_url', 'https://world.dan.org/membership-coverage/asia-pacific/'), ('dan_affiliate', '0');")
   return out.join('\n\n') + '\n'
 }

@@ -81,7 +81,7 @@ export default {
  "¿Quién va?": "谁会去？",
  "1 plaza reservada": "已订 1 个位置",
  "{n} plazas reservadas": "已订 {n} 个位置",
- "Aún no ha reservado nadie. ¡Sé el primero!": "还没有人预订。成为第一个吧。",
+ "Aún no ha reservado nadie. Puedes ser el primero.": "还没有人预订。成为第一个吧。",
  "Tú": "你",
  "+1 acompañante": "+1 位同伴",
  "+{n} acompañantes": "+{n} 位同伴",

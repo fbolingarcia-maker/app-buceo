@@ -96,12 +96,12 @@ section('reserva por el enlace del centro con extras y tasas')
 r = await A.rpc('book_trip', { p_trip: T, p_seats: 2, p_with_gear: true, p_medical_signed: true, p_ref: 'c1', p_extras: [INS, VID] })
 const BA = r.data
 // 2 × 3000 + 2 × 500 + 2 × 350 + 2 × 400 + 1500 = 10000
-ok(BA?.amount_php === 10000 && BA.fees_php === 700 && BA.extras_php === 2300 && BA.channel === 'direct' && BA.commission_php === 500 && BA.deposit_php === 5000, 'importe con tasas y extras; por el enlace propio también paga comisión', r)
+ok(BA?.amount_php === 10000 && BA.fees_php === 700 && BA.extras_php === 2300 && BA.channel === 'direct' && BA.commission_php === 450 && BA.deposit_php === 5000, 'importe con tasas y extras; por el enlace propio también paga comisión', r)
 r = await A.rest({ table: 'booking_extras', select: 'name, qty, price_php', filters: [['booking_id', 'eq', BA.id]] })
 ok(r.data?.length === 2 && r.data.some((x) => x.qty === 2), 'extras guardados en la reserva', r)
 ok(code(await B.rpc('book_trip', { p_trip: T, p_seats: 1, p_with_gear: false, p_medical_signed: true, p_extras: [OFF] })) === 'BAD_EXTRA', 'un extra inactivo no se puede añadir')
 r = await B.rpc('book_trip', { p_trip: T, p_seats: 1, p_with_gear: false, p_medical_signed: true, p_ref: 'c2' })
-ok(r.data?.channel === 'marketplace' && r.data.commission_php === 250 && r.data.amount_php === 3350, 'el enlace de otro centro no cuenta como suyo: marketplace, ₱250', r)
+ok(r.data?.channel === 'marketplace' && r.data.commission_php === 151 && r.data.amount_php === 3350, 'el enlace de otro centro no cuenta como suyo: marketplace, 4,5 %', r)
 const BB = r.data
 
 section('pago de la reserva')

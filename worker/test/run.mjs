@@ -185,7 +185,7 @@ ok(r.status === 403, 'no puede autoverificarse la certificación', r)
 
 r = await A.rpc('book_trip', { p_trip: T1, p_seats: 2, p_with_gear: true, p_medical_signed: true })
 const BA = r.data
-ok(BA?.amount_php === 7000 && BA.deposit_php === 3500 && BA.commission_php === 500 && BA.status === 'pending_payment' && BA.with_gear === true, 'A reserva 2 plazas: 7000, señal 3500, comisión 500', r)
+ok(BA?.amount_php === 7000 && BA.deposit_php === 3500 && BA.commission_php === 315 && BA.status === 'pending_payment' && BA.with_gear === true, 'A reserva 2 plazas: 7000, señal 3500, comisión 4,5 % = 315', r)
 ok(errCode(await A.rpc('book_trip', { p_trip: T1, p_seats: 1, p_with_gear: false, p_medical_signed: true })) === 'DUPLICATE', 'no duplica reserva')
 r = await A.rpc('confirm_payment_demo', { p_booking: BA.id, p_kind: 'deposit' })
 ok(r.data?.status === 'confirmed' && r.data.paid_php === 3500, 'A paga la señal demo y queda confirmada', r)
@@ -222,7 +222,7 @@ section('cancelaciones')
 // A cancela a menos de 24 h: se queda el 50 %
 await db.prepare('UPDATE trips SET departs_at = ? WHERE id = ?').bind(dep(10), T1).run()
 r = await A.rpc('cancel_my_booking', { p_booking: BA.id })
-ok(r.data?.status === 'cancelled_by_diver' && r.data.refund_php === 3500 && r.data.commission_php === 500, 'A cancela a <24 h: devuelve 7000 − 3500, mantiene comisión', r)
+ok(r.data?.status === 'cancelled_by_diver' && r.data.refund_php === 3500 && r.data.commission_php === 315, 'A cancela a <24 h: devuelve 7000 − 3500, mantiene comisión', r)
 // otra salida cancelada por meteo: devuelve el 100 %
 r = await centro.rest({ table: 'trips', op: 'insert', values: { center_id: CID, boat_id: BOAT, departs_at: dep(72), price_php: 2500, divers_per_guide: 4, status: 'published' }, returning: true, select: 'id' })
 const T2 = r.data[0].id
@@ -250,6 +250,8 @@ r = await admin.rest({ table: 'admin_audit', select: '*', order: [{ col: 'at', a
 ok(r.data?.some((a) => a.action === 'center_status' && a.detail?.to === 'verified'), 'el registro muestra la aprobación', r.data)
 r = await admin.rpc('admin_dashboard', { p_days: 30, p_demo: false })
 ok(r.data?.bookings?.commission === 0 && r.data.bookings.by_status.cancelled_by_diver === 1 && r.data.bookings.refunds === 6000 && r.data.centers.by_status.verified === 1 && r.data.users.total === 4, 'admin_dashboard', r.data && { b: r.data.bookings, c: r.data.centers, u: r.data.users.total })
+r = await B.rest({ table: 'app_config', select: 'key, value', filters: [['key', 'in', ['marketplace_fee_pct', 'marketplace_fee_php', 'deposit_pct']]] })
+ok(r.data?.length === 1 && r.data[0].key === 'deposit_pct', 'la comisión de DivingSlot no se lee desde fuera', r)
 r = await admin.rpc('admin_users')
 ok(r.data?.length === 4 && r.data.find((u) => u.email === 'a@divingslot.test')?.certifications?.[0]?.verified === true, 'admin_users', r.data?.[0])
 ok(errCode(await admin.rpc('admin_revoke', { p_user: adminUser.id })) === 'LAST_ADMIN', 'no se quita el último admin')
@@ -526,5 +528,28 @@ section('avisos al administrador (como los triggers de la migración 030)')
 }
 
 console.log = log
+
+section('foto propia del centro')
+{
+  const cu = (await db.prepare("SELECT id FROM users WHERE email = 'centro@divingslot.test'").first()).id
+  const jpgF = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4])
+  ok((await centro.raw('PUT', `/api/storage/upload/dive-photos/${cu}/center-photo/${CID}-1.jpg`, jpgF)).status === 200, 'el centro sube su foto')
+  let f = await A.rpc('set_center_photo', { p_center: CID, p_path: `${cu}/center-photo/${CID}-1.jpg` })
+  ok(f.error?.message?.startsWith('FORBIDDEN'), 'otro usuario no la pone', f)
+  f = await centro.rpc('set_center_photo', { p_center: CID, p_path: `otro/center-photo/x.jpg` })
+  ok(f.error?.message?.startsWith('BAD_PATH'), 'solo rutas propias', f)
+  f = await centro.rpc('set_center_photo', { p_center: CID, p_path: `${cu}/center-photo/${CID}-1.jpg` })
+  ok(f.data?.photo_v === 1, 'foto puesta, versión 1', f)
+  const res = await handleApi(new Request(`https://divingslot.test/api/center-photo/${CID}?v=1`), env, { waitUntil() {} })
+  ok(res.status === 200 && res.headers.get('Cache-Control').includes('immutable'), 'se sirve en público con caché', res.status)
+  const pub = await A.rest({ table: 'centers', select: 'photo_v', filters: [['id', 'eq', CID]], single: 'single' })
+  ok(pub.data?.photo_v === 1, 'photo_v es pública', pub)
+  const hid = await A.rest({ table: 'centers', select: 'photo_path', filters: [['id', 'eq', CID]] })
+  ok(hid.error || !hid.data?.[0]?.photo_path, 'la ruta privada no se ve', hid)
+  f = await centro.rpc('set_center_photo', { p_center: CID, p_path: null })
+  ok(f.data?.photo_v === 0, 'se puede quitar', f)
+  ok((await handleApi(new Request(`https://divingslot.test/api/center-photo/${CID}`), env, { waitUntil() {} })).status === 404, 'sin foto: 404')
+}
+
 console.log(`\n${passes} bien, ${fails} mal`)
 process.exit(fails ? 1 : 0)

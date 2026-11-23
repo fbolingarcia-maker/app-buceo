@@ -43,7 +43,7 @@ export default {
   // centroExtras.jsx / CentroAjustes.jsx
   'Copiado': 'Copied',
   'Reserva tu inmersión': 'Book your dive',
-  'Comparte tu enlace para que tus clientes vean tus salidas y reserven en la app. Las reservas por la app tienen una comisión de ₱250 por buceador; las reservas que apuntas tú (WhatsApp, en el centro) no.': 'Share your link so your customers can see your trips and book in the app. App bookings carry a ₱250 commission per diver; bookings you add yourself (WhatsApp, walk-ins) don\'t.',
+  'Comparte tu enlace para que tus clientes vean tus salidas y reserven en la app. Las reservas por la app pagan la comisión de DivingSlot acordada contigo; las reservas que apuntas tú (WhatsApp, en el centro) no.': 'Share your link so your customers can see your trips and book in the app. App bookings pay the DivingSlot commission agreed with you; bookings you add yourself (WhatsApp, walk-ins) don\'t.',
   'Tu enlace de reservas': 'Your booking link',
   'Copiar enlace': 'Copy link',
   'Copiar botón para tu web': 'Copy button for your website',

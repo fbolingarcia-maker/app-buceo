@@ -81,7 +81,7 @@ export default {
  "¿Quién va?": "誰が参加する？",
  "1 plaza reservada": "1席予約済み",
  "{n} plazas reservadas": "{n}席予約済み",
- "Aún no ha reservado nadie. ¡Sé el primero!": "まだ誰も予約していません。最初の参加者になりましょう。",
+ "Aún no ha reservado nadie. Puedes ser el primero.": "まだ誰も予約していません。最初の参加者になりましょう。",
  "Tú": "あなた",
  "+1 acompañante": "+同行者1人",
  "+{n} acompañantes": "+同行者{n}人",

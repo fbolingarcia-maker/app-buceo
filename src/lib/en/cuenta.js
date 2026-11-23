@@ -122,7 +122,7 @@ export default {
   '¿Quién va?': "Who's going?",
   '1 plaza reservada': '1 seat booked',
   '{n} plazas reservadas': '{n} seats booked',
-  'Aún no ha reservado nadie. ¡Sé el primero!': 'Nobody has booked yet. Be the first!',
+  'Aún no ha reservado nadie. Puedes ser el primero.': 'Nobody has booked yet. You can be the first.',
   'Tú': 'You',
   '+1 acompañante': '+1 guest',
   '+{n} acompañantes': '+{n} guests',

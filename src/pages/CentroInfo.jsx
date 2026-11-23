@@ -13,6 +13,7 @@ import { CenterReviews } from '../lib/plus'
 import { CenterGuideRatings } from '../lib/guides'
 import { FollowButton } from '../lib/comunidad'
 import { useAuth } from '../lib/auth'
+import { centerPhotoUrl } from '../lib/photos'
 import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from 'lucide-react'
 
 // Ficha pública de un centro: datos, valoración y próximas salidas
@@ -24,7 +25,7 @@ export default function CentroInfo({ id }) {
   const [allDays, setAllDays] = useState(false)
 
   useEffect(() => {
-    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages, agencies, agency_detail, verification_status, green_fins, green_fins_verified, eco').eq('id', id).maybeSingle()
+    supabase.from('centers').select('id, name, area, locality, destination, province, website, phone, listing_status, lat, lng, location_precision, source_url, languages, course_languages, agencies, agency_detail, verification_status, green_fins, green_fins_verified, eco, photo_v').eq('id', id).maybeSingle()
       .then(({ data, error }) => { if (error) setError(errMsg(error)); setC(data || false) })
     supabase.from('published_trips').select('*').eq('center_id', id).gte('departs_at', new Date().toISOString()).order('departs_at').limit(60)
       .then(({ data }) => setTrips(data || []))
@@ -43,6 +44,7 @@ export default function CentroInfo({ id }) {
   return (
     <>
       <Link to="/centros" className="small"><Icon icon={ArrowLeft} size={16} /> {t('Centros')}</Link>
+      {c.photo_v > 0 && <img className="hero-photo" src={centerPhotoUrl(c.id, c.photo_v)} alt={t('Foto de {name}', { name: c.name })} style={{ marginTop: 10 }} />}
       <h1 style={{ marginTop: 8, marginBottom: 4 }}>{c.name}</h1>
       <div className="row wrap" style={{ gap: 8, marginBottom: 12 }}>
         {dest && <Link to={'/d/' + encodeURIComponent(dest)} className="small"><Icon icon={MapPin} size={14} /> {[c.locality !== dest ? c.locality : null, dest, c.province].filter(Boolean).join(', ')}</Link>}
