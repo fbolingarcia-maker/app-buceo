@@ -6,7 +6,10 @@ import { t } from './i18n'
 import { Link } from './router'
 import { dayLabel, manilaDate, addDays, time } from './format'
 import Icon from './Icon'
-import { Check, Copy, Camera, X, Users, UserPlus, QrCode, Trophy, Target, Fish, Trash, Code, Award } from 'lucide-react'
+import { Check, Copy, Camera, X, Users, UserPlus, QrCode, Trophy, Target, Fish, Trash, Code, Award, MapPin, Move } from 'lucide-react'
+import { MapView } from './plus'
+import { useAuth } from './auth'
+import EN from './en/comunidad'
 
 // ── Actividades ──
 export const ACTIVITIES = [['scuba', 'Buceo'], ['snorkel', 'Esnórquel'], ['freedive', 'Apnea'], ['try_dive', 'Bautismo']]
@@ -295,12 +298,13 @@ export function FollowButton({ type, id, small }) {
 
 // ── Avistamientos ──
 export const SPECIES = ['Tiburón zorro', 'Tiburón ballena', 'Tortuga', 'Sardinas', 'Manta', 'Delfines', 'Pez rana', 'Caballito de mar', 'Nudibranquios', 'Jureles', 'Tiburón de puntas blancas', 'Pulpo mimo']
-export function Sightings({ siteId = null, area = null, sites = null, title = true, days = 14, allowAdd = true, session }) {
+export function Sightings({ siteId = null, area = null, sites = null, title = true, days = 14, allowAdd = true, session, byIds = false }) {
   const [list, setList] = useState(null)
   const [adding, setAdding] = useState(false)
   const [f, setF] = useState({ site: siteId || '', species: '', note: '', seen_on: manilaDate() })
   const [err, setErr] = useState('')
-  const load = useCallback(() => supabase.rpc('sightings', { p_site: siteId, p_area: area, p_days: days }).then(({ data }) => setList(data || [])), [siteId, area, days])
+  const ids = byIds && sites ? sites.map((x) => x.id).join(',') : ''
+  const load = useCallback(() => supabase.rpc('sightings', ids ? { p_sites: ids.split(','), p_days: days } : { p_site: siteId, p_area: area, p_days: days }).then(({ data }) => setList(data || [])), [siteId, area, days, ids])
   useEffect(() => { load() }, [load])
   if (!list) return null
   return (
@@ -340,6 +344,75 @@ export function Sightings({ siteId = null, area = null, sites = null, title = tr
           {err && <div className="msg err" role="alert">{err}</div>}
           <div className="row" style={{ gap: 8 }}><button className="btn">{t('Publicar')}</button><button type="button" className="btn ghost" onClick={() => setAdding(false)}>{t('Cancelar')}</button></div>
         </form>
+      )}
+    </section>
+  )
+}
+
+// ── Mapa de avistamientos ──
+// Nombres equivalentes de una especie (se guarda en el idioma de quien la cuenta): para filtrar en los dos idiomas
+const speciesNames = (s) => [s, EN[s]].filter(Boolean)
+export function SightingsMap({ siteIds = null, area = null, height = 380, days: days0 = 30, filters = true }) {
+  const { session, isAdmin } = useAuth()
+  const [days, setDays] = useState(days0)
+  const [species, setSpecies] = useState('')
+  const [data, setData] = useState(null)
+  const [sel, setSel] = useState(null)
+  const [moving, setMoving] = useState(false)
+  const [err, setErr] = useState('')
+  const load = useCallback(() => supabase.rpc('sightings_map', { p_days: days, p_species: species ? speciesNames(species) : null, p_area: area })
+    .then(({ data, error }) => { if (error) setErr(errMsg(error)); setData(data || { sites: [], total: 0, days }) }), [days, species, area])
+  useEffect(() => { load() }, [load])
+  if (!data) return <p className="muted small">{t('Cargando…')}</p>
+  const sites = siteIds ? data.sites.filter((x) => siteIds.includes(x.id)) : data.sites
+  const total = sites.reduce((a, x) => a + x.n, 0)
+  const site = sites.find((x) => x.id === sel)
+  const points = sites.map((x) => ({ id: x.id, lat: x.lat, lng: x.lng, weight: x.n, badge: x.n || '', cls: x.n ? '' : 'dot',
+    label: x.name + ' · ' + (x.n === 1 ? t('1 avistamiento') : t('{n} avistamientos', { n: x.n })) }))
+  return (
+    <section className="sight-map">
+      {filters && (
+        <>
+          <div className="chips" role="group" aria-label={t('Periodo')}>
+            {[7, 30, 90].map((d) => <button key={d} type="button" className={days === d ? 'on' : ''} onClick={() => setDays(d)}>{t('{n} días', { n: d })}</button>)}
+          </div>
+          <div className="chips" role="group" aria-label={t('Especie')}>
+            <button type="button" className={!species ? 'on' : ''} onClick={() => setSpecies('')}>{t('Todo')}</button>
+            {SPECIES.map((s) => <button key={s} type="button" className={species === s ? 'on' : ''} onClick={() => setSpecies(species === s ? '' : s)}>{t(s)}</button>)}
+          </div>
+        </>
+      )}
+      <p className="small muted" style={{ margin: '4px 0 8px' }}>
+        {total ? (total === 1 ? t('1 avistamiento en los últimos {d} días.', { d: days }) : t('{n} avistamientos en los últimos {d} días.', { n: total, d: days }))
+          : species ? t('Nadie ha contado {especie} en los últimos {d} días.', { especie: t(species), d: days }) : t('Nadie ha contado nada en los últimos {n} días.', { n: days })}
+        {' '}{t('Los números son avistamientos; los puntos grises, sitios sin avistamientos. Ubicaciones aproximadas.')}
+      </p>
+      {err && <div className="msg err" role="alert">{err}</div>}
+      <MapView points={points} height={height} cluster selected={sel} onPick={(id) => { setSel(id === sel ? null : id); setMoving(false) }}
+        empty={t('Aún no hay puntos de buceo con ubicación en el mapa.')}
+        onMapClick={moving && site ? async (lat, lng) => {
+          const { error } = await supabase.rpc('set_site_location', { p_site: site.id, p_lat: lat, p_lng: lng })
+          if (error) setErr(errMsg(error)); else { setMoving(false); load() }
+        } : undefined} />
+      {site && (
+        <div className="card sight-map-card">
+          <div className="row between" style={{ gap: 8 }}>
+            <b className="row" style={{ gap: 6 }}><Icon icon={MapPin} size={16} /> {site.name}</b>
+            <button type="button" className="linkish small" onClick={() => setSel(null)} aria-label={t('Cerrar')}><Icon icon={X} size={16} /></button>
+          </div>
+          <div className="small muted">{site.area}{site.last ? ' · ' + t('último: {d}', { d: dayLabel(site.last, { day: 'numeric', month: 'short' }) }) : ''}</div>
+          {site.species.length > 0
+            ? <ul className="small">{site.species.map((x) => <li key={x.s}>{t(x.s)}{x.n > 1 ? ' ×' + x.n : ''}</li>)}</ul>
+            : <p className="small muted">{t('Nadie ha contado nada aquí en los últimos {n} días.', { n: days })}</p>}
+          <details className="fold"><summary className="small">{t('Ver detalle y contar lo que has visto')}</summary>
+            <Sightings key={site.id} siteId={site.id} title={false} days={days > 60 ? 60 : days} session={session} />
+          </details>
+          {isAdmin && (
+            <p className="small" style={{ marginBottom: 0 }}>
+              <button type="button" className={moving ? 'btn small' : 'btn small ghost'} onClick={() => setMoving(!moving)}><Icon icon={Move} size={14} /> {moving ? t('Toca en el mapa la posición correcta') : t('Corregir la ubicación')}</button>
+            </p>
+          )}
+        </div>
       )}
     </section>
   )

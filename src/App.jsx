@@ -40,6 +40,7 @@ const Admin = lazyPage(() => import('./pages/Admin'))
 const Importar = lazyPage(() => import('./pages/Importar'))
 const Guia = lazyPage(() => import('./pages/Guia'))
 const Muro = lazyPage(() => import('./pages/Muro'))
+const Avistamientos = lazyPage(() => import('./pages/Avistamientos'))
 const Buzo = lazyPage(() => import('./pages/Buzo'))
 const Mensajes = lazyPage(() => import('./pages/Mensajes'))
 const CentroMensajes = lazyPage(() => import('./pages/Mensajes').then((m) => ({ default: m.CentroMensajes })))
@@ -188,6 +189,7 @@ export default function App() {
   else if (seg[0] === 'centro') page = <NeedCenter><CentroPanel /></NeedCenter>
   else if (seg[0] === 'centros') page = <Centros />
   else if (seg[0] === 'puntos') page = <Puntos />
+  else if (seg[0] === 'avistamientos') page = <Avistamientos />
   else if (seg[0] === 'c' && seg[1]) page = <CentroInfo id={seg[1]} />
   else if (seg[0] === 'd' && seg[1]) page = <Destino name={decodeURIComponent(seg[1])} />
   else if (session && adminView === 'admin') page = <Admin />

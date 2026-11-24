@@ -325,17 +325,55 @@ export const COMUNIDAD = {
     return { deleted: changes(r) }
   },
   // Públicos: por punto, por zona (destino) o los últimos de todo el país
-  async sightings(ctx, { p_site = null, p_area = null, p_days = 14, p_limit = 60 }) {
+  async sightings(ctx, { p_site = null, p_area = null, p_sites = null, p_days = 14, p_limit = 60 }) {
     const days = Math.min(60, Math.max(1, +p_days || 14))
     const since = manilaDay(Date.now() - days * 864e5)
     const where = ['s.seen_on >= ?'], params = [since]
     if (p_site) { where.push('s.site_id = ?'); params.push(p_site) }
     if (p_area) { where.push('ds.area = ?'); params.push(p_area) }
+    // Varios puntos (un destino con sus islas: Panglao + Balicasag + Pamilacan)
+    const ids = Array.isArray(p_sites) ? p_sites.filter((x) => typeof x === 'string').slice(0, 80) : []
+    if (ids.length) { where.push(`s.site_id IN (${ids.map(() => '?').join(', ')})`); params.push(...ids) }
     const rows = await all(ctx.db, `SELECT s.id, s.site_id, s.species, s.note, s.seen_on, s.created_at, ds.name AS site, ds.area, c.id AS center_id, c.name AS center_name, d.full_name,
         s.user_id = ? AS mine
       FROM sightings s JOIN dive_sites ds ON ds.id = s.site_id LEFT JOIN centers c ON c.id = s.center_id LEFT JOIN divers d ON d.id = s.diver_id
       WHERE ${where.join(' AND ')} ORDER BY s.seen_on DESC, s.created_at DESC LIMIT ?`, ctx.uid || '', ...params, Math.min(200, +p_limit || 60))
     return rows.map((r) => ({ ...r, by: r.center_name || shortName(r.full_name), full_name: undefined, mine: !!r.mine }))
+  },
+
+  // Mapa de avistamientos: todos los puntos con posición y, en cada uno, lo visto en los últimos días (público).
+  // p_species: lista de nombres equivalentes (español e inglés) de la especie a filtrar
+  async sightings_map(ctx, { p_days = 30, p_species = null, p_area = null }) {
+    const days = Math.min(90, Math.max(1, +p_days || 30))
+    const since = manilaDay(Date.now() - days * 864e5)
+    const names = (Array.isArray(p_species) ? p_species : p_species ? [p_species] : []).map((x) => String(x).trim().toLowerCase()).filter(Boolean).slice(0, 6)
+    const sp = names.length ? ` AND lower(s.species) IN (${names.map(() => '?').join(', ')})` : ''
+    const area = p_area ? ' AND ds.area = ?' : ''
+    const sites = await all(ctx.db, `SELECT ds.id, ds.name, ds.area, ds.lat, ds.lng FROM dive_sites ds WHERE ds.lat IS NOT NULL${area} ORDER BY ds.name`, ...(p_area ? [p_area] : []))
+    const rows = await all(ctx.db, `SELECT s.site_id, s.species, count(*) AS n, max(s.seen_on) AS last FROM sightings s JOIN dive_sites ds ON ds.id = s.site_id
+      WHERE s.seen_on >= ?${sp}${area} GROUP BY s.site_id, lower(s.species), s.species ORDER BY n DESC`, since, ...names, ...(p_area ? [p_area] : []))
+    const by = {}
+    for (const r of rows) {
+      const b = (by[r.site_id] = by[r.site_id] || { n: 0, last: '', species: [] })
+      b.n += r.n; if (r.last > b.last) b.last = r.last
+      const same = b.species.find((x) => x.s.toLowerCase() === r.species.toLowerCase())
+      if (same) same.n += r.n; else b.species.push({ s: r.species, n: r.n })
+    }
+    return {
+      days, total: rows.reduce((a, r) => a + r.n, 0),
+      sites: sites.map((x) => ({ ...x, n: by[x.id]?.n || 0, last: by[x.id]?.last || null, species: (by[x.id]?.species || []).sort((a, b) => b.n - a.n).slice(0, 5) })),
+    }
+  },
+  // El administrador corrige la posición de un punto de buceo tocando el mapa
+  async set_site_location(ctx, { p_site, p_lat, p_lng }) {
+    if (!ctx.isAdmin) fail('FORBIDDEN', 'solo administradores', 403)
+    if (ctx.uid && !ctx.mfaOk) fail('MFA_REQUIRED', 'introduce el código de verificación en dos pasos', 403)
+    const lat = Math.round(+p_lat * 1e5) / 1e5, lng = Math.round(+p_lng * 1e5) / 1e5
+    if (!(lat >= 4 && lat <= 22 && lng >= 116 && lng <= 128)) fail('BAD_INPUT', 'la posición tiene que estar en Filipinas')
+    const r = await run(ctx.db, 'UPDATE dive_sites SET lat = ?, lng = ? WHERE id = ?', lat, lng, p_site)
+    if (!changes(r)) fail('NOT_FOUND', 'punto de buceo no encontrado', 404)
+    await run(ctx.db, 'INSERT INTO admin_audit (actor, action, target, detail) VALUES (?, ?, ?, ?)', ctx.uid, 'site_location', p_site, JSON.stringify({ lat, lng }))
+    return { id: p_site, lat, lng }
   },
 
   // ── Rangos, retos y ranking ──

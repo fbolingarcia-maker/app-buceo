@@ -7,7 +7,7 @@ import { loadDestinations, openTripsIn, loadRatings, EXTRA_AREAS } from '../lib/
 import Icon from '../lib/Icon'
 import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../lib/auth'
-import { Sightings, Leaderboard } from '../lib/comunidad'
+import { Sightings, Leaderboard, SightingsMap } from '../lib/comunidad'
 
 // Página de un destino: puntos de buceo, centros y acceso a sus salidas
 export default function Destino({ name }) {
@@ -50,7 +50,10 @@ export default function Destino({ name }) {
       {sites && sites.length === 0 && <div className="card muted">{t('Aún no hay puntos de buceo registrados en este destino.')}</div>}
       {sites?.map((s) => <SiteCard key={s.id} site={s} sub={s.area !== dest.name ? s.area : null} />)}
 
-      {sites && sites.length > 0 && <Sightings area={dest.name} sites={sites} session={session} />}
+      {sites && sites.length > 0 && <Sightings area={dest.name} sites={sites} session={session} byIds />}
+      {sites && sites.some((s) => s.lat != null) && (
+        <details className="fold"><summary><b>{t('Ver en el mapa')}</b></summary><SightingsMap siteIds={sites.map((s) => s.id)} height={320} filters={false} /></details>
+      )}
       <Leaderboard area={dest.name} />
 
       <h2>{t('Centros de buceo')} <span className="muted small" style={{ fontWeight: 400 }}>· {centers.length}</span></h2>

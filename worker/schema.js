@@ -137,6 +137,9 @@ export const TABLES = {
     ['province', 'text'],
     ['highlight', 'text'],
     ['highlight_es', 'text'],
+    // Posición aproximada del punto (mapa de avistamientos); el administrador la corrige desde el mapa
+    ['lat', 'real', { check: 'lat IS NULL OR lat BETWEEN 4 AND 22' }],
+    ['lng', 'real', { check: 'lng IS NULL OR lng BETWEEN 116 AND 128' }],
   ] },
   trips: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],

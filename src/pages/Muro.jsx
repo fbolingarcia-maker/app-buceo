@@ -52,6 +52,7 @@ export default function Muro() {
         </div>
       ))}
       <Sightings days={7} allowAdd={false} />
+      <p className="small"><Link to="/avistamientos">{t('Ver el mapa de avistamientos')}</Link></p>
       {fol.centers.length > 0 && <><h2>{t('Centros que sigues')}</h2><p className="small">{fol.centers.map((c, k) => <span key={c.id}>{k ? ' · ' : ''}<Link to={'/c/' + c.id}>{c.name}</Link></span>)}</p></>}
       {fol.divers.length > 0 && <><h2>{t('Buceadores que sigues')}</h2><p className="small">{fol.divers.map((d, k) => <span key={d.id}>{k ? ' · ' : ''}<Link to={'/buzo/' + d.id}>{d.name}</Link></span>)}</p></>}
     </>

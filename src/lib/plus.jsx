@@ -316,17 +316,21 @@ export function Badges({ logs }) {
 const TILE = 256
 const lon2x = (lng, z) => ((lng + 180) / 360) * TILE * 2 ** z
 const lat2y = (lat, z) => { const r = (lat * Math.PI) / 180; return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * TILE * 2 ** z }
-export function MapView({ points, height = 360, onPick, selected }) {
+const x2lon = (x, z) => (x / (TILE * 2 ** z)) * 360 - 180
+const y2lat = (y, z) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / (TILE * 2 ** z)))) * 180) / Math.PI
+// points: { id, lat, lng, label, badge, weight?, cls? }. cluster: junta los marcadores que se pisan (al tocar el grupo, acerca).
+// onMapClick(lat, lng): toque en el mapa sin arrastrar (p. ej. para corregir la posición de un punto)
+export function MapView({ points, height = 360, onPick, selected, empty, cluster = false, onMapClick, minZoom = 4 }) {
   const box = useRef(null)
   const [w, setW] = useState(360)
   const pts = points.filter((p) => p.lat != null && p.lng != null)
   const fitZ = () => {
     if (pts.length < 2) return 11
-    for (let z = 12; z >= 4; z--) {
+    for (let z = 12; z >= minZoom; z--) {
       const xs = pts.map((p) => lon2x(p.lng, z)), ys = pts.map((p) => lat2y(p.lat, z))
       if (Math.max(...xs) - Math.min(...xs) < w - 60 && Math.max(...ys) - Math.min(...ys) < height - 60) return z
     }
-    return 4
+    return minZoom
   }
   const [z, setZ] = useState(null)
   const [off, setOff] = useState({ x: 0, y: 0 })
@@ -334,10 +338,11 @@ export function MapView({ points, height = 360, onPick, selected }) {
   useEffect(() => { const el = box.current; if (!el) return; const ro = new ResizeObserver(() => setW(el.clientWidth)); ro.observe(el); return () => ro.disconnect() }, [])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setZ(fitZ()); setOff({ x: 0, y: 0 }) }, [pts.length, w])
-  if (!pts.length) return <div className="card muted small">{t('Los centros de este día no tienen la ubicación en el mapa.')}</div>
+  if (!pts.length) return <div className="card muted small">{empty || t('Los centros de este día no tienen la ubicación en el mapa.')}</div>
   const zz = z ?? fitZ()
-  const cx = (Math.min(...pts.map((p) => lon2x(p.lng, zz))) + Math.max(...pts.map((p) => lon2x(p.lng, zz)))) / 2 - off.x
-  const cy = (Math.min(...pts.map((p) => lat2y(p.lat, zz))) + Math.max(...pts.map((p) => lat2y(p.lat, zz)))) / 2 - off.y
+  const midX = (Math.min(...pts.map((p) => lon2x(p.lng, zz))) + Math.max(...pts.map((p) => lon2x(p.lng, zz)))) / 2
+  const midY = (Math.min(...pts.map((p) => lat2y(p.lat, zz))) + Math.max(...pts.map((p) => lat2y(p.lat, zz)))) / 2
+  const cx = midX - off.x, cy = midY - off.y
   const left = cx - w / 2, top = cy - height / 2
   const tiles = []
   for (let tx = Math.floor(left / TILE); tx <= Math.floor((left + w) / TILE); tx++) {
@@ -347,23 +352,51 @@ export function MapView({ points, height = 360, onPick, selected }) {
       tiles.push(<img key={tx + ':' + ty} src={`https://tile.openstreetmap.org/${zz}/${wx}/${ty}.png`} alt="" draggable="false" style={{ position: 'absolute', left: tx * TILE - left, top: ty * TILE - top, width: TILE, height: TILE }} />)
     }
   }
+  const zoomTo = (nz, px, py) => {
+    nz = Math.max(minZoom, Math.min(16, nz)); const k = 2 ** (nz - zz)
+    setZ(nz); setOff(px == null ? { x: off.x * k, y: off.y * k } : { x: (midX - px) * k, y: (midY - py) * k })
+  }
+  // Grupos: marcadores a menos de 30 px se juntan (el seleccionado nunca se agrupa)
+  const placed = pts.map((p) => ({ p, x: lon2x(p.lng, zz), y: lat2y(p.lat, zz) }))
+  const groups = []
+  for (const m of placed) {
+    const g = cluster && m.p.id !== selected && groups.find((g) => !g.sel && Math.hypot(g.x - m.x, g.y - m.y) < 30)
+    if (g) { g.items.push(m); g.x = (g.x * (g.items.length - 1) + m.x) / g.items.length; g.y = (g.y * (g.items.length - 1) + m.y) / g.items.length }
+    else groups.push({ x: m.x, y: m.y, items: [m], sel: m.p.id === selected })
+  }
   return (
-    <div className="map" ref={box} style={{ height }}
-      onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, o: off }; e.currentTarget.setPointerCapture?.(e.pointerId) }}
-      onPointerMove={(e) => { if (drag.current) setOff({ x: drag.current.o.x + e.clientX - drag.current.x, y: drag.current.o.y + e.clientY - drag.current.y }) }}
-      onPointerUp={() => { drag.current = null }}>
+    <div className={'map' + (onMapClick ? ' picking' : '')} ref={box} style={{ height }}
+      onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, o: off, moved: false }; e.currentTarget.setPointerCapture?.(e.pointerId) }}
+      onPointerMove={(e) => { const d = drag.current; if (!d) return; if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true; setOff({ x: d.o.x + e.clientX - d.x, y: d.o.y + e.clientY - d.y }) }}
+      onPointerUp={(e) => {
+        const d = drag.current; drag.current = null
+        if (d && !d.moved && onMapClick) { const r = box.current.getBoundingClientRect(); onMapClick(y2lat(top + e.clientY - r.top, zz), x2lon(left + e.clientX - r.left, zz)) }
+      }}>
       {tiles}
-      {pts.map((p) => (
-        <button key={p.id} type="button" className={'map-pin' + (selected === p.id ? ' on' : '')} style={{ left: lon2x(p.lng, zz) - left, top: lat2y(p.lat, zz) - top }}
-          onPointerDown={(e) => e.stopPropagation()} onClick={() => onPick?.(p.id)} aria-label={p.label}>
-          <span>{p.badge}</span>
-        </button>
-      ))}
+      {groups.map((g) => {
+        if (g.items.length === 1) {
+          const p = g.items[0].p
+          return (
+            <button key={p.id} type="button" className={'map-pin' + (p.cls ? ' ' + p.cls : '') + (selected === p.id ? ' on' : '')} style={{ left: g.x - left, top: g.y - top }}
+              onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onClick={() => onPick?.(p.id)} aria-label={p.label} title={p.label}>
+              <span>{p.badge}</span>
+            </button>
+          )
+        }
+        const wsum = g.items.reduce((a, m) => a + (m.p.weight || 0), 0)
+        return (
+          <button key={'g' + g.items[0].p.id} type="button" className={'map-pin cluster' + (wsum ? '' : ' dot')} style={{ left: g.x - left, top: g.y - top }}
+            onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onClick={() => zoomTo(zz + 2, g.x, g.y)}
+            aria-label={t('{n} puntos: acercar', { n: g.items.length })} title={t('{n} puntos: acercar', { n: g.items.length })}>
+            <span>{wsum || g.items.length}</span>
+          </button>
+        )
+      })}
       <div className="map-zoom">
-        <button type="button" aria-label={t('Acercar')} onClick={() => { setZ(Math.min(16, zz + 1)); setOff({ x: off.x * 2, y: off.y * 2 }) }}><Icon icon={Plus} size={18} /></button>
-        <button type="button" aria-label={t('Alejar')} onClick={() => { setZ(Math.max(4, zz - 1)); setOff({ x: off.x / 2, y: off.y / 2 }) }}><Icon icon={Minus} size={18} /></button>
+        <button type="button" aria-label={t('Acercar')} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onClick={() => zoomTo(zz + 1)}><Icon icon={Plus} size={18} /></button>
+        <button type="button" aria-label={t('Alejar')} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onClick={() => zoomTo(zz - 1)}><Icon icon={Minus} size={18} /></button>
       </div>
-      <span className="map-attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></span>
+      <span className="map-attr" onPointerDown={(e) => e.stopPropagation()}>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></span>
     </div>
   )
 }

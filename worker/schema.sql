@@ -130,6 +130,8 @@ CREATE TABLE IF NOT EXISTS dive_sites (
   province TEXT,
   highlight TEXT,
   highlight_es TEXT,
+  lat REAL CHECK (lat IS NULL OR lat BETWEEN 4 AND 22),
+  lng REAL CHECK (lng IS NULL OR lng BETWEEN 116 AND 128),
   UNIQUE (area, name),
   CHECK (max_depth_m IS NULL OR min_depth_m IS NULL OR max_depth_m >= min_depth_m)
 );

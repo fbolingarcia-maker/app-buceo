@@ -29,8 +29,8 @@ const myTrips = myCenter ? [0, 1, 2].map((d) => ({ id: 'mt' + d, center_id: MY, 
 const T = {
   published_trips: rawRole === 'vacio' ? [] : pubTrips,
   destinations: [{ name: 'Panglao', province: 'Bohol', island_group: 'Visayas', lat: 9.58, lng: 123.75 }, { name: 'Moalboal', province: 'Cebu', island_group: 'Visayas', lat: 9.94, lng: 123.39 }, { name: 'Apo Reef', province: 'Occidental Mindoro', island_group: 'Mindoro', lat: 12.66, lng: 120.43 }],
-  dive_sites: [{ id: 's1', name: 'Napaling', area: 'Panglao', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines', highlight_es: 'Sardinas' },
-    { id: 's2', name: 'Balicasag – Black Forest', area: 'Panglao', province: 'Bohol', max_depth_m: 40, min_depth_m: 8, recommended_min: 'advanced', highlight: 'Black coral, jacks', highlight_es: 'Coral negro, jureles' },
+  dive_sites: [{ id: 's1', name: 'Napaling', area: 'Panglao', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines', highlight_es: 'Sardinas', lat: 9.616, lng: 123.776 },
+    { id: 's2', name: 'Balicasag – Black Forest', area: 'Panglao', province: 'Bohol', max_depth_m: 40, min_depth_m: 8, recommended_min: 'advanced', highlight: 'Black coral, jacks', highlight_es: 'Coral negro, jureles', lat: 9.52, lng: 123.688 },
     { id: 's3', name: 'Alona House Reef', area: 'Panglao', province: 'Bohol', max_depth_m: 14, min_depth_m: 3, recommended_min: 'open_water', highlight: 'Night dive', highlight_es: 'Inmersión nocturna' },
     { id: 's4', name: 'Balicasag – Turtle Point', area: 'Balicasag', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Turtles', highlight_es: 'Tortugas' },
     { id: 's5', name: 'Pescador Island', area: 'Moalboal', province: 'Cebu', max_depth_m: 30, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines and wall', highlight_es: 'Sardinas y pared' },
@@ -64,6 +64,10 @@ const T = {
   admin_audit: role === 'admin' ? [{ id: 1, at: iso(now - H), action: 'center_status', target: C1, detail: { name: 'Demo · Centro Alona', from: 'pending', to: 'verified' } }, { id: 2, at: iso(now - 2 * H), action: 'admin_grant', detail: { email: 'admin@example.com' } }] : [],
 }
 const RPC = {
+  sightings_map: { days: 30, total: 3, sites: [
+    { id: 's1', name: 'Napaling', area: 'Panglao', lat: 9.616, lng: 123.776, n: 3, last: '2026-11-20', species: [{ s: 'Sardinas', n: 2 }, { s: 'Tortuga', n: 1 }] },
+    { id: 's2', name: 'Balicasag – Black Forest', area: 'Balicasag', lat: 9.52, lng: 123.688, n: 0, last: null, species: [] },
+    { id: 's9', name: 'Gato Island', area: 'Malapascua', lat: 11.457, lng: 124.017, n: 0, last: null, species: [] }] },
   center_reviews: { avg: 4.6, count: 2, reviews: [{ id: 'rv1', author: 'Ana L.', rating: 5, body: 'Guías muy atentos y barco puntual.', reply: 'Gracias Ana', created_at: iso(now - 2 * D) }, { id: 'rv2', author: 'Marco R.', rating: 4, body: null, reply: null, created_at: iso(now - 5 * D) }] },
   pack_preview: { packs: [{ id: 'pk1', name: 'Semana de buceo', trips: 3, discount_pct: 10, valid_days: 10 }], booked_here: 1 },
   trip_messages: [{ id: 'm1', author: 'Demo · Centro Alona', is_staff: true, body: 'Quedamos a las 7:00 en el muelle de Alona', created_at: iso(now - H), mine: false }],
