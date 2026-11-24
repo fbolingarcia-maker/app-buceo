@@ -248,6 +248,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   rebooked_from TEXT,
   moved_php INTEGER NOT NULL DEFAULT 0 CHECK (moved_php >= 0),
   commission_paid_php INTEGER NOT NULL DEFAULT 0,
+  commission_vat_php INTEGER NOT NULL DEFAULT 0,
   CHECK ((source = 'app' AND diver_id IS NOT NULL) OR (source <> 'app' AND guest_name IS NOT NULL)),
   CHECK (source = 'app' OR commission_php = 0)
 );

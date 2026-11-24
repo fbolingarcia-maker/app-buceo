@@ -30,11 +30,11 @@ const manila = (iso) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/
 export function centreCancelStatements(db, tripId, now = nowIso()) {
   const cancelled = "EXISTS (SELECT 1 FROM trips WHERE id = ?3 AND status = 'cancelled_weather')"
   return [
-    db.prepare(`UPDATE bookings SET status = 'cancelled_by_center', refund_php = 0, commission_php = 0, commission_paid_php = 0, cancelled_at = ?1,
+    db.prepare(`UPDATE bookings SET status = 'cancelled_by_center', refund_php = 0, commission_php = 0, commission_vat_php = 0, commission_paid_php = 0, cancelled_at = ?1,
         refund_choice = 'pending', choice_until = ?2
       WHERE trip_id = ?3 AND status IN ('pending_payment', 'confirmed') AND source = 'app' AND diver_id IS NOT NULL AND paid_php > 0 AND ${cancelled}`)
       .bind(now, plusDays(now, CHOICE_DAYS), tripId),
-    db.prepare(`UPDATE bookings SET status = 'cancelled_by_center', refund_php = paid_php, commission_php = 0, commission_paid_php = 0, cancelled_at = ?1
+    db.prepare(`UPDATE bookings SET status = 'cancelled_by_center', refund_php = paid_php, commission_php = 0, commission_vat_php = 0, commission_paid_php = 0, cancelled_at = ?1
       WHERE trip_id = ?3 AND status IN ('pending_payment', 'confirmed') AND ${cancelled}`).bind(now, null, tripId),
   ]
 }
@@ -154,7 +154,7 @@ export const REBOOK = {
           paid_at = CASE WHEN ?1 >= deposit_php THEN ?3 ELSE paid_at END,
           balance_paid_at = CASE WHEN ?1 >= amount_php THEN ?3 ELSE balance_paid_at END,
           hold_until = CASE WHEN ?1 >= deposit_php THEN hold_until ELSE ?4 END,
-          commission_paid_php = min(commission_php, ?1)
+          commission_paid_php = min(commission_php + commission_vat_php, ?1)
         WHERE id = ?5 AND status = 'pending_payment'`).bind(moved, b.id, now, new Date(Date.now() + 30 * 60000).toISOString(), nb.id),
       ctx.db.prepare(`UPDATE bookings SET refund_choice = 'rebooked', rebooked_to = ?1, moved_php = ?2, refund_php = ?3
         WHERE id = ?4 AND refund_choice = 'rebooking'`).bind(nb.id, moved, back, b.id),

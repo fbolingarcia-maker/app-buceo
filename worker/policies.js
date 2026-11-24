@@ -38,7 +38,7 @@ export const POLICIES = {
   destinations: { select: () => YES },
   dive_sites: { select: () => YES },
   // La última copia de seguridad y la comisión de DivingSlot (dato interno, 23 nov 2026) solo las ve el administrador
-  app_config: { select: (c, a) => or(P(`${a}.key NOT IN ('last_backup', 'marketplace_fee_pct', 'marketplace_fee_php')`), admin(c)) },
+  app_config: { select: (c, a) => or(P(`${a}.key NOT IN ('last_backup', 'marketplace_fee_pct', 'marketplace_fee_php', 'commission_vat_pct')`), admin(c)) },
   published_trips: { select: () => YES },
   boats: { select: () => YES, ops: ['insert', 'update', 'delete'],
     write: (c, a) => staffIn(c, `${a}.center_id`), check: (c, a) => staffIn(c, `${a}.center_id`) },

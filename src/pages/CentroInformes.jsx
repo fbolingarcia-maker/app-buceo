@@ -95,7 +95,8 @@ function Resumen({ onPick }) {
     const billable = all.filter((b) => b.trip.status !== 'cancelled_weather' && (b.status === 'confirmed' || b.status === 'cancelled_by_diver') && (b.commission_php || 0) > 0)
     const commission = billable.reduce((s, b) => s + b.commission_php, 0)
     // Se retiene del pago online (señal o total) al reservar: lo que cobras en efectivo es íntegro para ti
-    const retained = billable.reduce((s, b) => s + Math.min(b.commission_paid_php || 0, b.commission_php), 0)
+    const commissionVat = billable.reduce((s, b) => s + (b.commission_vat_php || 0), 0)
+    const retained = billable.reduce((s, b) => s + Math.min(b.commission_paid_php || 0, b.commission_php + (b.commission_vat_php || 0)), 0)
     const appLive = live.filter((b) => b.source === 'app' && b.status === 'confirmed')
     const fee = { market: billable.reduce((s, b) => s + b.seats, 0), direct: appLive.filter((b) => b.channel === 'direct').reduce((s, b) => s + b.seats, 0),
       manual: live.filter((b) => b.source !== 'app').reduce((s, b) => s + b.seats, 0) }
@@ -118,7 +119,7 @@ function Resumen({ onPick }) {
       done: active.filter((tr) => new Date(tr.departs_at).getTime() < now).length,
       upcoming: active.filter((tr) => new Date(tr.departs_at).getTime() >= now).length,
       weather: trips.length - active.length,
-      seats, total, paid, pending: total - paid, commission, retained, fee, refunds,
+      seats, total, paid, pending: total - paid, commission, commissionVat, retained, fee, refunds,
       cancelled: cancelled.length, cancelledSeats: cancelled.reduce((s, b) => s + b.seats, 0),
       bySource, sites: Object.entries(sites).sort((a, b) => b[1] - a[1]).slice(0, 8), wd,
       hours: Object.entries(hours).sort((a, b) => a[0].localeCompare(b[0])), clients: divers.size,
@@ -165,8 +166,9 @@ function Resumen({ onPick }) {
             <div className="row between"><span>{t('Buceadores con reserva por la app')}</span><span>{t('{n} plazas', { n: r.fee.market })} · <b>{php(r.commission)}</b></span></div>
             {r.fee.direct > 0 && <div className="row between muted"><span>{t('De ellos, por tu enlace de reservas')}</span><span>{t('{n} plazas', { n: r.fee.direct })}</span></div>}
             <div className="row between"><span>{t('Reservas manuales (WhatsApp, en el centro…)')}</span><span>{t('{n} plazas', { n: r.fee.manual })} · <b>₱0</b></span></div>
+            {r.commissionVat > 0 && <div className="row between"><span>{t('IVA de la comisión (12 %)')}</span><b>{php(r.commissionVat)}</b></div>}
             <div className="row between"><span className="muted">{t('Ya descontada del pago online')}</span><span>{php(r.retained)}</span></div>
-            {r.commission > r.retained && <div className="row between"><span className="muted">{t('Pendiente de liquidar')}</span><span>{php(r.commission - r.retained)}</span></div>}
+            {r.commission + r.commissionVat > r.retained && <div className="row between"><span className="muted">{t('Pendiente de liquidar')}</span><span>{php(r.commission + r.commissionVat - r.retained)}</span></div>}
             <span className="muted">{t('La comisión se descuenta del pago que el buceador hace en la app al reservar (la señal ya la cubre), así que lo que te paga en efectivo en el centro es íntegro para ti. La comisión de la pasarela de pago va aparte. Las salidas que cancelas no pagan comisión.')} <Link to="/centro/ajustes">{t('Tu enlace de reservas')}</Link></span>
           </div>
 

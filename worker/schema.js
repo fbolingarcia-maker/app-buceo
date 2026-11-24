@@ -262,7 +262,8 @@ export const TABLES = {
     ['rebooked_to', 'uuid'],
     ['rebooked_from', 'uuid'],
     ['moved_php', 'int', { nn: true, def: '0', check: 'moved_php >= 0' }],
-    ['commission_paid_php', 'int', { nn: true, def: '0' }], // comisión ya retenida de los pagos online (≤ commission_php)
+    ['commission_paid_php', 'int', { nn: true, def: '0' }], // comisión + IVA ya retenidos de los pagos online (≤ commission_php + commission_vat_php)
+    ['commission_vat_php', 'int', { nn: true, def: '0' }], // IVA de la comisión (app_config.commission_vat_pct), lo paga el centro
   ] },
   payments: { cols: [
     ['id', 'uuid', { pk: true, def: UUID }],

@@ -208,6 +208,21 @@ ok(r.data?.status === 'confirmed' && r.data.commission_php === 0 && r.data.amoun
 { const P = (await B.rpc('book_trip', { p_trip: T1, p_seats: 1, p_with_gear: false, p_medical_signed: true })).data
   ok(errCode(await centro.rpc('record_cash_payment', { p_booking: P?.id })) === 'DEPOSIT_ONLINE', 'la señal de una reserva por la app no se cobra en efectivo')
   await db.prepare('DELETE FROM bookings WHERE id = ?').bind(P?.id).run() }
+// IVA de la comisión: lo activa el administrador (0 % o 12 %), solo para reservas nuevas, y se retiene con la comisión
+ok(errCode(await A.rpc('admin_set_commission_vat', { p_pct: 12 })) === 'FORBIDDEN', 'solo el administrador activa el IVA de la comisión')
+ok(errCode(await admin.rpc('admin_set_commission_vat', { p_pct: 10 })) === 'BAD_INPUT', 'el IVA de la comisión solo puede ser 0 o 12')
+r = await admin.rpc('admin_set_commission_vat', { p_pct: 12 })
+ok(r.data?.pct === 12, 'el administrador activa el 12 % de IVA sobre la comisión', r)
+r = await anon.rest({ table: 'app_config', select: 'key', filters: [['key', 'eq', 'commission_vat_pct']] })
+ok(!r.data?.length, 'el IVA de la comisión no es público', r)
+{ const V = (await B.rpc('book_trip', { p_trip: T1, p_seats: 1, p_with_gear: false, p_medical_signed: true })).data
+  ok(V?.commission_vat_php === Math.round(V?.commission_php * 0.12) && V.commission_vat_php > 0, 'la reserva lleva el 12 % de IVA sobre la comisión', V)
+  const pv = (await B.rpc('confirm_payment_demo', { p_booking: V?.id, p_kind: 'deposit' })).data
+  ok(pv?.commission_paid_php === V.commission_php + V.commission_vat_php, 'la señal retiene la comisión y su IVA', pv)
+  await db.prepare('DELETE FROM payments WHERE booking_id = ?').bind(V?.id).run()
+  await db.prepare('DELETE FROM bookings WHERE id = ?').bind(V?.id).run() }
+r = await admin.rpc('admin_set_commission_vat', { p_pct: 0 })
+ok(r.data?.pct === 0, 'se vuelve a quitar el IVA de la comisión', r)
 ok(errCode(await centro.rpc('add_manual_booking', { p_trip: T1, p_guest: 'X', p_seats: 9, p_with_gear: false, p_source: 'walk_in' })) === 'NO_SEATS', 'reserva manual respeta el barco')
 ok(errCode(await A.rpc('add_manual_booking', { p_trip: T1, p_guest: 'X', p_seats: 1, p_with_gear: false, p_source: 'walk_in' })) === 'FORBIDDEN', 'un buceador no añade reservas manuales')
 r = await centro.rpc('set_checkin', { p_booking: BA.id, p_in: true })

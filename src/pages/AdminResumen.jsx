@@ -47,6 +47,7 @@ export default function AdminResumen({ go }) {
 
       <Visitas days={days} />
       <Backup />
+      <CommissionVat />
 
       {err && <div className="msg err" role="alert">{err}</div>}
       {!r && !err && <p className="muted">{t('Cargando…')}</p>}
@@ -126,6 +127,34 @@ export default function AdminResumen({ go }) {
 
 // Visitas de la web comercial y de la app (las cuenta el Worker en /api/hit; ver worker/stats.js)
 const PAGE = { '/': 'Web comercial', '/app': 'App: Salidas' }
+// IVA sobre la comisión de DivingSlot (app_config.commission_vat_pct): activarlo solo con el alta en el IVA. Afecta a las reservas nuevas.
+function CommissionVat() {
+  const [s, setS] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+  useEffect(() => { supabase.rpc('admin_commission_vat', {}).then(({ data }) => setS(data || null)) }, [])
+  if (!s) return null
+  const on = s.pct > 0
+  async function toggle() {
+    setBusy(true); setMsg(null)
+    const { data, error } = await supabase.rpc('admin_set_commission_vat', { p_pct: on ? 0 : 12 })
+    setBusy(false)
+    if (error) return setMsg({ ok: false, text: errMsg(error) })
+    setS({ ...s, pct: data.pct })
+    setMsg({ ok: true, text: data.pct ? t('IVA activado: las reservas nuevas llevan el 12 % sobre la comisión.') : t('IVA desactivado para las reservas nuevas.') })
+  }
+  return (
+    <div className="card" style={{ marginTop: 10 }}>
+      <div className="row between wrap" style={{ gap: 8 }}>
+        <span className="small"><b>{t('IVA sobre la comisión')}</b> · {on ? t('12 % activado, lo paga el centro') : t('desactivado (sin alta en el IVA)')} · {t('comisión {pct} %', { pct: s.fee_pct })}</span>
+        <button type="button" className="btn small ghost" disabled={busy} onClick={toggle}>{on ? t('Desactivar IVA') : t('Activar 12 % de IVA')}</button>
+      </div>
+      <span className="small muted">{t('Actívalo solo cuando DivingSlot esté dado de alta en el IVA. Se aplica a las reservas nuevas y se descuenta del pago online junto con la comisión.')}</span>
+      {msg && <div className={msg.ok ? 'msg ok' : 'msg err'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
+    </div>
+  )
+}
+
 // Copia de seguridad semanal de la base de datos en R2 (worker/backup.js): cuándo fue la última y hacer una ahora
 function Backup() {
   const [s, setS] = useState(null)
