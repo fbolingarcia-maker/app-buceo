@@ -6,8 +6,9 @@ import { SOURCES, sourceName, levelName, TRIP_STATUS, BOOKING_STATUS, manilaDate
 import { seatsSummary, hashParam, TRIP_SELECT } from '../lib/centro'
 import { t } from '../lib/i18n'
 import { medicalValid, medicalLabel, daysSinceDive } from '../lib/medical'
+import { MedicalButton } from '../lib/medicalForm'
 import { ManifestSheet, manifestCsv } from '../lib/manifest'
-import { SeaChip, extraName } from '../lib/extras'
+import { SeaChip, extraName, hasInsurance } from '../lib/extras'
 import { TripChat } from '../lib/plus'
 import { CancelTrip } from '../lib/rebook'
 
@@ -20,7 +21,7 @@ const store = {
 }
 const isNetErr = (error) => !navigator.onLine || /fetch|network|conexi|Load failed/i.test(error?.message || '')
 
-import { GuideAssign, QrCheckin, activityName } from '../lib/comunidad'
+import { GuideAssign, QrCheckin, activityName, noMedical } from '../lib/comunidad'
 
 export default function CentroAgenda() {
   const { center, verified, readOnly } = useAuth()
@@ -129,7 +130,7 @@ export default function CentroAgenda() {
       {trips === null && <p className="muted">{t('Cargando…')}</p>}
       {trips === false && <div className="msg err" role="alert">{t('No se pudo cargar la agenda.')} <button type="button" className="linkish" onClick={() => { setTrips(null); load() }}>{t('Reintentar')}</button></div>}
       {trips?.length === 0 && <div className="card muted center">{t('No hay salidas este día.')} <Link to="/centro/nueva">{t('Crear una')}</Link></div>}
-      {trips && trips.map((tr) => <TripCard key={tr.id} t={tr} center={center} verified={verified} run={run} busy={busy} defaultOpen={trips.length === 1} offline={!!offline} offlineCheckin={offlineCheckin}
+      {trips && trips.map((tr) => <TripCard readOnly={readOnly} key={tr.id} t={tr} center={center} verified={verified} run={run} busy={busy} defaultOpen={trips.length === 1} offline={!!offline} offlineCheckin={offlineCheckin}
         guides={<GuideAssign trip={tr} team={team} assigned={tg.filter((g) => g.trip_id === tr.id)} onSaved={loadGuides} readOnly={readOnly} />} />)}
       {msg && (
         <div className={msg.ok ? 'toast' : 'toast err'} role={msg.ok ? 'status' : 'alert'} aria-live="polite">
@@ -174,7 +175,28 @@ function LastMinute({ trip, run, busy, free }) {
   )
 }
 
-function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, offlineCheckin, guides }) {
+// Lo que le falta a una reserva para salir (como la «paperwork» de los programas de centros de buceo):
+// cuestionario médico, pago, seguro y tallas si alquila equipo. Solo reservas de la app con ficha del buceador.
+export function missingFor(b, trip) {
+  const d = b.divers
+  if (!d) return []
+  const m = []
+  if (!noMedical(trip) && !medicalValid(d)) m.push('medical')
+  if ((b.paid_php || 0) < (b.amount_php || 0) && !b.pay_on_site) m.push('pay')
+  if (!hasInsurance(d)) m.push('insurance')
+  if (b.with_gear && !(d.wetsuit_size || d.bcd_size || d.fin_size)) m.push('sizes')
+  return m
+}
+const MISSING_LABEL = { medical: 'sin cuestionario médico', pay: 'sin pagar', insurance: 'sin seguro', sizes: 'sin tallas' }
+// Mensaje para pedirle al buceador lo que falta (por el chat privado de la reserva; también le llega por email/aviso)
+function askText(b, trip, miss) {
+  const parts = miss.map((k) => k === 'medical' ? t('el cuestionario médico (se rellena y firma en la app: Perfil → Buceo y salud)')
+    : k === 'pay' ? t('el pago pendiente de {amount}', { amount: php(b.amount_php - (b.paid_php || 0)) })
+    : k === 'insurance' ? t('los datos de tu seguro de buceo (en tu perfil)') : t('tus tallas de equipo (en tu perfil)'))
+  return t('Hola {name}, para la salida del {date} nos falta: {list}. ¡Gracias y nos vemos a bordo!', { name: (b.divers?.full_name || '').split(' ')[0], date: dateTime(trip.departs_at), list: parts.join('; ') })
+}
+
+function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, offlineCheckin, guides, readOnly }) {
   const [open, setOpen] = useState(defaultOpen)
   const [printing, setPrinting] = useState(false)
   const donePrint = useCallback(() => setPrinting(false), [])
@@ -186,6 +208,21 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
   const paidTotal = active.reduce((n, b) => n + (b.paid_php || 0), 0)
   const statusCls = trip.status === 'published' ? 'pill ok' : trip.status === 'draft' ? 'pill warn' : trip.status === 'completed' ? 'pill' : 'pill bad'
   const started = new Date(trip.departs_at) <= new Date()
+  const miss = active.map((b) => [b, missingFor(b, trip)])
+  const ready = miss.filter(([b, m]) => b.divers && !m.length).length, withProfile = miss.filter(([b]) => b.divers).length
+  const counts = {}
+  for (const [, m] of miss) for (const k of m) counts[k] = (counts[k] || 0) + 1
+  const askable = miss.filter(([b, m]) => m.length && b.source === 'app' && b.diver_id)
+  const [asked, setAsked] = useState({})
+  async function ask(list) {
+    if (list.length > 1 && !window.confirm(t('¿Enviar un mensaje a {n} buceadores con lo que le falta a cada uno?', { n: list.length }))) return
+    for (const [b, m] of list) {
+      const { error } = await supabase.rpc('booking_chat_send', { p_booking: b.id, p_body: askText(b, trip, m) })
+      if (error) return run(Promise.resolve({ error }), '')
+      setAsked((x) => ({ ...x, [b.id]: true }))
+    }
+    run(Promise.resolve({}), list.length > 1 ? t('Mensaje enviado a {n} buceadores', { n: list.length }) : t('Mensaje enviado'))
+  }
 
   function copyList() {
     const lines = active.map((b, i) => `${i + 1}. ${b.divers?.full_name || b.guest_name} · ${b.seats === 1 ? t('{n} plaza', { n: 1 }) : t('{n} plazas', { n: b.seats })}${b.with_gear ? ' · ' + t('equipo') : ''} · ${b.paid_php >= b.amount_php ? t('pagado') : t('falta {amount}', { amount: php(b.amount_php - b.paid_php) })}`)
@@ -227,6 +264,12 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
         <span>{t('Libres en app')} <b>{s.appFree}</b></span>
         <span>{t('Check-in')} <b>{checked}/{s.booked}</b></span>
       </div>
+      {withProfile > 0 && !started && (
+        <div className="row wrap small ready-line" style={{ gap: 6, marginTop: 6 }}>
+          <span className={'pill ' + (ready === withProfile ? 'ok' : 'warn')}>{t('Listos {a}/{b}', { a: ready, b: withProfile })}</span>
+          {Object.entries(counts).map(([k, n]) => <span key={k} className="muted">{n} {t(MISSING_LABEL[k])}</span>)}
+        </div>
+      )}
       {guides}
 
       {open && (
@@ -242,6 +285,12 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
               <button type="button" className="btn small ghost" onClick={() => manifestCsv(trip, active)}>{t('Descargar CSV')}</button>
             </div>
           )}
+          {!readOnly && !started && askable.length > 0 && (
+            <div className="msg warn row between wrap" style={{ gap: 8 }}>
+              <span className="small">{t('A {n} buceadores les falta algo para salir.', { n: askable.length })}</span>
+              <button type="button" className="btn small" disabled={askable.every(([b]) => asked[b.id])} onClick={() => ask(askable.filter(([b]) => !asked[b.id]))}>{t('Pedírselo a todos')}</button>
+            </div>
+          )}
           {printing && <ManifestSheet trip={trip} active={active} centerName={center.name} sites={sites} onDone={donePrint} />}
           {active.length === 0 && <p className="muted small">{t('Sin reservas.')}</p>}
           {active.map((b) => (
@@ -254,7 +303,7 @@ function TripCard({ t: trip, center, verified, run, busy, defaultOpen, offline, 
                     {b.divers?.logged_dives ? ' · ' + t('{n} inm.', { n: b.divers.logged_dives }) : ''}
                   </div>
                   {b.divers && <DiverReady d={b.divers} gear={b.with_gear} />}
-                  {!readOnly && b.source === 'app' && b.diver_id && <Link to={'/centro/mensajes/' + b.id} className="small">{t('Mensajes')}</Link>}
+                  {!readOnly && b.source === 'app' && b.diver_id && <div className="row wrap booking-links" style={{ gap: '0 14px' }}><Link to={'/centro/mensajes/' + b.id} className="small linkish">{t('Mensajes')}</Link><MedicalButton bookingId={b.id} name={b.divers?.full_name} />{!started && missingFor(b, trip).length > 0 && (asked[b.id] ? <span className="small muted">{t('Pedido')} ✓</span> : <button type="button" className="linkish small" onClick={() => ask([[b, missingFor(b, trip)]])}>{t('Pedir lo que falta')}</button>)}</div>}
                   {b.booking_extras?.length > 0 && <div className="small muted">{t('Extras')}: {b.booking_extras.map((e) => extraName(e) + (e.qty > 1 ? ' ×' + e.qty : '')).join(', ')}</div>}
                   {b.divers?.certifications?.map((c) => (
                     <div key={c.id} className="small row wrap" style={{ gap: 6 }}>

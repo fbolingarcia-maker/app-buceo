@@ -19,5 +19,7 @@ import chat from './en/chat'
 import guides from './en/guides'
 import rebook from './en/rebook'
 import ux23 from './en/ux23'
+import medical from './en/medical'
+import centroUx from './en/centroUx'
 
-export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad, ...chat, ...guides, ...rebook, ...ux23 }
+export default { ...core, ...cuenta, ...buceador, ...centro, ...verificacion, ...ux, ...seguridad, ...mfa, ...diseno, ...buddy, ...perfil, ...mejoras, ...mejoras2, ...plus, ...reserva10, ...comunidad, ...chat, ...guides, ...rebook, ...ux23, ...medical, ...centroUx }

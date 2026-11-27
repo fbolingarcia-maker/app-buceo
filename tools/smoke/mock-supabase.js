@@ -24,16 +24,16 @@ for (let d = 0; d < 8; d++) {
 const centerRow = (st) => ({ id: MY, name: 'PRUEBA', area: 'Panglao', destination: 'Panglao', province: 'Bohol', phone: '+63 900', lat: null, lng: null, languages: [], course_languages: [], agencies: [], verification_status: st, listing_status: 'socio', review_note: st === 'rejected' ? 'Documento ilegible' : null, default_divers_per_guide: 4, created_at: iso(now - 3 * D) })
 const myCenter = role === 'center' ? centerRow('unverified') : role === 'centerv' || role === 'admin' ? centerRow('verified') : role === 'centerr' ? centerRow('rejected') : null
 const diverRow = role === 'anon' ? null : { id: 'dv1', user_id: UID, full_name: 'Fernando B', account_type: myCenter ? 'center' : 'diver', languages: ['es'], logged_dives: 40, country: 'España', bio: '', seeks_buddy: false, show_on_trips: true, buddy_ratings_enabled: rawRole !== 'vacio', wetsuit_size: 'M', bcd_size: 'L', fin_size: '42', last_dive_date: '2025-06-10', nitrox: true, medical_done_at: localStorage.getItem('mockMedical') ? iso(now).slice(0, 10) : null, medical_result: localStorage.getItem('mockMedical') ? 'all_no' : null }
-const booking = (id, st, paid, ci) => ({ id, channel: id === 'bk1' ? 'direct' : 'marketplace', pay_on_site: id === 'bk2', booking_extras: id === 'bk1' ? [{ kind: 'video', name: 'Vídeo de la salida', qty: 1 }] : [], id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', wetsuit_size: 'S', bcd_size: 'S', fin_size: '38', last_dive_date: '2026-09-20', nitrox: false, medical_done_at: '2026-03-01', medical_result: 'all_no', allergies: 'Penicilina', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
+const booking = (id, st, paid, ci) => ({ id, channel: id === 'bk1' ? 'direct' : 'marketplace', pay_on_site: id === 'bk2', booking_extras: id === 'bk1' ? [{ kind: 'video', name: 'Vídeo de la salida', qty: 1 }] : [], id, status: st, seats: 1, amount_php: 5800, deposit_php: 2900, paid_php: paid, with_gear: false, source: 'app', diver_id: 'dv1', checked_in_at: ci, created_at: iso(now - H), guest_name: null, divers: { full_name: 'Ana López', logged_dives: 25, languages: 'es', wetsuit_size: 'S', bcd_size: 'S', fin_size: '38', last_dive_date: '2026-09-20', nitrox: false, medical_done_at: '2026-03-01', medical_result: 'all_no', allergies: 'Penicilina', certifications: [{ id: 'c1', agency: 'PADI', level: 'advanced', verified_at: null }] } })
 const myTrips = myCenter ? [0, 1, 2].map((d) => ({ id: 'mt' + d, center_id: MY, boat_id: 'b1', departs_at: iso(day0 + d * D + 7.5 * H), num_dives: 3, min_level: 'open_water', price_php: 5800, gear_rental_php: 800, guides: 2, divers_per_guide: 4, seat_override: null, blocked_seats: 0, status: d === 2 ? 'draft' : 'published', boats: { name: 'Banca Uno', capacity: 12 }, trip_sites: [{ position: 1, dive_sites: { name: 'Napaling' } }], bookings: d === 0 ? [booking('bk1', 'confirmed', 5800, null), booking('bk2', 'pending_payment', 0, null)] : [] })) : []
 const T = {
   published_trips: rawRole === 'vacio' ? [] : pubTrips,
   destinations: [{ name: 'Panglao', province: 'Bohol', island_group: 'Visayas', lat: 9.58, lng: 123.75 }, { name: 'Moalboal', province: 'Cebu', island_group: 'Visayas', lat: 9.94, lng: 123.39 }, { name: 'Apo Reef', province: 'Occidental Mindoro', island_group: 'Mindoro', lat: 12.66, lng: 120.43 }],
   dive_sites: [{ id: 's1', name: 'Napaling', area: 'Panglao', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines', highlight_es: 'Sardinas', lat: 9.616, lng: 123.776 },
     { id: 's2', name: 'Balicasag – Black Forest', area: 'Panglao', province: 'Bohol', max_depth_m: 40, min_depth_m: 8, recommended_min: 'advanced', highlight: 'Black coral, jacks', highlight_es: 'Coral negro, jureles', lat: 9.52, lng: 123.688 },
-    { id: 's3', name: 'Alona House Reef', area: 'Panglao', province: 'Bohol', max_depth_m: 14, min_depth_m: 3, recommended_min: 'open_water', highlight: 'Night dive', highlight_es: 'Inmersión nocturna' },
-    { id: 's4', name: 'Balicasag – Turtle Point', area: 'Balicasag', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Turtles', highlight_es: 'Tortugas' },
-    { id: 's5', name: 'Pescador Island', area: 'Moalboal', province: 'Cebu', max_depth_m: 30, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines and wall', highlight_es: 'Sardinas y pared' },
+    { id: 's3', name: 'Alona House Reef', area: 'Panglao', province: 'Bohol', max_depth_m: 14, min_depth_m: 3, recommended_min: 'open_water', highlight: 'Night dive', highlight_es: 'Inmersión nocturna', lat: 9.546, lng: 123.773 },
+    { id: 's4', name: 'Balicasag – Turtle Point', area: 'Balicasag', province: 'Bohol', max_depth_m: 25, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Turtles', highlight_es: 'Tortugas', lat: 9.521, lng: 123.684 },
+    { id: 's5', name: 'Pescador Island', area: 'Moalboal', province: 'Cebu', max_depth_m: 30, min_depth_m: 5, recommended_min: 'open_water', highlight: 'Sardines and wall', highlight_es: 'Sardinas y pared', lat: 9.925, lng: 123.34 },
     { id: 's6', name: 'Shark Ridge', area: 'Apo Reef', province: 'Occidental Mindoro', max_depth_m: 40, min_depth_m: 5, recommended_min: 'advanced', highlight: 'Reef sharks', highlight_es: 'Tiburones de arrecife' }],
   centers: [{ id: C1, name: 'Demo · Centro Alona', area: 'Panglao', destination: 'Panglao', province: 'Bohol', listing_status: 'socio', verification_status: 'verified', languages: ['en', 'es'], course_languages: ['es'], agencies: ['PADI', 'SSI'], agency_detail: 'PADI 5★ IDC', phone: '+63 912', website: 'https://example.com', lat: 9.5, lng: 123.7, location_precision: 'zona' },
     { id: 'dir1', name: 'Directorio Divers', area: 'Moalboal', destination: 'Moalboal', province: 'Cebu', listing_status: 'directorio', verification_status: 'unverified', languages: [], agencies: ['SSI'], source_url: 'https://example.org' },
@@ -59,10 +59,13 @@ const T = {
     { id: 'lg4', diver_id: 'dv1', site_name: 'Balicasag – Black Forest', dive_date: '2026-10-17', entry_time: '10:30', max_depth_m: 31, avg_depth_m: 19, duration_min: 45, water_temp_c: 28, rating: 4, centers: { name: 'Casa Azul Divers' }, dive_log_photos: [] },
     { id: 'lg3', diver_id: 'dv1', site_name: 'Balicasag – Turtle Point', dive_date: '2026-10-17', entry_time: '08:00', max_depth_m: 18, duration_min: 48, centers: { name: 'Casa Azul Divers' }, dive_log_photos: [] },
     { id: 'lg2', diver_id: 'dv1', site_name: 'Alona House Reef', dive_date: '2026-10-12', entry_time: '19:00', max_depth_m: 14, duration_min: 55, centers: { name: 'Napaling Dive Co.' }, dive_log_photos: [] },
+    { id: 'lg0', diver_id: 'dv1', site_name: 'Pescador Island', dive_date: '2026-08-02', entry_time: '09:00', max_depth_m: 28, duration_min: 47, centers: null, dive_log_photos: [] },
     { id: 'lg1', diver_id: 'dv1', site_name: 'Doljo Point', dive_date: '2026-09-28', entry_time: '09:00', max_depth_m: 22, duration_min: 50, centers: null, dive_log_photos: [] },
   ] : [], dive_log_photos: [], payments: [], trip_sites: [],
   admin_audit: role === 'admin' ? [{ id: 1, at: iso(now - H), action: 'center_status', target: C1, detail: { name: 'Demo · Centro Alona', from: 'pending', to: 'verified' } }, { id: 2, at: iso(now - 2 * H), action: 'admin_grant', detail: { email: 'admin@example.com' } }] : [],
 }
+// Viaje de demostración (vídeo «Mi ruta»): sustituye puntos, destinos e inmersiones si existe 'mockTrip'
+try { const x = JSON.parse(localStorage.getItem('mockTrip') || 'null'); if (x) Object.assign(T, x) } catch {}
 const RPC = {
   sightings_map: { days: 30, total: 3, sites: [
     { id: 's1', name: 'Napaling', area: 'Panglao', lat: 9.616, lng: 123.776, n: 3, last: '2026-11-20', species: [{ s: 'Sardinas', n: 2 }, { s: 'Tortuga', n: 1 }] },
@@ -73,6 +76,20 @@ const RPC = {
   trip_messages: [{ id: 'm1', author: 'Demo · Centro Alona', is_staff: true, body: 'Quedamos a las 7:00 en el muelle de Alona', created_at: iso(now - H), mine: false }],
   book_trip: { id: 'nb1', trip_id: 't1-1', status: 'pending_payment', seats: 1, amount_php: 5800, paid_php: 0, deposit_php: 2900, created_at: iso(now), hold_until: null },
   is_platform_admin: role === 'admin', center_ratings: [{ center_id: C1, rating: 4.7, reviews: 12 }],
+  // Cuestionario médico firmado (worker/medical.js). localStorage 'mockMedical' = 'none' para verlo sin rellenar
+  ...(() => {
+    const sig = 'M60 140 L90 80 L120 140 L150 70 Q200 40 240 120 L300 90 L360 130 Q420 60 480 110'
+    const form = { id: 'mf1', signed_at: iso(now - 20 * D), valid_until: '2027-11-07', needs_physician: true, physician_cleared: true, has_doc: true,
+      answers: { q1: false, q2: true, q3: false, q4: false, q5: false, q6: false, q7: false, q8: false, q9: false, q10: false }, boxes: { B: [false, true, false, false] },
+      name: 'Ana López', birth_date: '1978-05-14', signature: sig, physician: { name: 'Dra. Reyes', date: '2026-10-30', clinic: 'Bohol Clinic' } }
+    let none = false; try { none = localStorage.getItem('mockMedical') === 'none' } catch {}
+    return {
+      my_medical: none ? { status: 'none' } : { status: 'valid', form, access: [{ who: 'Demo · Centro Alona', at: iso(now - 2 * D) }, { who: 'Guía · Demo · Centro Alona', at: iso(now - D) }] },
+      medical_sign: { id: 'mf2', status: 'valid', valid_until: '2027-11-27', needs_physician: false },
+      medical_for_booking: { status: 'valid', version: 'wrstc-2020-ds1', ...form },
+      medical_doc_url: { url: '#' },
+    }
+  })(),
   // Mensajes privados de una reserva (worker/chat.js)
   chat_unread: { bookings: role === 'diver' ? { bk1: 1 } : {}, center: role.startsWith('center') ? 2 : 0 },
   chat_inbox: [{ booking_id: 'bk1', status: 'confirmed', seats: 1, departs_at: iso(day0 + 7.5 * H), trip_id: 'mt0', diver_name: 'Ana López', last_body: '¿Puedo llevar mi ordenador de buceo? Y voy con nitrox', last_sender: 'diver', last_at: iso(day0 - 2 * H), unread: 2 }],

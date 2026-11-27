@@ -3,7 +3,7 @@ import { supabase, errMsg, siteUrl } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Link, go } from '../lib/router'
 import { LEVELS, levelName, manilaDate } from '../lib/format'
-import { MedicalCheck } from '../lib/medical'
+import { MedicalPanel } from '../lib/medicalForm'
 import { t, LangSwitch } from '../lib/i18n'
 import EliminarCuenta from './EliminarCuenta'
 import DosPasos from './DosPasos'
@@ -243,7 +243,7 @@ export default function Perfil() {
       </div>
 
       <h2>{t('Salud para bucear')}</h2>
-      <div className="card"><MedicalCheck diver={diver} onSaved={refresh} /></div>
+      <div className="card"><MedicalPanel diver={diver} onSaved={refresh} /></div>
 
       <h2>{t('Tallas, seguro y alergias')}</h2>
           <form className="card" onSubmit={saveProfile}>

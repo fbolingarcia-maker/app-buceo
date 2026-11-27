@@ -26,6 +26,7 @@ import { handleHit, handleStats, handleNotify, dailyDigest, pruneVisits, notifyA
 import { handleWidget } from './comunidad.js'
 import { backupD1, BACKUP_CRON } from './backup.js'
 import { purgeChats } from './chat.js'
+import { purgeMedical } from './medical.js'
 import { expireRebookChoices } from './rebook.js'
 import { handleCenterPhoto } from './photos.js'
 
@@ -123,6 +124,7 @@ export default {
     ectx.waitUntil(updateFx(env).catch((e) => console.error('fx', e.message)))
     ectx.waitUntil(cleanup(env).catch(onFail('limpieza')))
     ectx.waitUntil(purgeChats(env).catch(onFail('borrado de mensajes antiguos')))
+    ectx.waitUntil(purgeMedical(env).catch(onFail('borrado de cuestionarios médicos caducados')))
     ectx.waitUntil(pruneVisits(env).catch(onFail('visitas')))
     ectx.waitUntil(dailyDigest(env).catch(onFail('resumen diario')))
     ectx.waitUntil(balanceReminders(env, env.APP_ORIGIN || 'https://divingslot.com').catch(onFail('recordatorios de pago')))

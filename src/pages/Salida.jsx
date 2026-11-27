@@ -10,6 +10,7 @@ import Icon from '../lib/Icon'
 import { ArrowLeft, Check, MapPin, MessageCircle, Waves, Users, GraduationCap, Clock, Plus, TriangleAlert } from 'lucide-react'
 import { BuddyChip, BuddyBreakdown } from '../lib/buddy'
 import { medicalValid, medicalUntil, medicalLabel, daysSinceDive } from '../lib/medical'
+import { MedicalForm } from '../lib/medicalForm'
 import { viaFor, unitPrice, PriceTag, LastMinuteTag, extrasTotal, extraKind, extraName, extraDesc, GreenFinsBadge, SeaCard, DanCard, hasInsurance } from '../lib/extras'
 import { PayBox, holdEnd } from '../lib/pay'
 import { TripChat, CenterReviews, expName, Approx } from '../lib/plus'
@@ -79,6 +80,7 @@ function QuienVa({ tripId, loggedIn }) {
 
 export default function Salida({ id }) {
   const { session, diver, isCenter, refresh } = useAuth()
+  const [medOpen, setMedOpen] = useState(false) // rellenar y firmar el cuestionario médico sin salir de la reserva
   const [trip, setTrip] = useState(null)
   const [center, setCenter] = useState(null)
   const [siteInfo, setSiteInfo] = useState([])
@@ -329,7 +331,15 @@ export default function Salida({ id }) {
 
           {session && (
             <Step n={2} title={t('Tus datos para el centro')}>
-              <ProfileData trip={trip} diver={diver} certs={certs} need={need} course={course} levelOk={levelOk} medical={medical} medicalReq={medicalReq} sinceDive={sinceDive} />
+              <ProfileData trip={trip} diver={diver} certs={certs} need={need} course={course} levelOk={levelOk} medical={medical} medicalReq={medicalReq} sinceDive={sinceDive} onMedical={() => setMedOpen(true)} />
+              {medOpen && (
+                <div className="modal" role="dialog" aria-modal="true" aria-label={t('Cuestionario médico para bucear')}>
+                  <div className="modal-card mq-modal">
+                    <h2>{t('Cuestionario médico para bucear')}</h2>
+                    <MedicalForm diver={diver} onCancel={() => setMedOpen(false)} onDone={() => { refresh?.(); setTimeout(() => setMedOpen(false), 1800) }} />
+                  </div>
+                </div>
+              )}
               {diver && <DanCard diver={diver} compact />}
             </Step>
           )}
@@ -489,7 +499,7 @@ function PdRow({ ok, warn, label, children }) {
   )
 }
 
-function ProfileData({ trip, diver, certs, need, course, levelOk, medical, medicalReq, sinceDive }) {
+function ProfileData({ trip, diver, certs, need, course, levelOk, medical, medicalReq, sinceDive, onMedical }) {
   if (!diver) return null
   const fix = <Link to="/perfil?ver=buceo" onClick={() => toProfile('/salida/' + trip.id)}>{t('Completar en el perfil')}</Link>
   const best = certs.reduce((m, c) => (!m || levelRank(c.level) > levelRank(m.level) ? c : m), null)
@@ -507,7 +517,7 @@ function ProfileData({ trip, diver, certs, need, course, levelOk, medical, medic
         </PdRow>
         <PdRow ok={medical} warn label={t('Cuestionario médico')}>
           {!medicalReq ? t('No hace falta para el esnórquel') : medical ? <>{medicalLabel(diver)} · {t('hasta el {fecha}', { fecha: day(until) })}</>
-            : <>{until ? t('Tu cuestionario médico caducó') : t('Falta el cuestionario médico')} · {fix}</>}
+            : <>{until ? t('Tu cuestionario médico caducó') : t('Falta el cuestionario médico')} · <button type="button" className="linkish" onClick={onMedical}>{t('Rellenar y firmar aquí (3 min)')}</button></>}
         </PdRow>
         <PdRow ok={sinceDive != null && sinceDive <= 365} label={t('Última inmersión')}>
           {sinceDive == null ? <>{t('Sin indicar')} · {fix}</> : sinceDive > 365 ? t('Tu última inmersión fue hace más de 12 meses: el centro puede pedirte un repaso antes de salir.') : day(diver.last_dive_date)}

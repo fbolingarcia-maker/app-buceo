@@ -320,14 +320,17 @@ const x2lon = (x, z) => (x / (TILE * 2 ** z)) * 360 - 180
 const y2lat = (y, z) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / (TILE * 2 ** z)))) * 180) / Math.PI
 // points: { id, lat, lng, label, badge, weight?, cls? }. cluster: junta los marcadores que se pisan (al tocar el grupo, acerca).
 // onMapClick(lat, lng): toque en el mapa sin arrastrar (p. ej. para corregir la posición de un punto)
-export function MapView({ points, height = 360, onPick, selected, empty, cluster = false, onMapClick, minZoom = 4 }) {
+export function MapView({ points, height = 360, onPick, selected, empty, cluster = false, onMapClick, minZoom = 4, path = null, fit = null, className = '' }) {
   const box = useRef(null)
   const [w, setW] = useState(360)
   const pts = points.filter((p) => p.lat != null && p.lng != null)
+  // fit: ids de los puntos a los que se ajusta la vista (los demás se ven al alejar o arrastrar)
+  const fitPts = fit?.length ? pts.filter((p) => fit.includes(p.id)) : pts
+  const box0 = fitPts.length ? fitPts : pts
   const fitZ = () => {
-    if (pts.length < 2) return 11
+    if (box0.length < 2) return 11
     for (let z = 12; z >= minZoom; z--) {
-      const xs = pts.map((p) => lon2x(p.lng, z)), ys = pts.map((p) => lat2y(p.lat, z))
+      const xs = box0.map((p) => lon2x(p.lng, z)), ys = box0.map((p) => lat2y(p.lat, z))
       if (Math.max(...xs) - Math.min(...xs) < w - 60 && Math.max(...ys) - Math.min(...ys) < height - 60) return z
     }
     return minZoom
@@ -337,11 +340,11 @@ export function MapView({ points, height = 360, onPick, selected, empty, cluster
   const drag = useRef(null)
   useEffect(() => { const el = box.current; if (!el) return; const ro = new ResizeObserver(() => setW(el.clientWidth)); ro.observe(el); return () => ro.disconnect() }, [])
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setZ(fitZ()); setOff({ x: 0, y: 0 }) }, [pts.length, w])
+  useEffect(() => { setZ(fitZ()); setOff({ x: 0, y: 0 }) }, [pts.length, box0.length, w])
   if (!pts.length) return <div className="card muted small">{empty || t('Los centros de este día no tienen la ubicación en el mapa.')}</div>
   const zz = z ?? fitZ()
-  const midX = (Math.min(...pts.map((p) => lon2x(p.lng, zz))) + Math.max(...pts.map((p) => lon2x(p.lng, zz)))) / 2
-  const midY = (Math.min(...pts.map((p) => lat2y(p.lat, zz))) + Math.max(...pts.map((p) => lat2y(p.lat, zz)))) / 2
+  const midX = (Math.min(...box0.map((p) => lon2x(p.lng, zz))) + Math.max(...box0.map((p) => lon2x(p.lng, zz)))) / 2
+  const midY = (Math.min(...box0.map((p) => lat2y(p.lat, zz))) + Math.max(...box0.map((p) => lat2y(p.lat, zz)))) / 2
   const cx = midX - off.x, cy = midY - off.y
   const left = cx - w / 2, top = cy - height / 2
   const tiles = []
@@ -365,7 +368,7 @@ export function MapView({ points, height = 360, onPick, selected, empty, cluster
     else groups.push({ x: m.x, y: m.y, items: [m], sel: m.p.id === selected })
   }
   return (
-    <div className={'map' + (onMapClick ? ' picking' : '')} ref={box} style={{ height }}
+    <div className={'map' + (onMapClick ? ' picking' : '') + (className ? ' ' + className : '')} ref={box} style={{ height }}
       onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, o: off, moved: false }; e.currentTarget.setPointerCapture?.(e.pointerId) }}
       onPointerMove={(e) => { const d = drag.current; if (!d) return; if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 6) d.moved = true; setOff({ x: d.o.x + e.clientX - d.x, y: d.o.y + e.clientY - d.y }) }}
       onPointerUp={(e) => {
@@ -373,6 +376,11 @@ export function MapView({ points, height = 360, onPick, selected, empty, cluster
         if (d && !d.moved && onMapClick) { const r = box.current.getBoundingClientRect(); onMapClick(y2lat(top + e.clientY - r.top, zz), x2lon(left + e.clientX - r.left, zz)) }
       }}>
       {tiles}
+      {path?.length > 1 && (
+        <svg className="map-path" width={w} height={height} aria-hidden="true">
+          <polyline points={path.map((q) => (lon2x(q.lng, zz) - left) + ',' + (lat2y(q.lat, zz) - top)).join(' ')} />
+        </svg>
+      )}
       {groups.map((g) => {
         if (g.items.length === 1) {
           const p = g.items[0].p
@@ -385,7 +393,7 @@ export function MapView({ points, height = 360, onPick, selected, empty, cluster
         }
         const wsum = g.items.reduce((a, m) => a + (m.p.weight || 0), 0)
         return (
-          <button key={'g' + g.items[0].p.id} type="button" className={'map-pin cluster' + (wsum ? '' : ' dot')} style={{ left: g.x - left, top: g.y - top }}
+          <button key={'g' + g.items[0].p.id} type="button" className={'map-pin cluster' + (wsum ? (g.items.find((m) => m.p.weight && m.p.cls)?.p.cls ? ' ' + g.items.find((m) => m.p.weight && m.p.cls).p.cls : '') : ' dot')} style={{ left: g.x - left, top: g.y - top }}
             onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onClick={() => zoomTo(zz + 2, g.x, g.y)}
             aria-label={t('{n} puntos: acercar', { n: g.items.length })} title={t('{n} puntos: acercar', { n: g.items.length })}>
             <span>{wsum || g.items.length}</span>

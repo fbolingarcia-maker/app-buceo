@@ -84,7 +84,9 @@ export async function handleStorage(req, env, ctx, rest) {
     const bytes = new Uint8Array(await req.arrayBuffer())
     if (bytes.length > MAX_BYTES) fail('TOO_BIG', 'el fichero supera los 10 MB', 413)
     const type = sniff(bytes)
-    if (!type || !b.mimes.includes(type)) fail('BAD_TYPE', 'tipo de fichero no permitido', 415)
+    // La evaluación del médico del cuestionario médico (dive-photos/<user>/medico/…) puede ser también un PDF
+    const okPdf = type === 'application/pdf' && bucket === 'dive-photos' && path.split('/')[1] === 'medico'
+    if (!type || (!b.mimes.includes(type) && !okPdf)) fail('BAD_TYPE', 'tipo de fichero no permitido', 415)
     if (await b.r2.head(path)) fail('DUPLICATE', 'The resource already exists', 409)
     await b.r2.put(path, bytes, { httpMetadata: { contentType: type }, customMetadata: { owner: ctx.uid } })
     return json({ data: { path, fullPath: `${bucket}/${path}` } })

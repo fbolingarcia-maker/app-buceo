@@ -10,6 +10,7 @@ import DepthBar from '../lib/DepthBar'
 import { ChevronRight, PencilLine, Star, Waves } from 'lucide-react'
 import { PendingBuddyRatings } from '../lib/buddy'
 import { ProgressCard } from '../lib/comunidad'
+import { MiMapa } from '../lib/miMapa'
 
 // Descarga la bitácora como CSV (se abre en Excel / Google Sheets)
 function exportCsv(logs) {
@@ -139,6 +140,9 @@ export default function Bitacora() {
         </>}
         {fav && <p className="small muted" style={{ margin: '10px 0 0' }}>{t('Punto favorito:')} <b>{fav}</b></p>}
       </div>
+
+      <h2>{t('Mi mapa')}</h2>
+      <MiMapa logs={logs} thumbs={thumbs} name={diver.full_name} />
 
       {logs.length > 0 && <YearInReview logs={logs} />}
       {logs.length > 0 && <details className="fold"><summary className="small"><b>{t('Insignias')}</b></summary><Badges logs={logs} /></details>}

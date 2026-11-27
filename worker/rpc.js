@@ -10,6 +10,7 @@ import { notifyDiver, notifyCentreStaff } from './push.js'
 import { COMUNIDAD, needsCert, needsMedical } from './comunidad.js'
 import { BACKUP_RPC } from './backup.js'
 import { CHAT, deleteDiverChats } from './chat.js'
+import { MEDICAL, deleteDiverMedical } from './medical.js'
 import { GUIDES, deleteDiverGuideRatings, ensureGuideRatings } from './guides.js'
 import { REBOOK, CANCEL_REASONS, centreCancelStatements, notifyCancelled } from './rebook.js'
 import { PHOTOS } from './photos.js'
@@ -659,6 +660,7 @@ export const RPC = {
     if (d) {
       s.push(...(await deleteDiverGuideRatings(db, d.id))) // valoraciones que hizo a guías
       s.push(...(await deleteDiverChats(db, d.id))) // mensajes privados con los centros: se borran, no se anonimizan
+      s.push(...(await deleteDiverMedical(db, d.id))) // cuestionarios médicos firmados (dato de salud)
       s.push(db.prepare('DELETE FROM dive_logs WHERE diver_id = ?').bind(d.id))
       s.push(db.prepare('DELETE FROM certifications WHERE diver_id = ?').bind(d.id))
       if (await first(db, 'SELECT 1 AS x FROM bookings WHERE diver_id = ?', d.id)) {
@@ -698,7 +700,7 @@ const CENTER_PUBLIC = 'id, name, area, phone, default_divers_per_guide, created_
 const publicCenter = async (db, id) => outRow('centers', await first(db, `SELECT ${CENTER_PUBLIC} FROM centers WHERE id = ?`, id))
 
 // Funciones nuevas (plus.js): lista de espera, chat, reseñas, avisos, bonos, salidas repetidas, bitácora firmada
-Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES, REBOOK, PHOTOS)
+Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES, REBOOK, PHOTOS, MEDICAL)
 
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null

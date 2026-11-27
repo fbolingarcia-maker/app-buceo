@@ -621,3 +621,69 @@ body.cta-open .sticky-cta { bottom: calc(12px + env(safe-area-inset-bottom)); }
 .sight-map-card { margin-top: 10px; }
 .sight-map-card ul { margin: 6px 0; padding-left: 18px; }
 .map-pin.dot::before { content: ""; position: absolute; inset: -12px; }
+/* Mi mapa (Bitácora): mapa nocturno, ruta entre los puntos buceados, punto visitado, ficha, destinos y vídeo */
+.map.dark { background: #0c2232; }
+.map.dark img { filter: invert(1) hue-rotate(185deg) brightness(.82) contrast(.9) saturate(.7); }
+.map.dark .map-path polyline { stroke: #5fd3e0; stroke-dasharray: none; stroke-width: 3; filter: drop-shadow(0 0 4px #5fd3e0); }
+.map.dark .map-pin.dot { background: #8fa7b5; border-color: #0c2232; }
+.map.dark .map-attr { background: rgba(12,34,50,.8); color: #cfe0ea; }
+.map.dark .map-attr a { color: #cfe0ea; }
+.mymap-site { display: flex; gap: 0; padding: 0; overflow: hidden; margin: 0 0 10px; }
+.mymap-site img { width: 96px; object-fit: cover; flex: none; }
+.mymap-site-body { padding: 10px 12px; flex: 1; min-width: 0; }
+.mymap-dests { display: grid; gap: 10px; margin-top: 10px; }
+.mymap-dest { display: block; color: inherit; text-decoration: none; }
+.mymap-dest > .row { display: flex; }
+.mymap-dest .progress { display: block; margin-top: 4px; }
+.mymap-dest .progress i { background: var(--laguna); }
+.video-maker .modal-card { max-width: 380px; }
+.vm-screen { display: block; width: 100%; max-height: 62vh; aspect-ratio: 9 / 16; object-fit: contain; background: #0b1f2c; border-radius: 12px; margin: 8px 0; }
+.map-path { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.map-path polyline { fill: none; stroke: #18a8c4; stroke-width: 3; stroke-dasharray: 2 6; stroke-linecap: round; stroke-linejoin: round; }
+.map-pin.visit { background: var(--coral, #f0604d); }
+.map-pin.visit::after { border-top-color: var(--coral, #f0604d); }
+.mymap-head { display: flex; align-items: center; gap: 14px; }
+.mymap-ring { flex: none; }
+.mymap-big { font: 600 40px/1 var(--font-data); }
+.mymap-side { margin-left: auto; text-align: right; }
+.mymap-side b { font: 600 26px/1 var(--font-data); }
+
+/* Cuestionario médico firmado en la app (src/lib/medicalForm.jsx) */
+.mq-steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 0 10px; counter-reset: s; }
+.mq-steps li { flex: 1; counter-increment: s; font: 700 12px var(--font-ui); color: var(--muted); border-top: 3px solid var(--line); padding-top: 6px; }
+.mq-steps li::before { content: counter(s) ' · '; }
+.mq-steps li.on { color: var(--brand); border-color: var(--brand); }
+.mq-steps li.done { color: var(--ok); border-color: var(--ok); }
+.mq-privacy { display: flex; gap: 6px; align-items: flex-start; margin: 0 0 10px; }
+.mq-row { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.mq-row.yes .mq-text { color: var(--warn); }
+.mq-text { margin: 0; font-size: 14px; line-height: 1.4; flex: 1; }
+.mq-n { display: inline-block; min-width: 22px; color: var(--muted); }
+.mq-seg { flex: none; margin: 0; flex-wrap: nowrap; }
+.mq-seg label { display: inline-flex; align-items: center; justify-content: center; min-width: 52px; min-height: 40px; border-radius: 10px; box-shadow: 0 0 0 1px var(--field); font-weight: 700; cursor: pointer; }
+.mq-seg label.on { background: var(--brand); color: var(--brand-ink); box-shadow: none; }
+.mq-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.mq-seg label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mq-box { border: 0; box-shadow: 0 0 0 1px var(--line); border-radius: 12px; padding: 8px 12px; margin: 0 0 10px; }
+.mq-box legend { font-size: 13px; padding: 0 4px; }
+.sig-pad { position: relative; margin-top: 10px; border-radius: 12px; box-shadow: 0 0 0 1px var(--field); background: var(--bg); color: var(--ink); touch-action: none; }
+.sig-pad canvas { display: block; width: 100%; aspect-ratio: 3 / 1; touch-action: none; cursor: crosshair; }
+.sig-hint { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: var(--muted); pointer-events: none; font-size: 14px; }
+.sig-pad::after { content: ''; position: absolute; left: 8%; right: 8%; bottom: 24%; border-bottom: 1px dashed var(--field); pointer-events: none; }
+.sig-clear { position: absolute; top: 6px; right: 6px; }
+.sig-view { display: block; width: 100%; max-width: 300px; height: auto; color: var(--ink); border-bottom: 1px solid var(--line); margin: 6px 0; }
+.mq-physician { margin-top: 10px; padding: 12px; border-radius: 12px; box-shadow: 0 0 0 1px var(--line); }
+.file-btn { cursor: pointer; }
+.mq-yes { padding-left: 18px; margin: 8px 0; font-size: 14px; }
+.mq-yes ul { padding-left: 16px; color: var(--muted); }
+.mq-details summary { cursor: pointer; padding: 6px 0; }
+.mq-log { padding-left: 18px; color: var(--muted); }
+.mq-modal { max-width: 560px; }
+.linkish.danger { color: var(--bad); display: block; margin-top: 8px; }
+@media print {
+  body:has(.print-only-this) > * { visibility: hidden; }
+  .print-only-this, .print-only-this * { visibility: visible; }
+  .print-only-this { position: absolute; inset: 0; max-height: none; box-shadow: none; }
+  .no-print { display: none !important; }
+}
+.booking-links .linkish { min-height: 36px; text-decoration: none; }

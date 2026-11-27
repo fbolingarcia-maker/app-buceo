@@ -8,6 +8,8 @@ import { t } from '../lib/i18n'
 import Icon from '../lib/Icon'
 import { TriangleAlert } from 'lucide-react'
 import { CenterReviews } from '../lib/plus'
+import { medicalValid } from '../lib/medical'
+import { noMedical } from '../lib/comunidad'
 
 const dayOf = (iso) => manilaDate(new Date(iso))
 
@@ -58,6 +60,9 @@ export default function CentroPanel() {
   const unpaid = nextBookings.filter((b) => b.status === 'pending_payment')
   const balances = nextBookings.filter((b) => b.status === 'confirmed' && b.paid_php < b.amount_php)
   const unverified = nextBookings.filter((b) => b.divers?.certifications?.length && !b.divers.certifications.some((c) => c.verified_at))
+  // Sin cuestionario médico válido en salidas de los próximos 3 días (lo más urgente antes de embarcar)
+  const soon = addDays(today, 3)
+  const noMed = nextBookings.filter((b) => b.divers && dayOf(b.trip.departs_at) <= soon && !noMedical(b.trip) && !medicalValid(b.divers))
   const drafts = next.filter((tr) => tr.status === 'draft')
   const toClose = trips.filter((tr) => tr.status === 'published' && new Date(tr.departs_at) < new Date(Date.now() - 6 * 3600000))
   const noSites = next.filter((tr) => live(tr) && !(tr.trip_sites || []).length)
@@ -68,6 +73,7 @@ export default function CentroPanel() {
   const alerts = [
     unpaid.length && [unpaid.length === 1 ? t('{n} reserva pendiente de pagar la señal', { n: 1 }) : t('{n} reservas pendientes de pagar la señal', { n: unpaid.length }), '/centro/informes?ver=cobros'],
     balances.length && [(balances.length === 1 ? t('{n} reserva con resto pendiente ({amount})', { n: 1, amount: balanceDue }) : t('{n} reservas con resto pendiente ({amount})', { n: balances.length, amount: balanceDue })), '/centro/informes?ver=cobros'],
+    noMed.length && [noMed.length === 1 ? t('{n} buceador sin cuestionario médico en los próximos 3 días', { n: 1 }) : t('{n} buceadores sin cuestionario médico en los próximos 3 días', { n: noMed.length }), '/centro/agenda'],
     unverified.length && [unverified.length === 1 ? t('{n} buceador con certificación sin verificar', { n: 1 }) : t('{n} buceadores con certificación sin verificar', { n: unverified.length }), '/centro/agenda'],
     drafts.length && [drafts.length === 1 ? t('{n} salida en borrador sin publicar', { n: 1 }) : t('{n} salidas en borrador sin publicar', { n: drafts.length }), '/centro/salidas'],
     toClose.length && [toClose.length === 1 ? t('{n} salida pasada sin marcar como completada', { n: 1 }) : t('{n} salidas pasadas sin marcar como completadas', { n: toClose.length }), '/centro/salidas'],
@@ -155,7 +161,7 @@ export default function CentroPanel() {
                 <td style={{ textAlign: 'right', paddingRight: 12 }}>{w.total ? php(w.total) : '—'}</td>
               </tr>
             ))}
-            <tr><td style={{ paddingLeft: 12 }}><b>{t('Total')}</b></td><td /><td><b>{weekTotals.booked}</b> {t('buceadores')}</td><td style={{ textAlign: 'right', paddingRight: 12 }}><b>{php(weekTotals.total)}</b><div className="small muted">{t('cobrado {amount}', { amount: php(weekTotals.paid) })}</div></td></tr>
+            <tr><td style={{ paddingLeft: 12 }}><b>{t('Total')}</b></td><td /><td><b>{weekTotals.booked}</b> {weekTotals.booked === 1 ? t('buceador') : t('buceadores')}</td><td style={{ textAlign: 'right', paddingRight: 12 }}><b>{php(weekTotals.total)}</b><div className="small muted">{t('cobrado {amount}', { amount: php(weekTotals.paid) })}</div></td></tr>
           </tbody>
         </table>
       </div>
