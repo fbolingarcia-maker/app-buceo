@@ -32,9 +32,11 @@
   "vars": {
     "GOOGLE_CLIENT_ID": "607421255103-95p23bfnoe8v6beaehct5n41dbeahijl.apps.googleusercontent.com",
     // A quién llegan los avisos al administrador (altas, reservas, centros por validar) y el resumen diario
-    "NOTIFY_TO": "divingslot@gmail.com"
-    // Anti-bots al entrar y crear cuenta (Cloudflare Turnstile): añade aquí "TURNSTILE_SITE_KEY": "<clave del sitio>"
-    // y en el panel del Worker el secreto TURNSTILE_SECRET. Con las dos, se activa solo (worker/auth.js, src/lib/Captcha.jsx).
+    "NOTIFY_TO": "divingslot@gmail.com",
+    // Anti-bots al entrar, crear cuenta y pedir emails de cuenta (Cloudflare Turnstile, widget «DivingSlot login», modo
+    // Managed, creado el 27 nov 2026). Clave pública; el secreto TURNSTILE_SECRET va en el panel del Worker. Solo se
+    // activa cuando están las dos (worker/auth.js, src/lib/Captcha.jsx).
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGVpZ3DHgUzpGamB"
   },
   // Emails sin claves con Cloudflare Email Service (Workers Paid contratado el 3 nov 2026). Envía desde
   // EMAIL_FROM o no-reply@divingslot.com: divingslot.com tiene que estar dado de alta en Email Service → Email Sending.
