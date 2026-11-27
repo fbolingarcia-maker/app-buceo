@@ -29,6 +29,7 @@ export function errorResponse(e) {
   // Restricciones de SQLite → mismos códigos que daba Postgres
   if (/UNIQUE constraint failed/i.test(m)) return json({ error: { message: 'DUPLICATE: ya existe', code: '23505' } }, 409)
   if (/CHECK constraint failed|NOT NULL constraint failed/i.test(m)) return json({ error: { message: 'BAD_DATA: algún dato no es válido', code: '23514' } }, 400)
+  if (/D1_TYPE_ERROR|not supported for value|Wrong number of parameter bindings/i.test(m)) return json({ error: { message: 'BAD_REQUEST: faltan datos o no son válidos', code: 'BAD_REQUEST' } }, 400)
   if (/FOREIGN KEY constraint failed/i.test(m)) return json({ error: { message: 'BAD_STATE: hay datos relacionados', code: '23503' } }, 409)
   console.error('api', m)
   return json({ error: { message: 'No se pudo completar. Inténtalo de nuevo.', code: 'INTERNAL' } }, 500)

@@ -154,3 +154,7 @@ App tipo Playtomic para salidas de buceo en toda Filipinas (piloto en Panglao, B
 - Agenda: `missingFor(b, trip)` (médico, pago no en efectivo, seguro, tallas si alquila) → «Listos n/m» en la tarjeta cerrada, «Pedir lo que falta» por buceador y «Pedírselo a todos» (mensaje por el chat de la reserva, en el idioma del centro). Panel: aviso de buceadores sin cuestionario médico en los próximos 3 días.
 - Arreglado: `TripCard` usaba `readOnly` sin recibirlo y la agenda se rompía al desplegar una salida con reservas.
 - Textos en `src/lib/en/centroUx.js`. Análisis completo en el proyecto: `claude/usabilidad-centro.md`.
+
+## Simulación de ataques (27 nov 2026)
+- `node --no-warnings worker/test/ataques.mjs`: 72 ataques contra el Worker local (oráculo de columnas privadas, inyección SQL, IDOR, escalada, ficheros, CSRF, sesión, fuerza bruta, pagos, equipo, check-in, volumen, inyección SMTP, XSS por enlaces y fuzzing de las 94 RPC). «✗ ATAQUE» = vulnerabilidad. Pasarlo antes de cada subida.
+- Arreglado: columnas HIDDEN ya no se usan en filtros/orden (`checkReadCol`); `limit` negativo; `certifications.photo_path` y `dive_log_photos.path` solo en la carpeta del usuario y nunca `/medico/` (también en `cert_photo_url`); `divers.email/auth_provider/account_type/medical_*` no se cambian por REST; máximo 200 filas por inserción; `/api/hit` 30/min por IP; `sendEmail` valida el destinatario; `website`/`source_url`/`social_url` solo http(s); parámetros que faltan → 400 en vez de 500.

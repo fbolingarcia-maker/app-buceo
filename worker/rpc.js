@@ -705,5 +705,5 @@ Object.assign(RPC, PLUS, COMUNIDAD, BACKUP_RPC, CHAT, GUIDES, REBOOK, PHOTOS, ME
 export async function handleRpc(ctx, name, args) {
   const f = Object.hasOwn(RPC, name) ? RPC[name] : null
   if (!f) fail('NOT_FOUND', 'función desconocida', 404)
-  return f(ctx, args || {})
+  return f(ctx, args && typeof args === 'object' && !Array.isArray(args) ? args : {})
 }

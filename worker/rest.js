@@ -8,12 +8,20 @@ import { ApiError, fail, outRow, inVal, all, first, uuid, nowIso } from './lib/u
 
 const MAX_ROWS = 5000
 const CHUNK = 80 // D1 admite 100 parámetros por consulta
+const MAX_INSERT = 200 // filas por inserción (evita llenar la base de datos con una sola petición)
 
 const isTable = (t) => !!POLICIES[t] && (TABLES[t] || VIEWS[t]) && !TABLES[t]?.internal
 const cols = (t) => Object.keys(TYPES[t])
 const readable = (t) => cols(t).filter((c) => !(HIDDEN[t] || []).includes(c))
 function checkCol(t, c) {
   if (!TYPES[t] || !Object.hasOwn(TYPES[t], c)) fail('BAD_COLUMN', `columna desconocida: ${t}.${c}`)
+  return c
+}
+// Las columnas privadas (HIDDEN) tampoco se pueden usar para filtrar ni ordenar: con un filtro se podría adivinar su
+// contenido letra a letra aunque nunca se devuelva (oráculo ciego). Seguridad, 27 nov 2026
+function checkReadCol(t, c) {
+  checkCol(t, c)
+  if ((HIDDEN[t] || []).includes(c)) fail('FORBIDDEN', `columna privada: ${c}`, 403)
   return c
 }
 
@@ -73,7 +81,7 @@ function relation(parent, item) {
 // ── filtros ──
 const OPS = { eq: '=', neq: '<>', gt: '>', gte: '>=', lt: '<', lte: '<=' }
 function filterSql(t, alias, [col, op, val]) {
-  checkCol(t, col)
+  checkReadCol(t, col)
   const c = `${alias}.${col}`
   if (OPS[op]) return P(`${c} ${OPS[op]} ?`, inVal(t, col, val))
   if (op === 'in') {
@@ -148,12 +156,12 @@ async function fetchRows(ctx, t, { items, filters = [], orSql: orStr, order = []
   for (const c of wanted) if ((HIDDEN[t] || []).includes(c)) fail('FORBIDDEN', `columna privada: ${c}`, 403)
   const selCols = [...wanted]
   const ord = order.map(({ col, ascending = true, nullsFirst }) => {
-    checkCol(t, col)
+    checkReadCol(t, col)
     const nf = nullsFirst ?? !ascending // Postgres: ASC NULLS LAST, DESC NULLS FIRST
     return `(${a}.${col} IS NULL) ${nf ? 'DESC' : 'ASC'}, ${a}.${col} ${ascending ? 'ASC' : 'DESC'}`
   })
-  const lim = Math.min(Number.isFinite(+limit) && limit !== null ? +limit : MAX_ROWS, MAX_ROWS)
-  const sql = `SELECT ${selCols.map((c) => `${a}.${c}`).join(', ') || '1 AS _'} FROM ${t} ${a} WHERE ${w.sql}${ord.length ? ' ORDER BY ' + ord.join(', ') : ''} LIMIT ${lim}${offset ? ' OFFSET ' + (+offset | 0) : ''}`
+  const lim = Math.max(0, Math.min(Number.isFinite(+limit) && limit !== null ? Math.floor(+limit) : MAX_ROWS, MAX_ROWS)) // un límite negativo en SQLite = sin límite
+  const sql = `SELECT ${selCols.map((c) => `${a}.${c}`).join(', ') || '1 AS _'} FROM ${t} ${a} WHERE ${w.sql}${ord.length ? ' ORDER BY ' + ord.join(', ') : ''} LIMIT ${lim}${offset ? ' OFFSET ' + Math.max(0, +offset | 0) : ''}`
   let rows = (await all(ctx.db, sql, ...w.params)).map((r) => outRow(t, r))
   // tablas incrustadas
   for (const it of items.filter((x) => x.embed)) {
@@ -202,6 +210,27 @@ const pkWhere = (t, row, alias = '') => {
 async function beforeWrite(ctx, t, op, row, old) {
   if (t === 'centers' && op === 'update' && !ctx.isAdmin && !ctx.trusted) {
     for (const c of PROTECTED.centers) if (JSON.stringify(row[c] ?? null) !== JSON.stringify(old[c] ?? null)) fail('FORBIDDEN', 'solo la plataforma puede cambiar la verificación del centro', 403)
+  }
+  // Rutas de ficheros: solo de la carpeta del propio usuario en dive-photos y nunca la de la evaluación médica (cert_photo_url
+  // firma la ruta guardada: con una ruta ajena se podía leer cualquier fichero privado). Seguridad, 27 nov 2026
+  const pathCol = { certifications: 'photo_path', dive_log_photos: 'path' }[t]
+  if (pathCol && !ctx.trusted && row[pathCol] != null && row[pathCol] !== old?.[pathCol]) {
+    const v = String(row[pathCol])
+    if (!v.startsWith(ctx.uid + '/') || v.includes('..') || v.split('/')[1] === 'medico') fail('BAD_PATH', 'ruta de fichero no válida', 403)
+  }
+  // Perfil del buceador: el email de los avisos es el de la cuenta (verificado) y el resultado médico solo lo pone el
+  // cuestionario firmado (medical_sign); el proveedor de acceso y el tipo de cuenta tampoco se cambian por REST
+  if (t === 'divers' && !ctx.trusted) {
+    if (op === 'insert' && row.email != null && row.email !== ctx.email) fail('FORBIDDEN', 'el email es el de tu cuenta', 403)
+    if (op === 'update') for (const c of ['email', 'auth_provider', 'account_type', 'medical_result', 'medical_done_at', 'insurance_reminded_for']) {
+      if (JSON.stringify(row[c] ?? null) !== JSON.stringify(old?.[c] ?? null)) fail('FORBIDDEN', 'este dato no se cambia desde aquí', 403)
+    }
+    if (op === 'insert') for (const c of ['medical_result', 'medical_done_at']) if (row[c] != null) fail('FORBIDDEN', 'este dato no se cambia desde aquí', 403)
+  }
+  // Enlaces que la app pinta como <a href>: solo http(s) (un «javascript:» sería XSS al pulsarlo)
+  for (const c of ({ centers: ['website', 'source_url'], center_verifications: ['social_url'] })[t] || []) {
+    const v = row[c]
+    if (v != null && v !== '' && v !== old?.[c] && !/^https?:\/\/[^\s<>"']+$/i.test(String(v))) fail('BAD_URL', 'el enlace tiene que empezar por https://', 400)
   }
   // La firma de la bitácora solo la pone el centro (sign_trip_logs)
   if (t === 'dive_logs' && !ctx.trusted) {
@@ -266,6 +295,7 @@ export async function handleRest(ctx, q) {
 
   if (op === 'insert' || op === 'upsert') {
     const list = (Array.isArray(q.values) ? q.values : [q.values]).map((v) => cleanValues(t, v))
+    if (list.length > MAX_INSERT) fail('TOO_MANY', `como mucho ${MAX_INSERT} filas por petición`, 413) // la app manda como mucho 50
     const pk = pkOf(t)
     const stmts = [], done = []
     for (const v of list) {

@@ -215,6 +215,8 @@ ${button(url, r.due > 0 && !r.pay_on_site ? s.payBtn : s.viewBtn)}${foot(s.forec
 }
 
 export async function sendEmail(env, to, { subject, html }) {
+  // Un solo destinatario y sin caracteres que permitan inyectar cabeceras o comandos SMTP
+  if (typeof to !== 'string' || to.length > 254 || !/^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/.test(to)) throw new Error('destinatario de email no válido')
   const from = env.EMAIL_FROM || 'DivingSlot <no-reply@divingslot.com>'
   // Cloudflare Email Service (binding send_email «EMAIL» en wrangler.jsonc): sin claves. Necesita Workers Paid y el
   // dominio dado de alta en Email Sending (o, en el plan gratuito, solo a direcciones verificadas de Email Routing).

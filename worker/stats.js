@@ -48,6 +48,8 @@ export async function handleHit(req, env, url) {
   const device = /iPad|Tablet/i.test(ua) ? 'tablet' : /Mobi|Android|iPhone/i.test(ua) ? 'mobile' : 'desktop'
   const day = manilaDay()
   const ip = req.headers.get('CF-Connecting-IP') || ''
+  // Como mucho 30 páginas por minuto y visitante (IP): evita inflar o llenar las estadísticas
+  try { await rateLimit(env, 'hit:' + ip, 30, 60) } catch (e) { return nothing }
   const vh = (await sha256(ip + '|' + ua + '|' + day + '|' + (env.AUTH_SECRET || 'divingslot-visits'))).slice(0, 16)
   await ensureTables(env.DB)
   await run(env.DB, 'INSERT INTO visits (day, ts, path, ref, country, device, lang, vh) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',

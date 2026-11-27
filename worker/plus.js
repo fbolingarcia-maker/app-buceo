@@ -263,6 +263,8 @@ export const PLUS = {
     const own = c.diver_id === ctx.diverId
     const staffOk = ctx.staff.length && await first(ctx.db, `SELECT 1 AS x FROM bookings b JOIN trips t ON t.id = b.trip_id WHERE b.diver_id = ? AND t.center_id IN (${ctx.staff.map(() => '?').join(',')})`, c.diver_id, ...ctx.staff)
     if (!own && !staffOk && !ctx.isAdmin) fail('FORBIDDEN', null, 403)
+    // Solo una foto de la carpeta del propio buceador (nunca su evaluación médica ni ficheros de otros)
+    if (!c.user_id || !c.photo_path.startsWith(c.user_id + '/') || c.photo_path.split('/')[1] === 'medico') fail('NOT_FOUND', 'sin foto')
     return { url: await signedObjectUrl(ctx.env, 'dive-photos', c.photo_path, 600) }
   },
 
